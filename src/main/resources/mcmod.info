@@ -1,0 +1,12 @@
+[{
+  "modid": "improvedmobs",
+  "name": "Improved Mobs",
+  "description": "Improved AI and customizations for mobs.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "https://github.com/Flemmli97/ImprovedMobs",
+  "updateJSON": "",
+  "authorList": ["Flemmli97"],
+  "credits": "",
+  "logoFile": ""
+}]
