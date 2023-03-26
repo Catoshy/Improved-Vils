@@ -55,7 +55,7 @@ public class VillagerInvListener implements IInventoryChangedListener {
 
 	private boolean hasGuardBlockPos() {
 		try {
-			return this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getBlockPos() != null;
+			return this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getGuardBlockPos() != null;
 		} catch (NullPointerException e) {}
 		return true;
 	}

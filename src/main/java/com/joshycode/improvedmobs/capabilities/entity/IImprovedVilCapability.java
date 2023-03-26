@@ -17,8 +17,12 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public boolean getHungry();
 	public void setGuardBlockPos(BlockPos posIn);
 	@Nullable
-	public BlockPos getBlockPos();
-	public void clearGuardPos();
+	public BlockPos getGuardBlockPos();
+	public void setCommBlock(BlockPos posIn);
+	@Nullable
+	public BlockPos getCommBlockPos();
 	public boolean isReturning();
 	public void setReturning(boolean isReturning);
+	public boolean isMovingIndoors();
+	public void setMovingIndoors(boolean b);
 }

@@ -64,6 +64,12 @@ public class VilGuardPacket implements IMessage {
 					if(message.guardState) {
 						System.out.println("Setting guard pos ... " + e.getPosition().toString());
 						setGuardBlock(e.getPosition(), (EntityVillager) e);
+						if(e instanceof EntityVillager)
+							((EntityVillager) e).tasks.taskEntries.forEach(t -> {
+								if(t.action instanceof VillagerAIGuard) {
+									((VillagerAIGuard) t.action).returnState();
+								}
+							});
 					} else {
 						clearGuardPos((EntityVillager) e);
 					}
@@ -77,7 +83,7 @@ public class VilGuardPacket implements IMessage {
 		
 		private void clearGuardPos(EntityVillager entity) {
 			try {
-				entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).clearGuardPos();
+				entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(null);
 			} catch (NullPointerException e) {}
 		}
 

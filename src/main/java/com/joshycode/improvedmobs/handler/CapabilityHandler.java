@@ -1,6 +1,7 @@
 package com.joshycode.improvedmobs.handler;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.joshycode.improvedmobs.CommonProxy;
 import com.joshycode.improvedmobs.ImprovedVils;
@@ -12,7 +13,10 @@ import com.joshycode.improvedmobs.capabilities.itemstack.MarshalsBatonCapability
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.item.ItemStack;
+import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -52,4 +56,86 @@ public final class CapabilityHandler {
 	    				StaticCapabilityProvider.from(MARSHALS_BATON_CAPABILITY, capability));
 	    	}
 	    }
+	    
+	    @Nullable
+	    public static BlockPos getGuardBlockPos(EntityVillager e) {
+	    	try {
+	    		return e.getCapability(VIL_PLAYER_CAPABILITY, null).getGuardBlockPos();
+	    	} catch (NullPointerException ex) {}
+	    	return null;
+	    }
+	    
+	    @Nullable
+		public static PathPoint guardBlockAsPP(EntityVillager e) {
+			try {
+				BlockPos pos = getGuardBlockPos(e);
+				return new PathPoint(pos.getX(), pos.getY(), pos.getZ());
+			} catch (NullPointerException ex) {}
+			return null;
+		}
+
+		@Nullable
+		public static BlockPos getCommBlockPos(EntityVillager e) {
+			  try {
+		    		return e.getCapability(VIL_PLAYER_CAPABILITY, null).getCommBlockPos();
+		    	} catch (NullPointerException ex) {}
+		    	return null;
+		}
+
+		@Nullable
+		public static Vec3d commPosAsVec(EntityVillager e) {
+			try {
+				BlockPos pos = getCommBlockPos(e);
+				return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
+		    } catch (NullPointerException ex) {}
+			return null;
+		}
+		
+		public static boolean isReturning(EntityVillager e) {
+			try {
+		    		return e.getCapability(VIL_PLAYER_CAPABILITY, null).isReturning();
+		    } catch (NullPointerException ex) {}
+		    return false;
+		}
+
+		public static void setCommBlockPos(EntityVillager e, BlockPos pos) {
+			try {
+	    		e.getCapability(VIL_PLAYER_CAPABILITY, null).setCommBlock(pos);
+			} catch (NullPointerException ex) {}
+		}
+
+		public static boolean getHungry(EntityVillager e) {
+			try {
+	    		return e.getCapability(VIL_PLAYER_CAPABILITY, null).getHungry();
+			} catch (NullPointerException ex) {}
+			return true;
+		}
+
+		public static void setReturning(EntityVillager e, boolean b) {
+			try {
+	    		e.getCapability(VIL_PLAYER_CAPABILITY, null).setReturning(b);
+			} catch (NullPointerException ex) {}
+		}
+
+		@Nullable
+		public static Vec3d guardBlockAsVec(EntityVillager e) {
+			try {
+				BlockPos pos = getGuardBlockPos(e);
+				return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
+			} catch (NullPointerException ex) {}
+			return null;
+		}
+
+		public static void setMovingIndoors(EntityVillager e, boolean b) {
+			try {
+	    		e.getCapability(VIL_PLAYER_CAPABILITY, null).setMovingIndoors(b);
+			} catch (NullPointerException ex) {}
+		}
+		
+		public static boolean getMovingIndoors(EntityVillager e) {
+			try {
+	    		return e.getCapability(VIL_PLAYER_CAPABILITY, null).isMovingIndoors();
+			} catch (NullPointerException ex) {}
+			return false;
+		}
 }

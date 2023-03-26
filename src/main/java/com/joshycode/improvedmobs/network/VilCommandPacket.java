@@ -21,11 +21,22 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 public class VilCommandPacket implements IMessage {
 
 	BlockPos pos;
+	int chunkx;
+	int chunkz;
 	
-	public VilCommandPacket() {}
+	public VilCommandPacket() { 
+		this.chunkx = Integer.MAX_VALUE; 
+		this.chunkz = Integer.MAX_VALUE;
+	}
 	
 	public VilCommandPacket(BlockPos pos) {
 		this.pos = pos;
+	}
+	
+	public VilCommandPacket(int x, int z) {
+		this(BlockPos.fromLong(Long.MAX_VALUE));
+		this.chunkx = x;
+		this.chunkz = z;
 	}
 	
 	@Override
@@ -33,6 +44,8 @@ public class VilCommandPacket implements IMessage {
 		buf.writeInt(this.pos.getX());
 		buf.writeInt(this.pos.getY());
 		buf.writeInt(this.pos.getZ());
+		buf.writeInt(this.chunkx);
+		buf.writeInt(this.chunkz);
 	}
 
 	@Override
@@ -41,6 +54,8 @@ public class VilCommandPacket implements IMessage {
 		x = buf.readInt();
 		y = buf.readInt();
 		z = buf.readInt();
+		this.chunkx = buf.readInt();
+		this.chunkz = buf.readInt();
 		this.pos = new BlockPos(x, y, z);
 	}
 
@@ -50,24 +65,38 @@ public class VilCommandPacket implements IMessage {
 		public IMessage onMessage(VilCommandPacket message, MessageContext ctx) {
 			EntityPlayerMP player = ctx.getServerHandler().player;
 			WorldServer world = ctx.getServerHandler().player.getServerWorld();
-			
-			if(world.isAreaLoaded(message.pos, 1)) {
-				ItemStack stack = player.getHeldItemMainhand();
-				IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
-				
-				if(cap != null) {
-					Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
-					for(Entity e : villagers) {
-						((EntityVillager)e).tasks.taskEntries.forEach(t -> {
-							if(t.action instanceof VillagerAICampaignMove) {
-								System.out.println(e.getUniqueID() + " found AI for movement, BlockPos is " + message.pos.toString());
-								((VillagerAICampaignMove)t.action).giveObjectiveBlockPos(message.pos);
+			ItemStack stack = player.getHeldItemMainhand();					
+			IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+			if(cap != null) {
+				if(message.pos.toLong() != Long.MAX_VALUE) {
+					System.out.println("not else");
+					if(world.isAreaLoaded(message.pos, 1)) {
+						System.out.println("BLock Pos objective = " + message.pos.toString());
+							Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
+							for(Entity e : villagers) {
+								setCommandPos((EntityVillager) e, message.pos);
 							}
-						});
+					}
+				} else {
+					if(world.isChunkGeneratedAt(message.chunkx, message.chunkz)) {
+						Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
+						for(Entity e : villagers) {
+							 ((EntityVillager) e).tasks.taskEntries.forEach(t -> {
+								 if(t.action instanceof VillagerAICampaignMove) {
+									 ((VillagerAICampaignMove) t.action).giveObjectiveChunkPos(message.chunkx, message.chunkz);
+								 }
+							 });
+						}
 					}
 				}
 			}
 			return null;
+		}
+
+		private void setCommandPos(EntityVillager e, BlockPos pos) {
+			try {
+				e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setCommBlock(pos);
+			} catch (NullPointerException ex) {}
 		}
 		
 	}

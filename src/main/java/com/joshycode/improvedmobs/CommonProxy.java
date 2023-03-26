@@ -1,6 +1,9 @@
 package com.joshycode.improvedmobs;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import com.flemmli97.tenshilib.common.config.ConfigUtils.LoadState;
 import com.joshycode.improvedmobs.capabilities.CapabilityStorage;
@@ -23,6 +26,7 @@ import com.joshycode.improvedmobs.util.InventoryUtil;
 import com.joshycode.improvedmobs.util.Pair;
 
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
@@ -56,8 +60,24 @@ public abstract class CommonProxy {
 		public static final ItemMarshalsBaton BATON = null;
 	}
 
+	public static class Targets {
+		public Set<Class> suitable_targets;
+		
+		public Targets() {this.suitable_targets = new HashSet(); }
+		
+		public Set<Class> getSuitable_targets() {
+			return suitable_targets;
+		}
+
+		public void addSuitable_targets(Class suitable_targets) {
+			this.suitable_targets.add(suitable_targets);
+		}	
+	}
+	
 	public static final int MAX_GUARD_DIST = 256;
-	public static final int GUARD_IGNORE_LIMIT = 4096;
+	public static final int GUARD_IGNORE_LIMIT = 16384;
+	public static final Targets TARGETS = new Targets();
+	public static final double GUARD_MAX_PATH = 576;
 		
 	public void preInit() throws IOException {
 		NetworkRegistry.INSTANCE.registerGuiHandler(ImprovedVils.instance, new VilGuiHandler());

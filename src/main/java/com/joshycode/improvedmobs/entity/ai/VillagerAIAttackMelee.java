@@ -11,15 +11,18 @@ import com.joshycode.improvedmobs.CommonProxy;
 import com.joshycode.improvedmobs.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedmobs.handler.ConfigHandlerVil;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
+import com.joshycode.improvedmobs.util.PositionUtil;
 import com.joshycode.improvedmobs.util.VilAttributes;
 
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityCreature;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAttackMelee;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
@@ -45,17 +48,16 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
 	
 	@Override
 	public boolean shouldExecute() {
+		if(CapabilityHandler.getCommBlockPos((EntityVillager) this.attacker) != null || PositionUtil.isOutsideHomeDist((EntityVillager) this.attacker)
+				|| CapabilityHandler.isReturning((EntityVillager) this.attacker) || CapabilityHandler.getMovingIndoors((EntityVillager) this.attacker)) {
+    		return false;
+    	}
 		String s = this.attacker.getHeldItemMainhand().getUnlocalizedName();
 		for(String g : ConfigHandlerVil.configuredGuns.keySet()) {
 			if(s.equals(g)) {
 				return false;
 			}
 		}
-    	if(getBlockPos() != null) {
-    		if(isReturning()) {
-    			return false;
-    		}
-    	}
     	return super.shouldExecute();
     }
 	
@@ -63,13 +65,23 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
 	public void updateTask()
     {
        super.updateTask();
-       this.path = this.attacker.getNavigator().getPath();
-       if(this.path != null && getBlockPos() != null && this.path.getFinalPathPoint().distanceToSquared(guardBlockAsPP()) > CommonProxy.MAX_GUARD_DIST - 31) {
-    	   this.truncatePath(this.path, getBlockPos());
-       }
-       this.attacker.getNavigator().setPath(this.path, this.speedToTarget);
+	       this.path = this.attacker.getNavigator().getPath();
+	       if(this.path != null && CapabilityHandler.getGuardBlockPos((EntityVillager) this.attacker) != null && 
+	    		   this.path.getFinalPathPoint().distanceToSquared(CapabilityHandler.guardBlockAsPP((EntityVillager) this.attacker)) > CommonProxy.MAX_GUARD_DIST - 31) {
+	    	   this.truncatePath(this.path, CapabilityHandler.getGuardBlockPos((EntityVillager) this.attacker));
+	       }
+	       this.attacker.getNavigator().setPath(this.path, this.speedToTarget);
     }
 
+	@Override
+	public boolean shouldContinueExecuting() {
+		if(CapabilityHandler.getCommBlockPos((EntityVillager) this.attacker) != null || PositionUtil.isOutsideHomeDist((EntityVillager) this.attacker)
+				|| CapabilityHandler.isReturning((EntityVillager) this.attacker) || CapabilityHandler.getMovingIndoors((EntityVillager) this.attacker)) {
+    		return false;
+    	}
+		return super.shouldContinueExecuting();
+	}
+	
 	private boolean attackEntityAsVillager(EntityLivingBase entityIn) {
 		float f = (float)this.attacker.getEntityAttribute(VilAttributes.VIL_DAMAGE).getAttributeValue();
         int i = 0;
@@ -191,26 +203,4 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
 
         this.attacker.getNavigator().clearPath();
     }
-	
-	private PathPoint guardBlockAsPP() {
-		try {
-			BlockPos pos = getBlockPos();
-			return new PathPoint(pos.getX(), pos.getY(), pos.getZ());
-		} catch (NullPointerException e) {}
-		return null;
-	}
-
-	private BlockPos getBlockPos() {
-		try {
-			return this.attacker.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getBlockPos();
-		} catch (NullPointerException e) {}
-		return null;
-	}
-
-	private boolean isReturning() {
-		try {
-			return this.attacker.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isReturning();
-		} catch (NullPointerException e) {}
-		return false;
-	}
 }

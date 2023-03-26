@@ -25,7 +25,22 @@ public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 			if(InventoryUtil.doesInventoryHaveItem(this.e.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0  && !cap.getHungry())
 				return false;
 		}
-		return super.shouldExecute();
+		if(super.shouldExecute()) {
+			CapabilityHandler.setMovingIndoors(this.e, true);
+			
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	@Override
+	public boolean shouldContinueExecuting() {
+		if(!super.shouldContinueExecuting()) {
+			CapabilityHandler.setMovingIndoors(this.e, false);
+			return false;
+		}
+		return true;
 	}
 
 }

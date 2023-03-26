@@ -1,7 +1,9 @@
 package com.joshycode.improvedmobs.util;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -10,6 +12,7 @@ import com.joshycode.improvedmobs.entity.ai.VillagerAIShootRanged;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 public class InventoryUtil {
 
@@ -65,6 +68,33 @@ public class InventoryUtil {
 				return invIn.decrStackSize(i, 1);
 			}
 		}		
+		return null;
+	}
+	
+	public static <T extends Item> ItemStack findAndIncrItem(IInventory invIn, Class<T> clazz) {
+		Set<Integer> emptyStacks = new HashSet();
+		for(int i = 0; i < invIn.getSizeInventory(); i++) {
+			ItemStack stack = invIn.getStackInSlot(i);
+			if(clazz.isInstance(stack.getItem())) {
+				stack.grow(1);
+				return stack;
+			} else if(stack.isEmpty()) {
+				emptyStacks.add(i);
+			}
+		}	
+		if(emptyStacks.size() > 0) {
+			Item item = null;
+			for(Item t : ForgeRegistries.ITEMS) {
+				if(clazz.isInstance(t)) {
+					item = t;
+				}
+			}
+			if(item != null) {
+				ItemStack stack = new ItemStack(item);
+				invIn.setInventorySlotContents(emptyStacks.iterator().next(), stack);
+				return stack;
+			}
+		}
 		return null;
 	}
 	

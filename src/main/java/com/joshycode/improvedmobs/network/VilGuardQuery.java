@@ -70,7 +70,7 @@ public class VilGuardQuery implements IMessage{
 
 		private boolean hasGuardBlockPos(EntityVillager entity) {
 			try {
-				return entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getBlockPos() != null;
+				return entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getGuardBlockPos() != null;
 			} catch (NullPointerException e) {}
 			return true;
 		}

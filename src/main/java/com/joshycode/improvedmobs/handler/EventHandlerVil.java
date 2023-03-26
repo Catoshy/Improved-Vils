@@ -12,6 +12,7 @@ import com.joshycode.improvedmobs.entity.ai.VillagerAIAvoidEntity;
 import com.joshycode.improvedmobs.entity.ai.VillagerAICampaignEat;
 import com.joshycode.improvedmobs.entity.ai.VillagerAICampaignMove;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIGuard;
+import com.joshycode.improvedmobs.entity.ai.VillagerAIHurtByTarget;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIMoveIndoors;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIShootRanged;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIWanderAvoidWater;
@@ -151,26 +152,22 @@ public class EventHandlerVil {
 		}
 		entity.tasks.taskEntries.removeAll(toRem);
 		entity.tasks.addTask(9, new VillagerAIWanderAvoidWater(entity, .6D));
+		entity.tasks.addTask(9, new VillagerAIMoveIndoors(entity));
 		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, .67D, false));
 		entity.tasks.addTask(4, new VillagerAIShootRanged(entity, 10, 16, .5F));
 		entity.tasks.addTask(1, new VillagerAICampaignEat(entity));
 		entity.tasks.addTask(3, new VillagerAICampaignMove(entity, 1));
-		entity.tasks.addTask(1, new VillagerAIGuard(entity, CommonProxy.MAX_GUARD_DIST, 6, 45));
+		entity.tasks.addTask(1, new VillagerAIGuard(entity, CommonProxy.MAX_GUARD_DIST, 6, 7));
 		entity.tasks.addTask(3, new VillagerAIMoveIndoors(entity));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityZombie.class, 8.0F, 0.6D, 0.6D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityEvoker.class, 12.0F, 0.8D, 0.8D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVindicator.class, 8.0F, 0.8D, 0.8D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVex.class, 8.0F, 0.6D, 0.6D));
-		if(ConfigHandlerVil.whiteListMobs) {
-			for(String s : ConfigHandlerVil.attackableMobs) {
-				entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, 
-						EntityList.getClass(new ResourceLocation(s)), .67D));
+		for(String s : ConfigHandlerVil.attackableMobs) {
+			entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, 
+					EntityList.getClass(new ResourceLocation(s)), true));
 			}
-		} else  {
-			entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityMob.class, .67D));
-			entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntitySlime.class, .67D));
-			entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityPlayer.class, .67D));
-		}
-
+		entity.targetTasks.addTask(2, new VillagerAIHurtByTarget(entity, false));
+		entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityMob.class, true));
 	}
 }

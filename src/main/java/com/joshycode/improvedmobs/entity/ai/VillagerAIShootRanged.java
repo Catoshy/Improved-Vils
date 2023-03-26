@@ -3,6 +3,7 @@ package com.joshycode.improvedmobs.entity.ai;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.annotation.Nullable;
 
@@ -14,21 +15,29 @@ import com.joshycode.improvedmobs.entity.ai.RangeAttackEntry.RangeAttackType;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
 import com.joshycode.improvedmobs.handler.ConfigHandlerVil;
 import com.joshycode.improvedmobs.util.InventoryUtil;
+import com.joshycode.improvedmobs.util.PositionUtil;
 
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
+import net.minecraft.entity.projectile.EntityArrow.PickupStatus;
 import net.minecraft.entity.projectile.EntityTippedArrow;
+import net.minecraft.init.Enchantments;
+import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.IInventoryChangedListener;
+import net.minecraft.item.ItemArrow;
 import net.minecraft.item.ItemStack;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.EnumDifficulty;
+import net.minecraft.world.World;
 
 public class VillagerAIShootRanged extends EntityAIBase {
 
@@ -71,7 +80,8 @@ public class VillagerAIShootRanged extends EntityAIBase {
 
 	@Override
 	public boolean shouldExecute() {
-		if(this.isReturning())
+		if(CapabilityHandler.isReturning(this.entityHost) || CapabilityHandler.getCommBlockPos(this.entityHost) != null || PositionUtil.isOutsideHomeDist(this.entityHost)
+				|| CapabilityHandler.getMovingIndoors(this.entityHost))
 			return false;
 		this.entry = villagerGunEntryForItems();
 		if(this.entry == null)
@@ -142,7 +152,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		if(d0 <= (double) this.attackRange_2 && this.ticksTargetSeen >= 10){
 			this.entityHost.getNavigator().clearPath();
 		}else{
-			BlockPos pos = this.getGuardPos();
+			BlockPos pos = CapabilityHandler.getGuardBlockPos(this.entityHost);
 			if(pos != null) {
 				if(this.entityHost.getDistanceSq(pos) < CommonProxy.GUARD_IGNORE_LIMIT) {
 					Path p = this.entityHost.getNavigator().getPathToEntityLiving(attackTarget);
@@ -240,10 +250,43 @@ public class VillagerAIShootRanged extends EntityAIBase {
         double d1 = target.getEntityBoundingBox().minY + (double)(target.height / 3.0F) - entityarrow.posY;
         double d2 = target.posZ - this.entityHost.posZ;
         double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
+        entityarrow = vanillaEnchantmentBow(this.entityHost.getHeldItemMainhand(), entityarrow, getPlayer());
         entityarrow.shoot(d0, d1 + d3 * 0.20000000298023224D, d2, 1.6F, (float)this.entityHost.world.getDifficulty().getDifficultyId());
         this.entityHost.playSound(SoundEvents.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.entityHost.getRNG().nextFloat() * 0.4F + 0.8F));
         this.entityHost.world.spawnEntity(entityarrow);
     }
+    
+    private EntityArrow vanillaEnchantmentBow(ItemStack stack, EntityArrow arrow, @Nullable EntityPlayer playerIn) {
+    	if(EnchantmentHelper.getEnchantmentLevel(Enchantments.INFINITY, stack) > 0) {
+	    	 arrow.pickupStatus = EntityArrow.PickupStatus.DISALLOWED;
+	     } else {
+	 	     arrow.pickupStatus = EntityArrow.PickupStatus.ALLOWED;
+	     }
+         int j = EnchantmentHelper.getEnchantmentLevel(Enchantments.POWER, stack);
+
+         if (j > 0)
+         {
+             arrow.setDamage(arrow.getDamage() + (double)j * 0.5D + 0.5D);
+         }
+
+         int k = EnchantmentHelper.getEnchantmentLevel(Enchantments.PUNCH, stack);
+
+         if (k > 0)
+         {
+             arrow.setKnockbackStrength(k);
+         }
+
+         if (EnchantmentHelper.getEnchantmentLevel(Enchantments.FLAME, stack) > 0)
+         {
+             arrow.setFire(100);
+         }
+         
+         if(playerIn != null) 
+         {
+        	 stack.damageItem(1, playerIn);
+         }
+         return arrow;
+	}
 
     protected EntityArrow getArrow(float p_190726_1_)
     {
@@ -252,14 +295,15 @@ public class VillagerAIShootRanged extends EntityAIBase {
         return entitytippedarrow;
     }
     
-	@Nullable
-	private BlockPos getGuardPos() {
-		IImprovedVilCapability cap = this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+    @Nullable
+    private EntityPlayer getPlayer() {
+    	IImprovedVilCapability cap = this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		if(cap != null) {
-			return cap.getBlockPos();
+			UUID playerId = cap.getPlayerId();
+			return this.entityHost.getWorld().getPlayerEntityByUUID(playerId);
 		}
 		return null;
-	}
+    }
     
 	private void truncatePath(Path p, BlockPos pos) {
 		for(int i = 0; i < p.getCurrentPathLength(); i++) {
@@ -268,14 +312,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 				p.setCurrentPathLength(i);
 			}
 		}
-	}
-	
-	private boolean isReturning() {
-		IImprovedVilCapability cap = this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		if(cap != null) {
-			return cap.isReturning();
-		}
-		return false;
 	}
 }
 

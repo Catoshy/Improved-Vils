@@ -2,15 +2,20 @@ package com.joshycode.improvedmobs.handler;
 
 import java.util.Map;
 
+import com.joshycode.improvedmobs.CommonProxy;
 import com.joshycode.improvedmobs.entity.ai.RangeAttackEntry;
 import com.joshycode.improvedmobs.entity.ai.RangeAttackEntry.RangeAttackType;
 
+import net.minecraft.entity.monster.EntityMob;
+import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.entity.monster.EntityWitch;
 import net.minecraft.init.Items;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 import com.flemmli97.tenshilib.common.config.ConfigUtils.LoadState;
 import com.google.common.collect.ArrayListMultimap;
@@ -45,11 +50,16 @@ public class ConfigHandlerVil {
 		general.setLanguageKey("improvedvils.general");
 		whiteListMobs = config.getBoolean("general", "whitelist only", false, "Set to true to have Villagers only attack whitelisted Mobs, "
 				+ "otherwise Villagers will attack all instances of \"EntityMob\" + any mobs listed in whitelist");
-		attackableMobs = config.getStringList("mob whitelist", "general", new String[]{EntityRegistry.getEntry(EntityWitch.class).getRegistryName().toString()}, "use the forge-registered name of the mob, this can generally "
+		attackableMobs = config.getStringList("mob whitelist", "general", new String[]{EntityRegistry.getEntry(EntitySlime.class).getRegistryName().toString()}, "use the forge-registered name of the mob, this can generally "
 				+ "be found in the entity registring method for the applicable mod");
 		villagerDeBuffMelee = config.getFloat("villagerDe-BuffMelee", "general", .75F, .25F, 1.0F, "how much of a fraction of damage an item would cause if held by player will be caused by villager");
 		if(state == LoadState.SYNC || state == LoadState.POSTINIT){
 			readEntryJson();
+			if(!whiteListMobs) {
+				CommonProxy.TARGETS.addSuitable_targets(EntityMob.class);
+			}
+			for(String s : attackableMobs)
+				CommonProxy.TARGETS.addSuitable_targets(ForgeRegistries.ENTITIES.getValue(new ResourceLocation(s)).getEntityClass());
 			config.save();
 		}
 	}

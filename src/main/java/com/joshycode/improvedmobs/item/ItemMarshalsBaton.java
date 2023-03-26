@@ -47,15 +47,16 @@ public class ItemMarshalsBaton extends Item {
 	public static Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world) {
 		System.out.println("getEntitiesByUUID() ids to find are;  " + ids.toString());
 		Set<Entity> applicable = new HashSet();
-		for (Entity e : world.getLoadedEntityList()) {
-			if(world.getChunkFromBlockCoords(e.getPosition()).isLoaded()) {
-				 if(ids.contains(e.getUniqueID())) {
-					 applicable.add(e);
-					 System.out.println("found applicable  " + e.getUniqueID());
-				 }
+		if(world.getLoadedEntityList() != null && world.getLoadedEntityList().size() != 0)	{
+			for (Entity e : world.getLoadedEntityList()) {
+				if(world.getChunkFromBlockCoords(e.getPosition()).isLoaded()) {
+					 if(ids.contains(e.getUniqueID())) {
+						 applicable.add(e);
+						 System.out.println("found applicable  " + e.getUniqueID());
+					 }
+				}
 			}
 		}
 		return applicable;
 	}
-	
 }
