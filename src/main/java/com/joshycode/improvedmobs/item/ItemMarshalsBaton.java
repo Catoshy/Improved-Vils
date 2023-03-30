@@ -1,11 +1,14 @@
 package com.joshycode.improvedmobs.item;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.joshycode.improvedmobs.network.NetWrapper;
 import com.joshycode.improvedmobs.network.VilCommandPacket;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -44,11 +47,12 @@ public class ItemMarshalsBaton extends Item {
 		return new ActionResult<ItemStack>(EnumActionResult.PASS, stack);
 	}
 	
-	public static Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world) {
+	public static synchronized Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world) {
 		System.out.println("getEntitiesByUUID() ids to find are;  " + ids.toString());
 		Set<Entity> applicable = new HashSet();
 		if(world.getLoadedEntityList() != null && world.getLoadedEntityList().size() != 0)	{
-			for (Entity e : world.getLoadedEntityList()) {
+			List<Entity> list = new CopyOnWriteArrayList <Entity> (world.getLoadedEntityList());
+			for (Entity e : list) {
 				if(world.getChunkFromBlockCoords(e.getPosition()).isLoaded()) {
 					 if(ids.contains(e.getUniqueID())) {
 						 applicable.add(e);

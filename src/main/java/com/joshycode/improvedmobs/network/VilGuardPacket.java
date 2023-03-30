@@ -2,14 +2,11 @@ package com.joshycode.improvedmobs.network;
 
 import java.util.UUID;
 
-import com.joshycode.improvedmobs.ClientProxy;
-import com.joshycode.improvedmobs.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIGuard;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
@@ -59,11 +56,13 @@ public class VilGuardPacket implements IMessage {
 			EntityPlayerMP player = ctx.getServerHandler().player;
 			WorldServer world = ctx.getServerHandler().player.getServerWorld();
 			Entity e = world.getEntityByID(message.id);
+			int int1 = 0;
 			if(e instanceof EntityVillager)  {
 				if(getPlayerId((EntityVillager) e).equals(player.getUniqueID())) {
 					if(message.guardState) {
 						System.out.println("Setting guard pos ... " + e.getPosition().toString());
-						setGuardBlock(e.getPosition(), (EntityVillager) e);
+						clearFollowState((EntityVillager) e);
+						int1 = setGuardBlock((EntityVillager) e, e.getPosition())? 2 : 1;
 						if(e instanceof EntityVillager)
 							((EntityVillager) e).tasks.taskEntries.forEach(t -> {
 								if(t.action instanceof VillagerAIGuard) {
@@ -71,26 +70,28 @@ public class VilGuardPacket implements IMessage {
 								}
 							});
 					} else {
-						clearGuardPos((EntityVillager) e);
+						clearFollowState((EntityVillager) e);
+						int1 = setGuardBlock((EntityVillager) e, null)? 1 : 2;
 					}
 				}
 			}
 			if(message.guardState)
-				return new VilGuardPacket(e.getPosition(), 1, true);
+				return new VilStateQuery(2, 1, e.getPosition());
 			else
-				return new VilGuardQuery(2);
+				return new VilStateQuery(int1, 1);
 		}
 		
-		private void clearGuardPos(EntityVillager entity) {
+		private void clearFollowState(EntityVillager e) {
 			try {
-				entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(null);
-			} catch (NullPointerException e) {}
+				e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(false);
+			} catch (NullPointerException ex) {}
 		}
 
-		private void setGuardBlock(BlockPos pos, EntityVillager entity) {
+		private boolean setGuardBlock(EntityVillager entity, BlockPos pos) {
 			try {
 				entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(pos);
-			} catch (NullPointerException e) {}
+				return true;
+			} catch (NullPointerException e) {return false; }
 		}
 		
 		private UUID getPlayerId(EntityVillager entity) {
@@ -99,15 +100,5 @@ public class VilGuardPacket implements IMessage {
 			} catch (NullPointerException e) {}
 			return UUID.randomUUID();
 		}
-	}
-	
-	public static class ClientHandler implements IMessageHandler<VilGuardPacket, IMessage> {
-
-		@Override
-		public IMessage onMessage(VilGuardPacket message, MessageContext ctx) {
-			ClientProxy.updateVillagerGuardGUIInfo(message.pos, message.id);
-			return null;
-		}
-		
 	}
 }

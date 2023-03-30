@@ -34,28 +34,19 @@ public class VillagerAICampaignEat extends EntityAIBase implements IInventoryCha
 	public void updateTask() {
 		if(this.hungerCooldown > 0) {
 			this.hungerCooldown--;
-			if(this.hungerCooldown == 0) {
-				System.out.println("hunger cooldown met");
+			if(this.hungerCooldown <= 0) {
 				checkFood();
-			}
-		} else {
-			ItemStack stack = InventoryUtil.findAndDecrItem(entityHost.getVillagerInventory(), ItemFood.class);
-			if(stack != null) {
-				this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setHungry(false);
-				float saturation = ((ItemFood)stack.getItem()).getSaturationModifier(stack);
-				this.hungerCooldown = (int) (saturation * 2000);
 			}
 		}
 	}
 
 	@Override
 	public void onInventoryChanged(IInventory invBasic) {
-		checkFood();
+		if(isHungry())
+			checkFood();
 	}
 
 	private void checkFood() {
-		if(!isHungry())
-			return;
 		ItemStack stack = InventoryUtil.findAndDecrItem(entityHost.getVillagerInventory(), ItemFood.class);
 		if(stack != null) {
 			setHungry(false);
@@ -68,7 +59,7 @@ public class VillagerAICampaignEat extends EntityAIBase implements IInventoryCha
 
 	private boolean isHungry() {
 		try {
-			return this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHungry();
+			return this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isHungry();
 		} catch (NullPointerException e) {}
 		return false;
 	}

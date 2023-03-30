@@ -3,7 +3,6 @@ package com.joshycode.improvedmobs.entity.ai;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
-import net.minecraft.item.ItemStack;
 
 public class VillagerAIAvoidEntity<T extends Entity> extends EntityAIAvoidEntity<T> {
 
@@ -13,7 +12,7 @@ public class VillagerAIAvoidEntity<T extends Entity> extends EntityAIAvoidEntity
 	}
 	
 	public boolean shouldExecute() {
-		if(this.entity.getHeldItemMainhand() != ItemStack.EMPTY)
+		if(!this.entity.getHeldItemMainhand().isEmpty())
 			return false;
 		return super.shouldExecute();
 	}

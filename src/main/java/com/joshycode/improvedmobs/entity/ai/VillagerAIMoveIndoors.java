@@ -1,6 +1,7 @@
 package com.joshycode.improvedmobs.entity.ai;
 
 import com.joshycode.improvedmobs.CommonProxy;
+import com.joshycode.improvedmobs.capabilities.VilCapabilityMethods;
 import com.joshycode.improvedmobs.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
 import com.joshycode.improvedmobs.util.InventoryUtil;
@@ -22,11 +23,11 @@ public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 	public boolean shouldExecute() {
 		IImprovedVilCapability cap = e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		if(cap != null) {
-			if(InventoryUtil.doesInventoryHaveItem(this.e.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0  && !cap.getHungry())
+			if(InventoryUtil.doesInventoryHaveItem(this.e.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0  && !cap.isHungry())
 				return false;
 		}
 		if(super.shouldExecute()) {
-			CapabilityHandler.setMovingIndoors(this.e, true);
+			VilCapabilityMethods.setMovingIndoors(this.e, true);
 			
 			return true;
 		} else {
@@ -37,7 +38,7 @@ public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 	@Override
 	public boolean shouldContinueExecuting() {
 		if(!super.shouldContinueExecuting()) {
-			CapabilityHandler.setMovingIndoors(this.e, false);
+			VilCapabilityMethods.setMovingIndoors(this.e, false);
 			return false;
 		}
 		return true;

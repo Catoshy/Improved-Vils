@@ -5,12 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.joshycode.improvedmobs.ClientProxy;
-import com.joshycode.improvedmobs.CommonProxy;
 import com.joshycode.improvedmobs.entity.EntityVillagerContainer;
 import com.joshycode.improvedmobs.network.NetWrapper;
 import com.joshycode.improvedmobs.network.VilEnlistPacket;
-import com.joshycode.improvedmobs.network.VilGuardPacket;
-import com.joshycode.improvedmobs.network.VilGuardQuery;
 
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -18,7 +15,6 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -36,10 +32,13 @@ public class GuiVillagerArm extends GuiContainer {
 	private List<GuiButton> notEnlistedButtons;
 	private List<GuiButton> guardButtons;
 	private List<GuiButton> notGuardButtons;
+	private List<GuiButton> followButtons;
+	private List<GuiButton> notFollowButtons;
 	private Vec3i vec;
 
 	public GuiVillagerArm(InventoryPlayer playerInv, IInventory villagerInv, IInventory villagerHand, int vilId, boolean hasBaton, boolean isEnlisted) {
 		super(new EntityVillagerContainer(playerInv, villagerInv, villagerHand));
+		ClientProxy.queryState(vilId);
 		this.villagerEnlistState = isEnlisted;
 		this.hasBaton = hasBaton;
 		this.vilId = vilId;
@@ -49,6 +48,8 @@ public class GuiVillagerArm extends GuiContainer {
 		this.notEnlistedButtons = new ArrayList();
 		this.guardButtons = new ArrayList();
 		this.notGuardButtons = new ArrayList();
+		this.followButtons = new ArrayList();
+		this.notFollowButtons = new ArrayList();
 	}
 	
 	public GuiVillagerArm(InventoryPlayer playerInv, IInventory villagerInv, IInventory villagerHand, int vilId, int company , int platoon) {
@@ -57,13 +58,14 @@ public class GuiVillagerArm extends GuiContainer {
 		this.platoon = platoon;
 	}
 	
-	@SuppressWarnings("serial")
 	public void initGui() {
-		NetWrapper.NETWORK.sendToServer(new VilGuardQuery(this.vilId));
 		super.initGui();
+		this.notGuardButtons.add(new GuiButton(106, guiLeft + 107, guiTop + 44, 24, 12, "Guard"));
+		this.guardButtons.add(new GuiButton(107, guiLeft + 107, guiTop + 44, 24, 12, "Stop"));
+		this.notFollowButtons.add(new GuiButton(108, guiLeft + 71, guiTop + 44, 24, 12, "Follow"));
+		this.followButtons.add(new GuiButton(109, guiLeft + 71, guiTop + 44, 24, 12, "Stop"));
 		this.enlistedButtons.add(new GuiButton(105, guiLeft + 143, guiTop + 44, 24, 12, "De-Enlist"));
-		this.notGuardButtons.add(new GuiButton(106, guiLeft + 107, guiTop + 62, 24, 12, "Guard"));
-		this.guardButtons.add(new GuiButton(107, guiLeft + 107, guiTop + 62, 24, 12, "Stop"));
+
 		this.notEnlistedButtons.addAll( new ArrayList<GuiButton>() {
 			{
 				add(new GuiButton(100, guiLeft + 143, guiTop + 8, 6, 12, "<"));
@@ -119,9 +121,11 @@ public class GuiVillagerArm extends GuiContainer {
         	ClientProxy.guardHere(this.vilId, true);
         } else if(button.id == 107) {
         	ClientProxy.guardHere(this.vilId, false);
-        }
-        	
-           
+        } else if(button.id == 108) {
+        	ClientProxy.followPlayer(this.vilId, true);
+        } else if(button.id == 109) {
+        	ClientProxy.followPlayer(this.vilId, false);
+        }  
     }
 
 	public void setEnlistState(boolean isEnlisted, int company, int platoon) {
@@ -139,19 +143,32 @@ public class GuiVillagerArm extends GuiContainer {
 		}
 	}
 
-	public void setGuardState(BlockPos pos, int id) {
-		if(pos != null) {
+	public void setGuardState(Vec3i pos, int id) {
+		if(!pos.equals(Vec3i.NULL_VECTOR)) {
 			this.vec = pos;
 		}
 		if(id == 1) {
-			this.buttonList.removeAll(notGuardButtons);
-			this.buttonList.addAll(guardButtons);
-		} else if(id == 2){
 			this.buttonList.removeAll(guardButtons);
 			this.buttonList.addAll(notGuardButtons);
+		} else if(id == 2){
+			this.buttonList.removeAll(notGuardButtons);
+			this.buttonList.addAll(guardButtons);
 		} else {
 			this.buttonList.removeAll(notGuardButtons);
 			this.buttonList.removeAll(guardButtons);
+		}
+	}
+
+	public void setFollowState(int int2) {
+		if(int2 == 1) {
+			this.buttonList.removeAll(followButtons);
+			this.buttonList.addAll(notFollowButtons);
+		} else if (int2 == 2) {
+			this.buttonList.removeAll(notFollowButtons);
+			this.buttonList.addAll(followButtons);
+		} else {
+			this.buttonList.removeAll(notFollowButtons);
+			this.buttonList.removeAll(followButtons);
 		}
 	}
 

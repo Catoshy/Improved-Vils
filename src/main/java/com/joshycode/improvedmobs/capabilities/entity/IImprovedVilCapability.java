@@ -13,16 +13,18 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public void setPlayerId(UUID id);
 	@Nullable
 	public UUID getPlayerId();
-	public void setHungry(boolean isHungry);
-	public boolean getHungry();
 	public void setGuardBlockPos(BlockPos posIn);
 	@Nullable
 	public BlockPos getGuardBlockPos();
 	public void setCommBlock(BlockPos posIn);
 	@Nullable
 	public BlockPos getCommBlockPos();
+	public boolean isHungry();
+	public void setHungry(boolean isHungry);
 	public boolean isReturning();
 	public void setReturning(boolean isReturning);
 	public boolean isMovingIndoors();
 	public void setMovingIndoors(boolean b);
+	public boolean isFollowing();
+	public void setFollowing(boolean follow);
 }

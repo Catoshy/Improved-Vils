@@ -8,19 +8,16 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedmobs.CommonProxy;
-import com.joshycode.improvedmobs.capabilities.entity.IImprovedVilCapability;
-import com.joshycode.improvedmobs.handler.ConfigHandlerVil;
+import com.joshycode.improvedmobs.capabilities.VilCapabilityMethods;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
-import com.joshycode.improvedmobs.util.PositionUtil;
+import com.joshycode.improvedmobs.handler.ConfigHandlerVil;
 import com.joshycode.improvedmobs.util.VilAttributes;
 
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityCreature;
-import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAttackMelee;
-import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
@@ -32,7 +29,6 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
 
 public class VillagerAIAttackMelee extends EntityAIAttackMelee {
 
@@ -48,10 +44,18 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
 	
 	@Override
 	public boolean shouldExecute() {
-		if(CapabilityHandler.getCommBlockPos((EntityVillager) this.attacker) != null || PositionUtil.isOutsideHomeDist((EntityVillager) this.attacker)
-				|| CapabilityHandler.isReturning((EntityVillager) this.attacker) || CapabilityHandler.getMovingIndoors((EntityVillager) this.attacker)) {
+		if(VilCapabilityMethods.getCommBlockPos((EntityVillager) this.attacker) != null)
+			return false;
+		if(VilCapabilityMethods.isOutsideHomeDist((EntityVillager) this.attacker))
+			return false;
+		if(VilCapabilityMethods.isReturning((EntityVillager) this.attacker))
+			return false;
+		if(VilCapabilityMethods.getMovingIndoors((EntityVillager) this.attacker))
+			return false;
+		if(((EntityVillager) this.attacker).isMating())
     		return false;
-    	}
+		if(VilCapabilityMethods.getFollowing((EntityVillager) this.attacker) && isDistanceTooGreat())
+			return false;
 		String s = this.attacker.getHeldItemMainhand().getUnlocalizedName();
 		for(String g : ConfigHandlerVil.configuredGuns.keySet()) {
 			if(s.equals(g)) {
@@ -66,17 +70,17 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
     {
        super.updateTask();
 	       this.path = this.attacker.getNavigator().getPath();
-	       if(this.path != null && CapabilityHandler.getGuardBlockPos((EntityVillager) this.attacker) != null && 
-	    		   this.path.getFinalPathPoint().distanceToSquared(CapabilityHandler.guardBlockAsPP((EntityVillager) this.attacker)) > CommonProxy.MAX_GUARD_DIST - 31) {
-	    	   this.truncatePath(this.path, CapabilityHandler.getGuardBlockPos((EntityVillager) this.attacker));
+	       if(this.path != null && VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.attacker) != null && 
+	    		   this.path.getFinalPathPoint().distanceToSquared(VilCapabilityMethods.guardBlockAsPP((EntityVillager) this.attacker)) > CommonProxy.MAX_GUARD_DIST - 31) {
+	    	   this.truncatePath(this.path, VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.attacker));
 	       }
 	       this.attacker.getNavigator().setPath(this.path, this.speedToTarget);
     }
 
 	@Override
 	public boolean shouldContinueExecuting() {
-		if(CapabilityHandler.getCommBlockPos((EntityVillager) this.attacker) != null || PositionUtil.isOutsideHomeDist((EntityVillager) this.attacker)
-				|| CapabilityHandler.isReturning((EntityVillager) this.attacker) || CapabilityHandler.getMovingIndoors((EntityVillager) this.attacker)) {
+		if(VilCapabilityMethods.getCommBlockPos((EntityVillager) this.attacker) != null || VilCapabilityMethods.isOutsideHomeDist((EntityVillager) this.attacker)
+				|| VilCapabilityMethods.isReturning((EntityVillager) this.attacker) || VilCapabilityMethods.getMovingIndoors((EntityVillager) this.attacker)) {
     		return false;
     	}
 		return super.shouldContinueExecuting();
@@ -89,10 +93,8 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
         ItemStack itemstack = this.attacker.getHeldItemMainhand();
         
         List<AttributeModifier> l = new ArrayList(itemstack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()));
-        System.out.println(l.toString());
         try {
             float f1 = (float) l.get(0).getAmount();
-        	System.out.println(f1);
         	if(f1 >= 1.5F)	
         		f1 *= ConfigHandlerVil.villagerDeBuffMelee;
         	f += f1;
@@ -101,9 +103,7 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
         }
         f += EnchantmentHelper.getModifierForCreature(this.attacker.getHeldItemMainhand(), ((EntityLivingBase)entityIn).getCreatureAttribute());
         i += EnchantmentHelper.getKnockbackModifier(this.attacker);
-        
-        System.out.println(f);
-        
+                
         boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this.attacker), f);
 
         if(!itemstack.isEmpty()) {
@@ -113,7 +113,6 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
     			playerEnt = this.attacker.world.getPlayerEntityByUUID(player);
     		}
         	if(playerEnt != null) {
-        		System.out.println("VillagerAIAttackMelee player is; " + playerEnt.getName());
         		itemstack.hitEntity(entityIn, playerEnt);
         	} else {
         		itemstack.getItem().hitEntity(itemstack, entityIn, this.attacker);
@@ -143,7 +142,6 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
                 if (!itemstack.isEmpty() && !itemstack1.isEmpty() && itemstack.getItem().canDisableShield(itemstack, itemstack1, entityplayer, this.attacker) && itemstack1.getItem().isShield(itemstack1, entityplayer))
                 {
                     float f2 = 0.25F + (float)EnchantmentHelper.getEfficiencyModifier(this.attacker) * 0.05F;
-
                     if (this.rand.nextFloat() < f2)
                     {
                         entityplayer.getCooldownTracker().setCooldown(itemstack1.getItem(), 100);
@@ -177,6 +175,18 @@ public class VillagerAIAttackMelee extends EntityAIAttackMelee {
 				p.setCurrentPathLength(i);
 			}
 		}
+	}
+	
+	private boolean isDistanceTooGreat() {
+		try {	
+			UUID playerId = VilCapabilityMethods.getPlayerId((EntityVillager) this.attacker);
+			EntityPlayer player = this.attacker.getEntityWorld().getPlayerEntityByUUID(playerId);
+			double followRange = this.attacker.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
+			if(player.getDistanceSq(this.attacker) > (followRange - 2) * (followRange - 2)) {
+				return true;
+			}
+		} catch(NullPointerException e) {}
+		return false;
 	}
 	
 	@Nullable

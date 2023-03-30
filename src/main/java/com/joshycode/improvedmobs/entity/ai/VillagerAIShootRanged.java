@@ -1,43 +1,35 @@
 package com.joshycode.improvedmobs.entity.ai;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import com.joshycode.improvedmobs.CommonProxy;
+import com.joshycode.improvedmobs.capabilities.VilCapabilityMethods;
 import com.joshycode.improvedmobs.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedmobs.entity.ai.RangeAttackEntry.RangeAttackType;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
 import com.joshycode.improvedmobs.handler.ConfigHandlerVil;
 import com.joshycode.improvedmobs.util.InventoryUtil;
-import com.joshycode.improvedmobs.util.PositionUtil;
 
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
-import net.minecraft.entity.projectile.EntityArrow.PickupStatus;
 import net.minecraft.entity.projectile.EntityTippedArrow;
 import net.minecraft.init.Enchantments;
-import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.IInventoryChangedListener;
-import net.minecraft.item.ItemArrow;
 import net.minecraft.item.ItemStack;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.EnumDifficulty;
-import net.minecraft.world.World;
 
 public class VillagerAIShootRanged extends EntityAIBase {
 
@@ -80,8 +72,17 @@ public class VillagerAIShootRanged extends EntityAIBase {
 
 	@Override
 	public boolean shouldExecute() {
-		if(CapabilityHandler.isReturning(this.entityHost) || CapabilityHandler.getCommBlockPos(this.entityHost) != null || PositionUtil.isOutsideHomeDist(this.entityHost)
-				|| CapabilityHandler.getMovingIndoors(this.entityHost))
+		if(VilCapabilityMethods.getCommBlockPos(this.entityHost) != null)
+			return false;
+		if(VilCapabilityMethods.isOutsideHomeDist(this.entityHost))
+			return false;
+		if(VilCapabilityMethods.isReturning(this.entityHost))
+			return false;
+		if(VilCapabilityMethods.getMovingIndoors(this.entityHost))
+			return false;
+		if(this.entityHost.isMating())
+    		return false;
+		if(VilCapabilityMethods.getFollowing(this.entityHost) && isDistanceTooGreat())
 			return false;
 		this.entry = villagerGunEntryForItems();
 		if(this.entry == null)
@@ -152,7 +153,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		if(d0 <= (double) this.attackRange_2 && this.ticksTargetSeen >= 10){
 			this.entityHost.getNavigator().clearPath();
 		}else{
-			BlockPos pos = CapabilityHandler.getGuardBlockPos(this.entityHost);
+			BlockPos pos = VilCapabilityMethods.getGuardBlockPos(this.entityHost);
 			if(pos != null) {
 				if(this.entityHost.getDistanceSq(pos) < CommonProxy.GUARD_IGNORE_LIMIT) {
 					Path p = this.entityHost.getNavigator().getPathToEntityLiving(attackTarget);
@@ -286,6 +287,18 @@ public class VillagerAIShootRanged extends EntityAIBase {
         	 stack.damageItem(1, playerIn);
          }
          return arrow;
+	}
+    
+	private boolean isDistanceTooGreat() {
+		try {	
+			UUID playerId = VilCapabilityMethods.getPlayerId((EntityVillager) this.entityHost);
+			EntityPlayer player = this.entityHost.getEntityWorld().getPlayerEntityByUUID(playerId);
+			double followRange = this.entityHost.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
+			if(player.getDistanceSq(this.entityHost) > (followRange - 2) * (followRange - 2)) {
+				return true;
+			}
+		} catch(NullPointerException e) {}
+		return false;
 	}
 
     protected EntityArrow getArrow(float p_190726_1_)

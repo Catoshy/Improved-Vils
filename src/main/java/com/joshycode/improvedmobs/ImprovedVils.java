@@ -5,8 +5,9 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.joshycode.improvedmobs.handler.EventHandlerVil;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
+import com.joshycode.improvedmobs.handler.EventHandlerVil;
+
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -38,10 +39,7 @@ public class ImprovedVils {
 	}
 	
 	@EventHandler
-	public void init(FMLInitializationEvent e) {
-		
-		
-	}
+	public void init(FMLInitializationEvent e) {}
 	
 	@EventHandler
 	public void postInit(FMLPostInitializationEvent e) throws IOException {

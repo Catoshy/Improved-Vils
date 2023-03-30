@@ -18,6 +18,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	private boolean isReturning;
 	private BlockPos commObj;
 	private boolean movingIndoors;
+	private boolean following;
 
 	@Override
 	public void setPlayerId(UUID id) {
@@ -35,7 +36,8 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "b", isHungry); /*b for boolean!*/
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "br", isReturning);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bm", movingIndoors);
-		
+		nbt.setBoolean(VILPLAYER_NBT_KEY + "bf", following);
+
 		if(this.guardObj == null)
 			nbt.setLong(VILPLAYER_NBT_KEY + "bp", Long.MAX_VALUE);
 		else
@@ -56,6 +58,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		this.isHungry = nbt.getBoolean(VILPLAYER_NBT_KEY + "b");
 		this.isReturning = nbt.getBoolean(VILPLAYER_NBT_KEY + "br");
 		this.movingIndoors = nbt.getBoolean(VILPLAYER_NBT_KEY + "bm");
+		this.following = nbt.getBoolean(VILPLAYER_NBT_KEY + "bf");
 		
 		long l = nbt.getLong(VILPLAYER_NBT_KEY + "bp");
 		if(l == Long.MAX_VALUE)
@@ -72,15 +75,14 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		String s = nbt.getString(VILPLAYER_NBT_KEY);
 		if(!s.isEmpty()) {
 			this.player = UUID.fromString(s);
-			System.out.println("UUID-toString; " + s + "	recovered from nbt");
 		}
 	}
 
 	@Override
-	public void setHungry(boolean isHungry) {this.isHungry = isHungry; System.out.println("isHUngery .. " + isHungry); }
+	public void setHungry(boolean isHungry) {this.isHungry = isHungry; }
 
 	@Override
-	public boolean getHungry() {return this.isHungry; }
+	public boolean isHungry() {return this.isHungry; }
 
 	@Override
 	public void setGuardBlockPos(BlockPos pos) {
@@ -122,6 +124,16 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	@Override
 	public void setMovingIndoors(boolean b) {
 		this.movingIndoors = b;
+	}
+
+	@Override
+	public boolean isFollowing() {
+		return this.following;
+	}
+
+	@Override
+	public void setFollowing(boolean follow) {
+		this.following = follow;
 	}
 
 

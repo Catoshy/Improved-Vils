@@ -1,6 +1,5 @@
 package com.joshycode.improvedmobs.entity.ai;
 
-import com.joshycode.improvedmobs.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
 
 import net.minecraft.entity.EntityCreature;

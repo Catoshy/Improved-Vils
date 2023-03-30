@@ -75,8 +75,6 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability{
 				this.companys.put(company, uniqueplatoonid);
 				return true;
 			}
-			System.out.println("Marshal Cap Class - addVillager -- companys  = " + this.companys.toString());
-			System.out.println("Marshal Cap Class - addVillager -- platoons  = " + this.platoons.toString());
 		}
 		return false;
 	}
@@ -114,7 +112,6 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability{
 			for(Iterator<UUID> iterator = this.platoons.get(i).iterator(); iterator.hasNext(); ) {
 				UUID id = iterator.next();
 				if(id.equals(entityid)) {
-					System.out.println("Marshal Cap Class - removeVillager id = " + id.toString() + " entityid = " + entityid.toString() + " i = " + i);
 					return new Pair<Integer, UUID>(i, id);
 				}
 			}

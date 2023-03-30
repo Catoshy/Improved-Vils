@@ -2,39 +2,33 @@ package com.joshycode.improvedmobs;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.concurrent.Callable;
 
 import com.flemmli97.tenshilib.common.config.ConfigUtils.LoadState;
 import com.joshycode.improvedmobs.capabilities.CapabilityStorage;
 import com.joshycode.improvedmobs.capabilities.entity.IImprovedVilCapability;
-import com.joshycode.improvedmobs.capabilities.entity.VilPlayerCapabilityFactory;
+import com.joshycode.improvedmobs.capabilities.entity.ImprovedVilCapability;
 import com.joshycode.improvedmobs.capabilities.itemstack.IMarshalsBatonCapability;
-import com.joshycode.improvedmobs.capabilities.itemstack.MarshalsBatonCapabilityFactory;
-import com.joshycode.improvedmobs.entity.ai.VillagerAIAttackMelee;
+import com.joshycode.improvedmobs.capabilities.itemstack.MarshalsBatonCapability;
 import com.joshycode.improvedmobs.gui.VilGuiHandler;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
 import com.joshycode.improvedmobs.handler.ConfigHandlerVil;
-import com.joshycode.improvedmobs.handler.EventHandlerVil;
 import com.joshycode.improvedmobs.item.ItemMarshalsBaton;
 import com.joshycode.improvedmobs.network.NetWrapper;
 import com.joshycode.improvedmobs.network.VilCommandPacket;
 import com.joshycode.improvedmobs.network.VilEnlistPacket;
+import com.joshycode.improvedmobs.network.VilFollowPacket;
 import com.joshycode.improvedmobs.network.VilGuardPacket;
-import com.joshycode.improvedmobs.network.VilGuardQuery;
+import com.joshycode.improvedmobs.network.VilStateQuery;
 import com.joshycode.improvedmobs.util.InventoryUtil;
 import com.joshycode.improvedmobs.util.Pair;
 
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -60,23 +54,10 @@ public abstract class CommonProxy {
 		public static final ItemMarshalsBaton BATON = null;
 	}
 
-	public static class Targets {
-		public Set<Class> suitable_targets;
-		
-		public Targets() {this.suitable_targets = new HashSet(); }
-		
-		public Set<Class> getSuitable_targets() {
-			return suitable_targets;
-		}
-
-		public void addSuitable_targets(Class suitable_targets) {
-			this.suitable_targets.add(suitable_targets);
-		}	
-	}
-	
 	public static final int MAX_GUARD_DIST = 256;
 	public static final int GUARD_IGNORE_LIMIT = 16384;
-	public static final Targets TARGETS = new Targets();
+	@SuppressWarnings("rawtypes")
+	public static final HashSet<Class> TARGETS = new HashSet<Class>();
 	public static final double GUARD_MAX_PATH = 576;
 		
 	public void preInit() throws IOException {
@@ -95,12 +76,22 @@ public abstract class CommonProxy {
         CapabilityManager.INSTANCE.register(
         		IImprovedVilCapability.class,
         		new CapabilityStorage(),
-                new VilPlayerCapabilityFactory()
+                new Callable<IImprovedVilCapability>() {
+        			@Override
+        			public IImprovedVilCapability call() throws Exception {
+        				return new ImprovedVilCapability();
+        			}
+        		}
         );
         CapabilityManager.INSTANCE.register(
         		IMarshalsBatonCapability.class,
         		new CapabilityStorage(),
-        		new MarshalsBatonCapabilityFactory()
+        		new Callable<IMarshalsBatonCapability>() {
+        			@Override
+        			public MarshalsBatonCapability call() throws Exception {
+        				return new MarshalsBatonCapability();
+        			}
+        		}
         );
     }
     
@@ -109,18 +100,14 @@ public abstract class CommonProxy {
     	NetWrapper.NETWORK.registerMessage(VilEnlistPacket.ClientHandler.class, VilEnlistPacket.class, 1, Side.CLIENT);
     	NetWrapper.NETWORK.registerMessage(VilCommandPacket.Handler.class, VilCommandPacket.class, 2, Side.SERVER);
     	NetWrapper.NETWORK.registerMessage(VilGuardPacket.ServerHandler.class, VilGuardPacket.class, 3, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilGuardPacket.ClientHandler.class, VilGuardPacket.class, 4, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(VilGuardQuery.ServerHandler.class, VilGuardQuery.class, 5, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilGuardQuery.ClientHandler.class, VilGuardQuery.class, 6, Side.CLIENT);
-
+    	NetWrapper.NETWORK.registerMessage(VilStateQuery.ServerHandler.class, VilStateQuery.class, 5, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilStateQuery.ClientHandler.class, VilStateQuery.class, 6, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(VilFollowPacket.Handler.class, VilFollowPacket.class, 7, Side.SERVER);
     }
     
 	public static void openVillagerGUI(EntityPlayer player, World world, EntityVillager entityIn) {
 		if(!entityIn.isChild()) {
-			IImprovedVilCapability vcap = entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-			if(vcap != null && !player.world.isRemote) {
-				vcap.setPlayerId(player.getUniqueID());
-			}
+			setPlayerId(player, entityIn);
 			int intA = -2;
 			int intB = 0;
 			ItemStack stack = InventoryUtil.get1StackByItem(player.inventory, CommonProxy.ItemHolder.BATON);
@@ -143,6 +130,12 @@ public abstract class CommonProxy {
 		}
 	}
 	
+	private static void setPlayerId(EntityPlayer player, EntityVillager entityIn) {
+		try {
+			entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerId(player.getUniqueID());
+		} catch (NullPointerException ex) {}
+	}
+
 	@SubscribeEvent
 	public void registerItems(RegistryEvent.Register<Item> e) {
 		System.out.println("registerItems(RegistryEvent.Register<Item> e)");

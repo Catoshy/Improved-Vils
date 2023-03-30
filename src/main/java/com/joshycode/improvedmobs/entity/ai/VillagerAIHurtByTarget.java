@@ -3,15 +3,13 @@ package com.joshycode.improvedmobs.entity.ai;
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedmobs.CommonProxy;
-import com.joshycode.improvedmobs.handler.CapabilityHandler;
+import com.joshycode.improvedmobs.capabilities.VilCapabilityMethods;
 
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.ai.EntityAIHurtByTarget;
 import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 
 public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends VillagerAITarget<T> {
 
@@ -59,7 +57,7 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 
                 if(entitycreature instanceof EntityVillager) {
                 	flag = false;
-                	if(CapabilityHandler.getGuardBlockPos((EntityVillager) entitycreature) != null && entitycreature.getDistanceSq(CapabilityHandler.getGuardBlockPos((EntityVillager) entitycreature)) > CommonProxy.MAX_GUARD_DIST) {
+                	if(VilCapabilityMethods.getGuardBlockPos((EntityVillager) entitycreature) != null && entitycreature.getDistanceSq(VilCapabilityMethods.getGuardBlockPos((EntityVillager) entitycreature)) > CommonProxy.MAX_GUARD_DIST) {
                 		 flag = true;
                 	}
                 }	
@@ -71,11 +69,11 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
     }
 	
 	protected boolean isSuitableTarget(@Nullable EntityLivingBase target, boolean includeInvincibles) {
-		System.out.println("isSuitableTarget, CommonProxy.TARGETS = " + CommonProxy.TARGETS.getSuitable_targets().toString());
+		System.out.println("isSuitableTarget, CommonProxy.TARGETS = " + CommonProxy.TARGETS.toString());
 		if(!super.isSuitableTarget(target, includeInvincibles))
 			return false;
 		if(target != null) {
-			for(Class c : CommonProxy.TARGETS.getSuitable_targets()) {
+			for(Class c : CommonProxy.TARGETS) {
 				if(c.isInstance(target)) {
 					System.out.println("isSuitableTarget, return = " + true);
 					return true;

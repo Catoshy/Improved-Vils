@@ -5,20 +5,14 @@ import java.util.UUID;
 import com.joshycode.improvedmobs.CommonProxy;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
 import com.joshycode.improvedmobs.network.NetWrapper;
-import com.joshycode.improvedmobs.network.VilGuardQuery;
+import com.joshycode.improvedmobs.network.VilStateQuery;
 import com.joshycode.improvedmobs.util.InventoryUtil;
 
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.IInventoryChangedListener;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.world.IInteractionObject;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 
 public class VillagerInvListener implements IInventoryChangedListener {
 
@@ -34,21 +28,31 @@ public class VillagerInvListener implements IInventoryChangedListener {
 	
 	@Override
 	public void onInventoryChanged(IInventory invBasic) {
-		boolean flag2 = false; int i = 0;
+		boolean flag2 = false; int i = 0, i2 = 0;
 		flag2 = InventoryUtil.doesInventoryHaveItem(entity.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0;
 		flag2 &= !getHungry();
 		if(flag2) {
 			if(hasGuardBlockPos()) {
 				i = 2;
+			} else if(isFollowing()) {
+				i2 = 2;
 			}
 			i = 1;
+			i2 = 1;
 		}
-		NetWrapper.NETWORK.sendTo(new VilGuardQuery(i), (EntityPlayerMP) world.getPlayerEntityByUUID(playerId));
+		NetWrapper.NETWORK.sendTo(new VilStateQuery(i, i2), (EntityPlayerMP) world.getPlayerEntityByUUID(playerId));
 	}
 	
+	private boolean isFollowing() {
+		try {
+			return this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isFollowing();
+		} catch (NullPointerException e) {}
+		return false;
+	}
+
 	private boolean getHungry() {
 		try {
-			return this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHungry();
+			return this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isHungry();
 		} catch (NullPointerException e) {}
 		return true;
 	}

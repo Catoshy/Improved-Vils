@@ -11,9 +11,11 @@ import com.joshycode.improvedmobs.entity.ai.VillagerAIAttackNearestTarget;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIAvoidEntity;
 import com.joshycode.improvedmobs.entity.ai.VillagerAICampaignEat;
 import com.joshycode.improvedmobs.entity.ai.VillagerAICampaignMove;
+import com.joshycode.improvedmobs.entity.ai.VillagerAIFollow;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIGuard;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIHurtByTarget;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIMoveIndoors;
+import com.joshycode.improvedmobs.entity.ai.VillagerAIMoveTowardsRestriction;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIShootRanged;
 import com.joshycode.improvedmobs.entity.ai.VillagerAIWanderAvoidWater;
 import com.joshycode.improvedmobs.event.ChildGrowEvent;
@@ -23,16 +25,16 @@ import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
+import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry;
+import net.minecraft.entity.ai.EntityAIVillagerMate;
 import net.minecraft.entity.ai.EntityAIWander;
 import net.minecraft.entity.monster.EntityEvoker;
 import net.minecraft.entity.monster.EntityMob;
-import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.entity.monster.EntityVex;
 import net.minecraft.entity.monster.EntityVindicator;
 import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
@@ -99,7 +101,7 @@ public class EventHandlerVil {
 			InventoryHands inv = new InventoryHands((EntityVillager) e.getEntity(), "Hands", false);
 			for(int i = 0; i < inv.getSizeInventory(); i++) {
 				ItemStack stack = inv.getStackInSlot(i);
-				if(stack != ItemStack.EMPTY) {
+				if(!stack.isEmpty()) {
 					if(!e.getEntity().getEntityWorld().isRemote)
 						e.getEntity().entityDropItem(stack, 0);
 				}
@@ -148,17 +150,23 @@ public class EventHandlerVil {
 				toRem.add(ai);
 			}else if(ai.action instanceof EntityAIWander) {
 				toRem.add(ai);
+			}else if(ai.action instanceof EntityAIMoveTowardsRestriction) {
+				toRem.add(ai);
+			}else if(ai.action instanceof EntityAIVillagerMate) {
+				toRem.add(ai);
 			}
 		}
 		entity.tasks.taskEntries.removeAll(toRem);
 		entity.tasks.addTask(9, new VillagerAIWanderAvoidWater(entity, .6D));
-		entity.tasks.addTask(9, new VillagerAIMoveIndoors(entity));
+		entity.tasks.addTask(6, new EntityAIVillagerMate(entity));
+		entity.tasks.addTask(5, new VillagerAIMoveTowardsRestriction(entity, 0.6D));
+		entity.tasks.addTask(5, new VillagerAIFollow(entity, .67D, 6.0F));
+		entity.tasks.addTask(4, new VillagerAIMoveIndoors(entity));
 		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, .67D, false));
 		entity.tasks.addTask(4, new VillagerAIShootRanged(entity, 10, 16, .5F));
 		entity.tasks.addTask(1, new VillagerAICampaignEat(entity));
-		entity.tasks.addTask(3, new VillagerAICampaignMove(entity, 1));
+		entity.tasks.addTask(3, new VillagerAICampaignMove(entity, 7));
 		entity.tasks.addTask(1, new VillagerAIGuard(entity, CommonProxy.MAX_GUARD_DIST, 6, 7));
-		entity.tasks.addTask(3, new VillagerAIMoveIndoors(entity));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityZombie.class, 8.0F, 0.6D, 0.6D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityEvoker.class, 12.0F, 0.8D, 0.8D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVindicator.class, 8.0F, 0.8D, 0.8D));

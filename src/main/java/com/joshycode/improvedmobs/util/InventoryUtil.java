@@ -7,10 +7,9 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.joshycode.improvedmobs.entity.ai.VillagerAIShootRanged;
-
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
@@ -138,5 +137,16 @@ public class InventoryUtil {
 			}
 		}
 		return toBeConsumed;
+	}
+
+	public static Set<ItemStack> getStacksByItem(IInventory invIn, Class<ItemFood> class1) {
+		Set<ItemStack> stacks = new HashSet();
+		for(int i = 0; i < invIn.getSizeInventory(); i++) {
+			ItemStack stack = invIn.getStackInSlot(i);
+			if(class1.isInstance(stack.getItem())) {
+				stacks.add(stack);
+			}
+		}
+		return stacks;
 	}
 }

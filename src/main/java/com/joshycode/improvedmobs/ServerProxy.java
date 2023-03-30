@@ -1,5 +1,3 @@
 package com.joshycode.improvedmobs;
 
-public class ServerProxy extends CommonProxy {
-
-}
+public class ServerProxy extends CommonProxy {}

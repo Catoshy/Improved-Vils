@@ -2,9 +2,6 @@ package com.joshycode.improvedmobs.entity.ai;
 
 import java.util.Map;
 
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemStack;
-
 public class RangeAttackEntry {
 
 	public final float damage;

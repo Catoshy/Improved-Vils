@@ -1,17 +1,15 @@
 package com.joshycode.improvedmobs.entity.ai;
 
-import java.util.UUID;
-
 import com.joshycode.improvedmobs.CommonProxy;
+import com.joshycode.improvedmobs.capabilities.VilCapabilityMethods;
 import com.joshycode.improvedmobs.handler.CapabilityHandler;
+
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.pathfinding.Path;
-import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 
 public class VillagerAIGuard extends EntityAIBase{
 
@@ -41,13 +39,15 @@ public class VillagerAIGuard extends EntityAIBase{
 	
 	@Override
 	public boolean shouldExecute() {
-		if(CapabilityHandler.getGuardBlockPos(this.entityHost) == null || this.setFailed) 
+		if(VilCapabilityMethods.getGuardBlockPos(this.entityHost) == null || this.setFailed) 
 			return false;
-		if(CapabilityHandler.getHungry(this.entityHost)) {
+		if(this.entityHost.isMating())
+			return false;
+		if(VilCapabilityMethods.getHungry(this.entityHost)) {
 			this.fail();
 			return false;
 		}
-		if(this.entityHost.getDistanceSq(CapabilityHandler.getGuardBlockPos(this.entityHost)) > this.maxDistanceSq && 
+		if(this.entityHost.getDistanceSq(VilCapabilityMethods.getGuardBlockPos(this.entityHost)) > this.maxDistanceSq && 
 				(this.entityHost.ticksExisted - this.entityHost.getLastAttackedEntityTime()) > 40) {
 			if(this.generatePath()) {
 				System.out.println("should execute");
@@ -58,13 +58,13 @@ public class VillagerAIGuard extends EntityAIBase{
 	}
 	
 	public boolean shouldContinueExecuting() {
-		if(CapabilityHandler.getGuardBlockPos(this.entityHost) == null || this.setFailed)
+		if(VilCapabilityMethods.getGuardBlockPos(this.entityHost) == null || this.setFailed)
 			return false;
 		if(this.pathFails > this.maxPathFails) {
 			this.fail();
 			return false;
 		}
-		if(this.entityHost.getDistanceSq(CapabilityHandler.getGuardBlockPos(this.entityHost)) < this.minDistSq) {
+		if(this.entityHost.getDistanceSq(VilCapabilityMethods.getGuardBlockPos(this.entityHost)) < this.minDistSq) {
 			this.returnState();
 			return false;
 		}
@@ -73,18 +73,18 @@ public class VillagerAIGuard extends EntityAIBase{
 	
 	@Override
 	public void startExecuting() {
-		CapabilityHandler.setReturning(this.entityHost, true);
+		VilCapabilityMethods.setReturning(this.entityHost, true);
 		this.entityHost.getNavigator().setPath(this.path, .7d);
 		this.ppos = this.entityHost.getPosition();
 	}
 	
 	private boolean generatePath() {
 		Vec3d pos;
-		if(this.entityHost.getDistanceSq(CapabilityHandler.getGuardBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH) {
+		if(this.entityHost.getDistanceSq(VilCapabilityMethods.getGuardBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH) {
 			pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 16, 8,
-					CapabilityHandler.guardBlockAsVec(this.entityHost));
+					VilCapabilityMethods.guardBlockAsVec(this.entityHost));
 		} else {
-			pos = CapabilityHandler.guardBlockAsVec(this.entityHost);
+			pos = VilCapabilityMethods.guardBlockAsVec(this.entityHost);
 		}
 		if(pos == null) {
 			this.pathFails++;
@@ -121,7 +121,7 @@ public class VillagerAIGuard extends EntityAIBase{
 			float distanceCenter = 9999f;
 			if(this.path.getFinalPathPoint() != null)
 				distanceCenter = this.path.getFinalPathPoint().distanceToSquared(
-						CapabilityHandler.guardBlockAsPP(this.entityHost)
+						VilCapabilityMethods.guardBlockAsPP(this.entityHost)
 						);
 			if(distanceCenter > this.distToCenter) {
 				this.pathFails++;
@@ -143,7 +143,7 @@ public class VillagerAIGuard extends EntityAIBase{
 		this.tickCounter = -1;
 		this.path = null;
 		this.pathFails = 0;
-		CapabilityHandler.setReturning(this.entityHost, false);
+		VilCapabilityMethods.setReturning(this.entityHost, false);
 	}
 	
 	public void fail() {
@@ -152,7 +152,7 @@ public class VillagerAIGuard extends EntityAIBase{
 		this.tickCounter = -1;
 		this.path = null;
 		this.pathFails = 0;
-		CapabilityHandler.setReturning(this.entityHost, false);
+		VilCapabilityMethods.setReturning(this.entityHost, false);
 		this.setFailed = true;
 		try {
 			this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(null);

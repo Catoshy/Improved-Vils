@@ -3,11 +3,9 @@ package com.joshycode.improvedmobs.gui;
 import com.joshycode.improvedmobs.entity.EntityVillagerContainer;
 import com.joshycode.improvedmobs.entity.InventoryHands;
 import com.joshycode.improvedmobs.entity.VillagerInvListener;
-import com.joshycode.improvedmobs.entity.ai.VillagerAIShootRanged;
 
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.IInventoryChangedListener;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.IGuiHandler;
 

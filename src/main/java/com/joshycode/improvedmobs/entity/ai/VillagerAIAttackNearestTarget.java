@@ -8,8 +8,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 import com.joshycode.improvedmobs.CommonProxy;
-import com.joshycode.improvedmobs.capabilities.entity.IImprovedVilCapability;
-import com.joshycode.improvedmobs.handler.CapabilityHandler;
+import com.joshycode.improvedmobs.capabilities.VilCapabilityMethods;
 import com.joshycode.improvedmobs.util.InventoryUtil;
 
 import net.minecraft.entity.Entity;
@@ -121,11 +120,11 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 		if(!super.shouldExecute())
 			return false;
 		EntityLivingBase target = this.taskOwner.getAttackTarget();
-		if(CapabilityHandler.getGuardBlockPos((EntityVillager) this.taskOwner) != null && target != null) {
-			double dist = target.getDistanceSq(CapabilityHandler.getGuardBlockPos((EntityVillager) this.taskOwner));
+		if(VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null && target != null) {
+			double dist = target.getDistanceSq(VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
 			if(dist > CommonProxy.MAX_GUARD_DIST - 31) {
     			List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
-    			Collections.sort(list, new VillagerAIAttackNearestTarget.Sorter(taskOwner, CapabilityHandler.getGuardBlockPos((EntityVillager) this.taskOwner)));
+    			Collections.sort(list, new VillagerAIAttackNearestTarget.Sorter(taskOwner, VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.taskOwner)));
     			T targetEntity = list.size() > 0 ? list.get(0) : null;
     			if(targetEntity != null && !targetEntity.equals(this.target)) {
     				this.target = targetEntity;
