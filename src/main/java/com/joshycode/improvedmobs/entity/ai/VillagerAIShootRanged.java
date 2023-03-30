@@ -132,7 +132,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 
 	@Override
 	public void resetTask() {
-		System.out.println("resetting vilAishoot");
+		
 		this.attackTarget = null;
 		this.ticksTargetSeen = 0;
 		this.rangedAttackTime = -1;
@@ -190,7 +190,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 
 			if(this.findAndConsumeRangeAttackItems()) {
 				if(this.entry.type != RangeAttackType.BOW) {
-					System.out.println("shoot! or try to at least...");
+					
 					this.attackEntityWithRangedAttackGun(this.attackTarget, f1);
 	
 					if(this.entry.shotsForBurst > 0)

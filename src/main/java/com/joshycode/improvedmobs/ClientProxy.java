@@ -57,7 +57,7 @@ public class ClientProxy extends CommonProxy {
 	}
 
 	public static void queryState(int vilId) {
-		System.out.println("query state");
+		
 		NetWrapper.NETWORK.sendToServer(new VilStateQuery(vilId, 0));
 	}
 }

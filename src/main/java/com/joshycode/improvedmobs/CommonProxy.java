@@ -114,7 +114,7 @@ public abstract class CommonProxy {
 			if(stack != null) {
 				IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 				if(cap != null) {
-					System.out.println("openVillagerGUI -- capacity != null");
+					
 					Pair<Integer, Integer> p = cap.getVillagerPlace(entityIn.getUniqueID());
 					intA = -1; /* Has the Baton but is not Enlisted*/
 					if(p != null) {
@@ -125,7 +125,7 @@ public abstract class CommonProxy {
 			} else {
 				intA = -2; /*Does not have baton, cannot be Enlisted*/
 			}
-			System.out.println("intA = " + intA);
+			
 			player.openGui(ImprovedVils.instance, 100, world, entityIn.getEntityId(), intA, intB);
 		}
 	}
@@ -138,7 +138,7 @@ public abstract class CommonProxy {
 
 	@SubscribeEvent
 	public void registerItems(RegistryEvent.Register<Item> e) {
-		System.out.println("registerItems(RegistryEvent.Register<Item> e)");
+		
 		e.getRegistry().registerAll(new  Item().setRegistryName("draft_writ")
 				.setUnlocalizedName(ImprovedVils.MODID + ".draft_writ")
 				.setCreativeTab(CreativeTabs.COMBAT),

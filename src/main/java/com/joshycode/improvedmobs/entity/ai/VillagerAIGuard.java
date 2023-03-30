@@ -50,7 +50,7 @@ public class VillagerAIGuard extends EntityAIBase{
 		if(this.entityHost.getDistanceSq(VilCapabilityMethods.getGuardBlockPos(this.entityHost)) > this.maxDistanceSq && 
 				(this.entityHost.ticksExisted - this.entityHost.getLastAttackedEntityTime()) > 40) {
 			if(this.generatePath()) {
-				System.out.println("should execute");
+				
 				return true;
 			}
 		}
@@ -92,8 +92,8 @@ public class VillagerAIGuard extends EntityAIBase{
 		}
 		this.path = this.entityHost.getNavigator().getPathToXYZ(pos.x, pos.y, pos.z);
 		if(this.path != null) {
-			System.out.println("generatePath -- path");
-			System.out.flush();
+			
+			
 			return true;
 		}
 		return false;
@@ -103,7 +103,7 @@ public class VillagerAIGuard extends EntityAIBase{
 	public void updateTask() {
 		if(this.path == null) {
 			if(generatePath()) {
-				System.out.println("Path failed");
+				
 				this.pathFails++;
 			} else {
 				this.fail();
@@ -111,7 +111,7 @@ public class VillagerAIGuard extends EntityAIBase{
 			return;
 		}
 		if (this.tickCounter > 20) {
-			System.out.println("this.tickCounter > 40");
+			
 			this.tickCounter = 0;
 			this.generatePath();
 			this.pathFails++;
@@ -137,7 +137,7 @@ public class VillagerAIGuard extends EntityAIBase{
 	}
 	
 	public void returnState() {
-		System.out.println("RETURNED STATE");
+		
 		this.setFailed = false;
 		this.entityHost.getNavigator().clearPath();
 		this.tickCounter = -1;
@@ -147,7 +147,7 @@ public class VillagerAIGuard extends EntityAIBase{
 	}
 	
 	public void fail() {
-		System.out.println("FAILED");
+		
 		this.entityHost.getNavigator().clearPath();
 		this.tickCounter = -1;
 		this.path = null;

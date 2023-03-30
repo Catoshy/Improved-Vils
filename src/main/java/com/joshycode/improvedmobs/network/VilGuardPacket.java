@@ -60,7 +60,7 @@ public class VilGuardPacket implements IMessage {
 			if(e instanceof EntityVillager)  {
 				if(getPlayerId((EntityVillager) e).equals(player.getUniqueID())) {
 					if(message.guardState) {
-						System.out.println("Setting guard pos ... " + e.getPosition().toString());
+						
 						clearFollowState((EntityVillager) e);
 						int1 = setGuardBlock((EntityVillager) e, e.getPosition())? 2 : 1;
 						if(e instanceof EntityVillager)

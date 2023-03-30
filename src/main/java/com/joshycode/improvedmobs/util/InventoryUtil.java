@@ -36,11 +36,11 @@ public class InventoryUtil {
 			ItemStack stack = invIn.getStackInSlot(i);
 			String stackItem = stack.getUnlocalizedName();
 			if(stackItem.equals(item.getUnlocalizedName())) {
-				System.out.println("getStackByItem -- " + stack.toString());
+				
 				return stack;
 			}
 		}
-		System.out.println("getStackByItem -- " + "null");
+		
 		return null;
 	}
 	
@@ -50,7 +50,7 @@ public class InventoryUtil {
 			ItemStack stack = invIn.getStackInSlot(i);
 			if(stack.getItem().equals(item)) {
 				if(rStack == null) {
-					System.out.println("get1StackByItem -- " + stack.toString());
+					
 					rStack = stack;
 				} else {
 					return null;

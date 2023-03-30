@@ -74,7 +74,7 @@ public class VilStateQuery implements IMessage{
 						vec = getGuardPos((EntityVillager) e);
 				}
 			}
-			System.out.println("query state server side ... " + int1 + " " + int2);
+			
 			if(vec != null) {
 				return new VilStateQuery(int1, int2, vec);
 			}

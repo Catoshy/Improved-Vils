@@ -69,9 +69,9 @@ public class VilCommandPacket implements IMessage {
 			IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 			if(cap != null) {
 				if(message.pos.toLong() != Long.MAX_VALUE) {
-					System.out.println("not else");
+					
 					if(world.isAreaLoaded(message.pos, 1)) {
-						System.out.println("BLock Pos objective = " + message.pos.toString());
+						
 							Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
 							for(Entity e : villagers) {
 								setCommandPos((EntityVillager) e, message.pos);

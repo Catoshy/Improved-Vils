@@ -61,12 +61,12 @@ public class VilEnlistPacket implements IMessage {
 	    ItemStack stack = InventoryUtil.get1StackByItem(serverPlayer.inventory, CommonProxy.ItemHolder.BATON);
 	    
 	    if(stack != null) {
-	    	System.out.println("onMessage -- only 1 Stick and not null");
+	    	
 	    	IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 	    	if(cap != null) {
-		    	System.out.println("onMessage -- capacity not null");
+		    	
 		    	if(message.isEnlisted) {	
-			    	System.out.println("onMessage -- must enlist" + server.getEntityByID(message.entityID).getUniqueID().toString() + ", " + message.company + ", " + message.platoon);
+			    	
 		    		cap.addVillager(server.getEntityByID(message.entityID).getUniqueID(), message.company, message.platoon);
 		    		return new VilEnlistPacket(0, message.company, message.platoon, true);
 		    	} else {

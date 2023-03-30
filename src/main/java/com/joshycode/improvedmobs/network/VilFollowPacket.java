@@ -56,7 +56,7 @@ public class VilFollowPacket implements IMessage {
 					}
 				}
 			}
-			System.out.println("Serverside VIlFollowPackage - " +1+ " " + int2);
+			
 			return new VilStateQuery(1, int2);
 		}
 
