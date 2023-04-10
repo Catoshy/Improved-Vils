@@ -1,0 +1,212 @@
+package com.joshycode.improvedvils.entity.ai;
+
+import java.util.concurrent.ThreadLocalRandom;
+
+import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.handler.CapabilityHandler;
+
+import net.minecraft.entity.ai.EntityAIBase;
+import net.minecraft.entity.ai.RandomPositionGenerator;
+import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.pathfinding.Path;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+
+public class VillagerAIGuard extends EntityAIBase{
+
+	EntityVillager entityHost;
+	BlockPos ppos;
+	private float distToCenter;
+	private int pathFails;
+	private final int maxDistanceSq;
+	private final int minDistanceSq;
+	private final int maxPathFails;
+	private Path path;
+	private boolean setFailed;
+	private int tickCounter;
+	private int randomTick;
+	
+	public VillagerAIGuard(EntityVillager entityHost, int maxDistSq, int minDistSq, int maxPathFails)
+	{
+		super();
+		this.entityHost = entityHost;
+		this.maxDistanceSq = maxDistSq;
+		this.minDistanceSq = minDistSq;
+		this.distToCenter = 0;
+		this.pathFails = 0;
+		this.tickCounter = -1;
+		this.maxPathFails = maxPathFails;
+		this.path = null;
+		this.setFailed = false;
+		this.setMutexBits(3);
+	}
+	
+	@Override
+	public boolean shouldExecute() 
+	{
+		if(VilCapabilityMethods.getGuardBlockPos(this.entityHost) == null || this.setFailed) 
+			return false;
+		if(this.entityHost.isMating())
+			return false;
+		if(VilCapabilityMethods.getHungry(this.entityHost))
+		{
+			this.fail();
+			return false;
+		}
+		if(this.entityHost.getAttackTarget() == null && this.randomTick == 0) 
+		{
+			this.randomTick = ThreadLocalRandom.current().nextInt(40, 80 + 1);
+			return true;
+		} 
+		else 
+		{
+			this.randomTick--;
+		}
+		if(this.entityHost.getAttackTarget() != null)
+		{
+			if(this.entityHost.getDistanceSq(VilCapabilityMethods.getGuardBlockPos(this.entityHost)) > this.maxDistanceSq) 
+			{
+				if(this.generatePath())
+				{
+					return true;
+				}
+			}
+		} 
+		else 
+		{
+			if(this.entityHost.getDistanceSq(VilCapabilityMethods.getGuardBlockPos(this.entityHost)) > this.minDistanceSq && 
+					(this.entityHost.ticksExisted - this.entityHost.getLastAttackedEntityTime()) > 40)
+			{
+				if(this.generatePath()) 
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	public boolean shouldContinueExecuting() 
+	{
+		if(VilCapabilityMethods.getGuardBlockPos(this.entityHost) == null || this.setFailed)
+			return false;
+		if(this.pathFails > this.maxPathFails) 
+		{
+			this.fail();
+			return false;
+		}
+		if(this.entityHost.getDistanceSq(VilCapabilityMethods.getGuardBlockPos(this.entityHost)) < this.minDistanceSq)
+		{
+			this.returnState();
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public void startExecuting() 
+	{
+		VilCapabilityMethods.setReturning(this.entityHost, true);
+		this.entityHost.getNavigator().setPath(this.path, .7d);
+		this.ppos = this.entityHost.getPosition();
+	}
+	
+	private boolean generatePath() 
+	{
+		Vec3d pos;
+		if(this.entityHost.getDistanceSq(VilCapabilityMethods.getGuardBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH) 
+		{
+			pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 16, 8,
+					VilCapabilityMethods.guardBlockAsVec(this.entityHost));
+		} 
+		else
+		{
+			pos = VilCapabilityMethods.guardBlockAsVec(this.entityHost);
+		}
+		if(pos == null) 
+		{
+			this.pathFails++;
+			return false;
+		}
+		this.path = this.entityHost.getNavigator().getPathToXYZ(pos.x, pos.y, pos.z);
+		if(this.path != null) 
+		{
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public void updateTask() 
+	{
+		if(this.path == null)
+		{
+			this.pathFails++;
+			if(generatePath()) 
+			{
+				this.entityHost.getNavigator().setPath(this.path, .7d);
+			}
+			return;
+		}
+		if (this.tickCounter > 20) 
+		{
+			this.tickCounter = 0;
+			this.pathFails++;
+			if(generatePath()) 
+			{
+				this.entityHost.getNavigator().setPath(this.path, .7d);
+			}
+			return;
+		}
+		if(this.path.isFinished())
+		{
+			float distanceCenter = 9999f;
+			
+			if(this.path.getFinalPathPoint() != null)
+				distanceCenter = this.path.getFinalPathPoint().distanceToSquared(VilCapabilityMethods.guardBlockAsPP(this.entityHost));
+			
+			if(distanceCenter > this.distToCenter) 
+			{
+				this.pathFails++;
+			}
+			if(this.generatePath()) 
+			{
+				this.entityHost.getNavigator().setPath(this.path, .7d);
+			}
+		}
+		if(this.entityHost.getPosition().equals(ppos))
+		{
+			this.tickCounter++;
+		} 
+		else 
+		{
+			this.tickCounter = 0;
+		}
+		this.ppos = this.entityHost.getPosition();
+	}
+	
+	public void returnState() 
+	{
+		this.setFailed = false;
+		this.entityHost.getNavigator().clearPath();
+		this.tickCounter = -1;
+		this.path = null;
+		this.pathFails = 0;
+		VilCapabilityMethods.setReturning(this.entityHost, false);
+	}
+	
+	public void fail() 
+	{
+		this.entityHost.getNavigator().clearPath();
+		this.tickCounter = -1;
+		this.path = null;
+		this.pathFails = 0;
+		this.setFailed = true;
+		try 
+		{
+			this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(null);
+			this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setReturning(false);
+		} catch (NullPointerException e) {}		
+	}
+}
