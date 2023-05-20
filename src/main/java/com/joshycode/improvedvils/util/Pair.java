@@ -1,12 +1,11 @@
 package com.joshycode.improvedvils.util;
 
-public class Pair<T, S> {
+public class Pair<S, T> {
 	
-	public final T a;
-	public final S b;
+	public final S a;
+	public final T b;
 	
-	public Pair(T a, S b) 
-	{
+	public Pair(S a, T b) {
 		this.a = a;
 		this.b = b;
 	}

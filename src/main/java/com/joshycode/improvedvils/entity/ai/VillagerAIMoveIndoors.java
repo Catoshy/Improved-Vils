@@ -1,7 +1,7 @@
 package com.joshycode.improvedvils.entity.ai;
 
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
@@ -23,12 +23,12 @@ public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 	@Override
 	public boolean shouldExecute() 
 	{
-		if(InventoryUtil.doesInventoryHaveItem(this.e.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0  && !VilCapabilityMethods.getHungry(e))
+		if(InventoryUtil.doesInventoryHaveItem(this.e.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0  && !VilMethods.getHungry(e))
 			return false;
 		
 		if(super.shouldExecute()) 
 		{
-			VilCapabilityMethods.setMovingIndoors(this.e, true);
+			VilMethods.setMovingIndoors(this.e, true);
 			return true;
 		}
 		else
@@ -42,7 +42,7 @@ public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 	{
 		if(!super.shouldContinueExecuting())
 		{
-			VilCapabilityMethods.setMovingIndoors(this.e, false);
+			VilMethods.setMovingIndoors(this.e, false);
 			return false;
 		}
 		return true;
@@ -51,7 +51,7 @@ public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 	@Override
 	public void resetTask() 
 	{
-		VilCapabilityMethods.setMovingIndoors(this.e, false);
+		VilMethods.setMovingIndoors(this.e, false);
 	}
 
 }

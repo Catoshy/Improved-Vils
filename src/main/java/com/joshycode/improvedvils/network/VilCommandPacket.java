@@ -2,7 +2,9 @@ package com.joshycode.improvedvils.network;
 
 import java.util.Set;
 
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.ServerProxy;
+import com.joshycode.improvedvils.capabilities.VilMethods;
+import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignMove;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
@@ -19,9 +21,8 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-public class VilCommandPacket implements IMessage {
+public class VilCommandPacket extends BlockPosPacket implements IMessage {
 
-	BlockPos pos;
 	int chunkx;
 	int chunkz;
 	
@@ -33,7 +34,7 @@ public class VilCommandPacket implements IMessage {
 	
 	public VilCommandPacket(BlockPos pos) 
 	{
-		this.pos = pos;
+		super(pos);
 	}
 	
 	public VilCommandPacket(int x, int z) 
@@ -46,9 +47,7 @@ public class VilCommandPacket implements IMessage {
 	@Override
 	public void toBytes(ByteBuf buf) 
 	{
-		buf.writeInt(this.pos.getX());
-		buf.writeInt(this.pos.getY());
-		buf.writeInt(this.pos.getZ());
+		super.toBytes(buf);
 		buf.writeInt(this.chunkx);
 		buf.writeInt(this.chunkz);
 	}
@@ -56,13 +55,9 @@ public class VilCommandPacket implements IMessage {
 	@Override
 	public void fromBytes(ByteBuf buf) 
 	{
-		int x, y, z;
-		x = buf.readInt();
-		y = buf.readInt();
-		z = buf.readInt();
+		super.fromBytes(buf);
 		this.chunkx = buf.readInt();
 		this.chunkz = buf.readInt();
-		this.pos = new BlockPos(x, y, z);
 	}
 
 	public static class Handler implements IMessageHandler<VilCommandPacket, IMessage>
@@ -72,9 +67,8 @@ public class VilCommandPacket implements IMessage {
 		public IMessage onMessage(VilCommandPacket message, MessageContext ctx)
 		{
 			EntityPlayerMP player = ctx.getServerHandler().player;
-			WorldServer world = ctx.getServerHandler().player.getServerWorld();
-			ItemStack stack = player.getHeldItemMainhand();					
-			IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+			WorldServer world = ctx.getServerHandler().player.getServerWorld();			
+			IMarshalsBatonCapability cap = player.getHeldItemMainhand().getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 			
 			if(cap != null) 
 			{
@@ -85,7 +79,8 @@ public class VilCommandPacket implements IMessage {
 						Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
 						for(Entity e : villagers) 
 						{
-							VilCapabilityMethods.setCommBlockPos((EntityVillager) e, message.pos);
+							if(ServerProxy.getPlayerFealty(player, (EntityVillager) e))
+								VilMethods.setCommBlockPos((EntityVillager) e, message.pos);
 						}
 					}
 				} 
@@ -97,7 +92,7 @@ public class VilCommandPacket implements IMessage {
 						for(Entity e : villagers) 
 						{
 							 ((EntityVillager) e).tasks.taskEntries.forEach(t -> {
-								 if(t.action instanceof VillagerAICampaignMove) 
+								 if(t.action instanceof VillagerAICampaignMove && ServerProxy.getPlayerFealty(player, (EntityVillager) e)) 
 								 {
 									 ((VillagerAICampaignMove) t.action).giveObjectiveChunkPos(message.chunkx, message.chunkz);
 								 }

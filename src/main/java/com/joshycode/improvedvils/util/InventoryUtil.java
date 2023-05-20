@@ -190,4 +190,15 @@ public class InventoryUtil {
 		}
 		return stacks;
 	}
+
+	public static float getFoodSaturation(IInventory inventory) 
+	{
+		Set<ItemStack> food = getStacksByItem(inventory, ItemFood.class);
+		float runningTotal = 0;
+		for(ItemStack foodItem  : food)
+		{
+			runningTotal += ((ItemFood)foodItem.getItem()).getSaturationModifier(foodItem) * foodItem.getCount();
+		}
+		return runningTotal;
+	}
 }

@@ -1,6 +1,6 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
@@ -19,7 +19,7 @@ public class VillagerAIRestrictOpenDoor extends EntityAIRestrictOpenDoor {
 	@Override 
 	public boolean shouldExecute() 
 	{
-		if(VilCapabilityMethods.getGuardBlockPos(villager) != null)
+		if(VilMethods.getGuardBlockPos(villager) != null)
 			return false;
 		
 		return super.shouldExecute();

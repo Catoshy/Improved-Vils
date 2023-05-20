@@ -3,7 +3,7 @@ package com.joshycode.improvedvils.entity.ai;
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
@@ -63,7 +63,7 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
                 if(entitycreature instanceof EntityVillager) 
                 {
                 	flag = false;
-                	if(VilCapabilityMethods.getGuardBlockPos((EntityVillager) entitycreature) != null && entitycreature.getDistanceSq(VilCapabilityMethods.getGuardBlockPos((EntityVillager) entitycreature)) > CommonProxy.MAX_GUARD_DIST - 31) 
+                	if(VilMethods.getGuardBlockPos((EntityVillager) entitycreature) != null && entitycreature.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) entitycreature)) > CommonProxy.MAX_GUARD_DIST - 31) 
                 	{
                 		 flag = true;
                 	}

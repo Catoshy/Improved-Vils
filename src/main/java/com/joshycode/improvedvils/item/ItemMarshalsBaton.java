@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.joshycode.improvedvils.handler.ConfigHandlerVil;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilCommandPacket;
+import com.joshycode.improvedvils.network.VilFoodStorePacket;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -35,22 +36,44 @@ public class ItemMarshalsBaton extends Item {
 		ItemStack stack = player.getHeldItemMainhand();
 		if(stack.getItem() instanceof ItemMarshalsBaton) 
 		{
-			double d0 = ConfigHandlerVil.commandDist;
 			Entity entity = Minecraft.getMinecraft().getRenderViewEntity();
 			if(entity != null && Minecraft.getMinecraft() != null) 
 			{
-				RayTraceResult lookingAt = entity.rayTrace(d0, 1.0F);
-				if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK) 
+				if(player.isSneaking()) 
 				{
-					BlockPos pos = lookingAt.getBlockPos();
-					NetWrapper.NETWORK.sendToServer(new VilCommandPacket(pos));
-					return new ActionResult<ItemStack>(EnumActionResult.SUCCESS, stack);
+					tryFoodStoreTileEntity(entity);
 				}
+				else
+				{
+					tryCommandVillagerMovement(entity);
+				}
+				return new ActionResult<ItemStack>(EnumActionResult.SUCCESS, stack);
 			}
 		}
 		return new ActionResult<ItemStack>(EnumActionResult.PASS, stack);
 	}
 	
+	private void tryCommandVillagerMovement(Entity entity) 
+	{
+		double d0 = ConfigHandlerVil.commandDist;
+		RayTraceResult lookingAt = entity.rayTrace(d0, 1.0F);
+		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK) 
+		{
+			BlockPos pos = lookingAt.getBlockPos();
+			NetWrapper.NETWORK.sendToServer(new VilCommandPacket(pos));
+		}
+	}
+
+	private void tryFoodStoreTileEntity(Entity entity) 
+	{
+		RayTraceResult lookingAt = entity.rayTrace(6.0, 1.0F);
+		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK) 
+		{
+			BlockPos pos = lookingAt.getBlockPos();
+			NetWrapper.NETWORK.sendToServer(new VilFoodStorePacket(pos));
+		}
+	}
+
 	public static synchronized Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world) 
 	{
 		Set<Entity> applicable = new HashSet();

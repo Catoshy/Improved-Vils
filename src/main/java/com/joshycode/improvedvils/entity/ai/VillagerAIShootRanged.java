@@ -9,7 +9,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.RangeAttackType;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
@@ -77,17 +77,19 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	@Override
 	public boolean shouldExecute() 
 	{
-		if(VilCapabilityMethods.getCommBlockPos(this.entityHost) != null)
+		if(VilMethods.getCommBlockPos(this.entityHost) != null)
 			return false;
-		if(VilCapabilityMethods.isOutsideHomeDist(this.entityHost))
+		if(VilMethods.isOutsideHomeDist(this.entityHost))
 			return false;
-		if(VilCapabilityMethods.isReturning(this.entityHost))
+		if(VilMethods.isReturning(this.entityHost))
 			return false;
-		if(VilCapabilityMethods.getMovingIndoors(this.entityHost))
+		if(VilMethods.isRefillingFood(this.entityHost))
+			return false;
+		if(VilMethods.getMovingIndoors(this.entityHost))
 			return false;
 		if(this.entityHost.isMating())
     		return false;
-		if(VilCapabilityMethods.getFollowing(this.entityHost) && isDistanceTooGreat())
+		if(VilMethods.getFollowing(this.entityHost) && isDistanceTooGreat())
 			return false;
 		this.entry = villagerGunEntryForItems();
 		if(this.entry == null)
@@ -175,7 +177,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		}
 		else
 		{
-			BlockPos pos = VilCapabilityMethods.getGuardBlockPos(this.entityHost);
+			BlockPos pos = VilMethods.getGuardBlockPos(this.entityHost);
 			if(pos != null) 
 			{
 				if(this.entityHost.getDistanceSq(pos) < CommonProxy.GUARD_IGNORE_LIMIT) 
@@ -366,7 +368,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	{
 		try 
 		{	
-			UUID playerId = VilCapabilityMethods.getPlayerId((EntityVillager) this.entityHost);
+			UUID playerId = VilMethods.getPlayerId((EntityVillager) this.entityHost);
 			EntityPlayer player = this.entityHost.getEntityWorld().getPlayerEntityByUUID(playerId);
 			double followRange = this.entityHost.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
 			if(player.getDistanceSq(this.entityHost) > (followRange - 2) * (followRange - 2)) 

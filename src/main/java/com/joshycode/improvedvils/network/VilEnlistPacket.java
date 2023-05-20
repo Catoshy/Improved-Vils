@@ -2,13 +2,18 @@ package com.joshycode.improvedvils.network;
 
 import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.ServerProxy;
+import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
 
 import io.netty.buffer.ByteBuf;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -57,33 +62,50 @@ public class VilEnlistPacket implements IMessage {
 	
 	public static class ServerHandler implements IMessageHandler<VilEnlistPacket, IMessage> {
 
-		  @Override 
-		  public IMessage onMessage(VilEnlistPacket message, MessageContext ctx) 
-		  {
-			  EntityPlayerMP serverPlayer = ctx.getServerHandler().player;
-			  WorldServer server = ctx.getServerHandler().player.getServerWorld();
-			  ItemStack stack = InventoryUtil.get1StackByItem(serverPlayer.inventory, CommonProxy.ItemHolder.BATON);
-		    
-			  if(stack != null) 
-			  {
-				  IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
-				  if(cap != null) 
-				  {
-					  if(message.isEnlisted) 
-					  {	
-						  cap.addVillager(server.getEntityByID(message.entityID).getUniqueID(), message.company, message.platoon);
-						  return new VilEnlistPacket(0, message.company, message.platoon, true);
-					  } 
-					  else 
-					  {
-						  cap.removeVillager(server.getEntityByID(message.entityID).getUniqueID());
-						  return new VilEnlistPacket(0, 0, 0, false);
-					  }
-				  }
-			  }
-		  return null;
+	@Override 
+	public IMessage onMessage(VilEnlistPacket message, MessageContext ctx) 
+	{
+		EntityPlayerMP serverPlayer = ctx.getServerHandler().player;
+		WorldServer server = ctx.getServerHandler().player.getServerWorld();
+		ItemStack stack = InventoryUtil.get1StackByItem(serverPlayer.inventory, CommonProxy.ItemHolder.BATON);
+		Entity entity = server.getEntityByID(message.entityID);
+		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+	  
+		if(ServerProxy.getPlayerFealty(serverPlayer, (EntityVillager) entity))
+		{
+			return updateEnlistInfoForStack(stack, message.isEnlisted, message.company, message.platoon, entity, vilCap);
+		}
+		else
+		{
+			return new VilStateUpdate();
 		}
 	}
+	
+	private static VilEnlistPacket updateEnlistInfoForStack(ItemStack stack, boolean isEnlisted, int company, int platoon, Entity entity, IImprovedVilCapability vilCap)
+	{
+		if(stack != null) 
+		{
+		 	IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+		 	if(cap != null) 
+		 	{
+		 		if(isEnlisted) 
+		 		{	
+		 			BlockPos foodStore = cap.getPlatoonFoodStore(company, platoon);
+		 			if(vilCap != null && foodStore != null)
+		 				vilCap.setFoodStore(foodStore);
+		 			cap.addVillager(entity.getUniqueID(), company, platoon);
+		 			return new VilEnlistPacket(0, company, platoon, true);
+		 		} 
+		 		else 
+		 		{
+		 			cap.removeVillager(entity.getUniqueID());
+		 			return new VilEnlistPacket(0, 0, 0, false);
+		 		}
+		 	}
+		}
+		return null;
+	}
+}
 	
 	public static class ClientHandler implements IMessageHandler<VilEnlistPacket, IMessage> {
 

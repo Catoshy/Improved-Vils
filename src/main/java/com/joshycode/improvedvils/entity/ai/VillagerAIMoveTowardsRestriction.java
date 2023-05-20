@@ -1,6 +1,6 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.passive.EntityVillager;
@@ -17,7 +17,7 @@ public class VillagerAIMoveTowardsRestriction extends EntityAIMoveTowardsRestric
 	
 	public boolean shouldExecute()
 	{
-		if(VilCapabilityMethods.getCommBlockPos(this.entity) != null || VilCapabilityMethods.getGuardBlockPos(this.entity) != null || VilCapabilityMethods.getFollowing(this.entity))
+		if(VilMethods.getCommBlockPos(this.entity) != null || VilMethods.getGuardBlockPos(this.entity) != null || VilMethods.getFollowing(this.entity))
 		{
 			return false;
 		}

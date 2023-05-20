@@ -4,8 +4,15 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 
+import javax.annotation.Nullable;
+
+import com.google.common.base.Predicate;
+import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
+import com.joshycode.improvedvils.ServerProxy;
+import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
+import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.entity.ai.VillagerAIAttackMelee;
 import com.joshycode.improvedvils.entity.ai.VillagerAIAttackNearestTarget;
@@ -20,32 +27,39 @@ import com.joshycode.improvedvils.entity.ai.VillagerAIHurtByTarget;
 import com.joshycode.improvedvils.entity.ai.VillagerAIMate;
 import com.joshycode.improvedvils.entity.ai.VillagerAIMoveIndoors;
 import com.joshycode.improvedvils.entity.ai.VillagerAIMoveTowardsRestriction;
+import com.joshycode.improvedvils.entity.ai.VillagerAIRefillFood;
 import com.joshycode.improvedvils.entity.ai.VillagerAIRestrictOpenDoor;
 import com.joshycode.improvedvils.entity.ai.VillagerAIShootRanged;
+import com.joshycode.improvedvils.entity.ai.VillagerAIVillagerInteract;
 import com.joshycode.improvedvils.entity.ai.VillagerAIWanderAvoidWater;
 import com.joshycode.improvedvils.event.ChildGrowEvent;
 import com.joshycode.improvedvils.util.VilAttributes;
 
 import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityList;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
 import net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry;
+import net.minecraft.entity.ai.EntityAIVillagerInteract;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.ai.EntityAIVillagerMate;
 import net.minecraft.entity.ai.EntityAIWander;
 import net.minecraft.entity.monster.EntityEvoker;
+import net.minecraft.entity.monster.EntityIronGolem;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.EntityVex;
 import net.minecraft.entity.monster.EntityVindicator;
 import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.village.Village;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityEvent.EntityConstructing;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -105,6 +119,7 @@ public class EventHandlerVil {
 		{
 			addAiTasks((EntityVillager) e.getEntity());
 			VilAttributes.apply((EntityVillager) e.getEntity());
+			ServerProxy.childGrown((EntityVillager) e.getEntity());
 			if(ConfigHandlerVil.villagerHealth != 20f) 
 			{
 				((EntityVillager) e.getEntity()).setHealth(ConfigHandlerVil.villagerHealth);
@@ -133,21 +148,33 @@ public class EventHandlerVil {
 	public void onVillagerAttacked(LivingAttackEvent e) 
 	{
 		if(e.getEntityLiving() instanceof EntityVillager)
+		{
 			if(e.getEntityLiving().getHeldItemOffhand().getItemUseAction() == EnumAction.BLOCK)
 				if(e.getAmount() > e.getEntityLiving().getMaxHealth() * .75D || this.rand.nextFloat() + Float.MIN_VALUE < ConfigHandlerVil.blockChance)
-					if(e.getEntityLiving().getActiveHand() != EnumHand.OFF_HAND) {
+					if(e.getEntityLiving().getActiveHand() != EnumHand.OFF_HAND) 
+					{
 							e.getEntityLiving().resetActiveHand();
 							e.getEntityLiving().setActiveHand(EnumHand.OFF_HAND);
 					}
+			if(e.getEntityLiving().getAttackingEntity() instanceof EntityPlayer)
+			{
+				if(e.getEntityLiving().isChild())
+					handleVillageBadReputation(((EntityVillager) e.getEntityLiving()), ((EntityPlayer)e.getEntityLiving().getAttackingEntity()), 3);
+				else
+					handleVillageBadReputation(((EntityVillager) e.getEntityLiving()), ((EntityPlayer)e.getEntityLiving().getAttackingEntity()), 1);
+			}
+		}
 	}
 	
 	@SubscribeEvent
-	public void onVillagerDies(LivingDeathEvent e) 
+	public void onLivingDies(LivingDeathEvent e) 
 	{
 		if(e.getEntity().getEntityWorld().isRemote) return;
 		
 		if(e.getEntityLiving() instanceof EntityVillager) 
 		{
+			if(e.getEntityLiving().getAttackingEntity() instanceof EntityPlayer)
+				handleVillageBadReputation(((EntityVillager) e.getEntityLiving()), ((EntityPlayer)e.getEntityLiving().getAttackingEntity()), 2);
 			e.getEntityLiving().captureDrops = true;
 			InventoryHands inv = new InventoryHands((EntityVillager) e.getEntity(), "Hands", false);
 			for(int i = 0; i < inv.getSizeInventory(); i++) 
@@ -173,18 +200,56 @@ public class EventHandlerVil {
 			}
 			e.getEntityLiving().captureDrops = false;
 		}
+		else if(e.getEntityLiving() instanceof EntityMob || CommonProxy.TARGETS.contains(e.getEntityLiving().getClass()))
+		{
+			if(e.getEntityLiving().getAttackingEntity() instanceof EntityPlayer)
+				handleVillageGoodReputation(e.getEntityLiving(), ((EntityPlayer)e.getEntityLiving().getAttackingEntity()), 1);
+		}
+		else if(e.getEntityLiving() instanceof EntityIronGolem)
+		{
+			EntityIronGolem golem = (EntityIronGolem) e.getEntityLiving();
+			if(!golem.isPlayerCreated() && golem.getAttackingEntity() instanceof EntityPlayer && golem.getVillage() != null)
+			{
+				golem.getVillage().modifyPlayerReputation(golem.getAttackingEntity().getUniqueID(), 5);
+			}
+		}
 	}
 	
+	private void handleVillageBadReputation(EntityVillager villager, EntityPlayer attackingPlayer, int reputationCost) 
+	{
+		Village village = villager.getEntityWorld().getVillageCollection().getNearestVillage(villager.getPosition(), 0);
+		if(village != null)
+		{
+			IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
+			IImprovedVilCapability vilCap = villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+			if((vilCap.getTeam() != null &&  vilCap.getTeam().equals(villageCap.getTeam()))
+					||	vilCap.getTeam() == null || villager.isChild())
+			{
+				ServerProxy.villageBadReputationChange(villager.getEntityWorld(), village, attackingPlayer);
+			}
+			else
+			{
+				village.modifyPlayerReputation(attackingPlayer.getUniqueID(), reputationCost);
+			}
+		}
+	}
+	
+	private void handleVillageGoodReputation(EntityLivingBase entity, EntityPlayer player, int reputation)
+	{
+		Village village = entity.getEntityWorld().getVillageCollection().getNearestVillage(entity.getPosition(), 0);
+		if(village != null)
+		{
+			village.modifyPlayerReputation(player.getUniqueID(), reputation);
+		}
+	}
+
 	@SubscribeEvent
 	@SideOnly(Side.CLIENT)
 	public void openVillagerInv(EntityInteractSpecific event) 
 	{
 		if(!event.getWorld().isRemote && event.getTarget() instanceof EntityVillager && event.getEntityPlayer().isSneaking())
 		{
-			try 
-			{
-				CommonProxy.openVillagerGUI(event.getEntityPlayer(), event.getWorld(), (EntityVillager) event.getTarget());
-			} catch(java.lang.Exception e) { e.printStackTrace(); }
+			ClientProxy.openGuiForPlayerIfOK(event.getEntityLiving().getEntityId());
 		}
 	}
 	
@@ -218,9 +283,15 @@ public class EventHandlerVil {
 			{
 				toRem.add(ai);
 			}
+			else if(ai.action instanceof EntityAIVillagerInteract) 
+			{
+				toRem.add(ai);
+			}
 		}
 		entity.tasks.taskEntries.removeAll(toRem);
 		entity.tasks.addTask(9, new VillagerAIWanderAvoidWater(entity, .6D));
+		entity.tasks.addTask(9, new VillagerAIVillagerInteract(entity));
+		entity.tasks.addTask(5, new VillagerAIRefillFood(entity));
 		entity.tasks.addTask(4, new VillagerAIMate(entity));
 		entity.tasks.addTask(5, new VillagerAIMoveTowardsRestriction(entity, 0.6D));
 		entity.tasks.addTask(5, new VillagerAIFollow(entity, .67D, 6.0F));
@@ -244,5 +315,30 @@ public class EventHandlerVil {
 		}
 		entity.targetTasks.addTask(2, new VillagerAIHurtByTarget(entity, false));
 		entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityMob.class, true));
+		entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityVillager.class, true, false, new VillagerPredicate<EntityVillager>(entity) {
+			 public boolean apply(@Nullable EntityVillager potentialEnemyVil)
+	            {
+				 IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+				 IImprovedVilCapability predCapability = potentialEnemyVil.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+				 	return predCapability.getTeam() != null && taskOwnerCapability.getTeam() != null && !taskOwnerCapability.getTeam().equals(predCapability.getTeam());
+	            }
+		}));
+		entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityPlayer.class, true, false, new VillagerPredicate<EntityPlayer>(entity) {
+			 public boolean apply(@Nullable EntityPlayer player)
+	            {
+				 IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+				 	return taskOwnerCapability.getTeam() != null && player.getTeam() != null && !taskOwnerCapability.getTeam().equals(player.getTeam().getName());
+	            }
+		}));
+	}
+	
+	private static abstract class VillagerPredicate<T extends EntityLivingBase> implements Predicate<T> {
+
+		protected EntityVillager taskOwner;
+		
+		protected VillagerPredicate(EntityVillager taskOwner) {
+			super();
+			this.taskOwner = taskOwner;
+		}
 	}
 }

@@ -51,6 +51,7 @@ public class GuiVillagerArm extends GuiContainer {
 		this.follow = false;
 		this.company = 0;
 		this.platoon = 0;
+		this.vec = Vec3i.NULL_VECTOR;
 		this.enlistedButtons = new ArrayList();
 		this.notEnlistedButtons = new ArrayList();
 		this.guardButtons = new ArrayList();
@@ -116,7 +117,10 @@ public class GuiVillagerArm extends GuiContainer {
         super.drawScreen(mouseX, mouseY, partialTicks);
 		this.fontRenderer.drawString(Integer.toString(company + 1), guiLeft + 152, guiTop + 8, 0);
 		this.fontRenderer.drawString(Integer.toString(platoon + 1), guiLeft + 152, guiTop + 26, 0);
-    }
+		this.fontRenderer.drawString("X: " + Integer.toString(this.vec.getX()), guiLeft + 107, guiTop + 8, 0);
+		this.fontRenderer.drawString("Y: " + Integer.toString(this.vec.getY()), guiLeft + 107, guiTop + 17, 0);		
+		this.fontRenderer.drawString("Z: " + Integer.toString(this.vec.getZ()), guiLeft + 107, guiTop + 26, 0);    
+	}
     
     @Override
     protected void actionPerformed(net.minecraft.client.gui.GuiButton button) throws IOException

@@ -9,11 +9,13 @@ import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.pathfinding.PathPoint;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
-public class VilCapabilityMethods {
+public class VilMethods {
 
 	@Nullable
 	public static BlockPos getGuardBlockPos(EntityVillager e) 
@@ -181,5 +183,60 @@ public class VilCapabilityMethods {
 			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(followState);
 			return true;
 		} catch (NullPointerException ex) {return false; }
+	}
+
+	public static BlockPos getFoodStorePos(EntityVillager e) {
+		try 
+		{
+			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getFoodStorePos();
+		} catch (NullPointerException ex) {return null; }
+	}
+
+	public static void setFoodStore(EntityVillager e, @Nullable BlockPos pos) {
+		try 
+		{
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(pos);
+		} catch (NullPointerException ex) {}
+	}
+
+	public static boolean isRefillingFood(EntityVillager e) {
+		try 
+		{
+			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getRefillingFood();
+		} catch (NullPointerException ex) {return false; }
+	}
+
+	public static boolean setRefilling(EntityVillager e, boolean b) {
+		try 
+		{
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setRefilling(b);
+			return true;
+		} catch (NullPointerException ex) {return false; }
+	}
+
+	public static UUID getHomeVillageId(EntityVillager entityIn)
+	{
+		return entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHomeVillageID();
+	}
+
+	public static void setPlayerId(EntityPlayer player, EntityVillager entityIn) 
+	{
+		entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerId(player.getUniqueID());
+	}
+
+	public static void setTeam(EntityVillager villager, Team team) 
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setTeam(team);
+	}
+
+	public static void setPlayerReputation(EntityVillager villager, UUID uniqueID, float f) 
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerReputation(uniqueID, f);
+	}
+
+	@Nullable
+	public static String getTeam(EntityVillager villager) 
+	{
+		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getTeam();
 	}
 }

@@ -267,4 +267,8 @@ public class InventoryHands implements IInventory {
 	{
 		this.entity.setItemStackToSlot(slot, itemstack1);
 	}
+
+	public ItemStack getStackInSlot(EntityEquipmentSlot armourSlot) {
+		return this.entity.getItemStackFromSlot(armourSlot);
+	}
 }

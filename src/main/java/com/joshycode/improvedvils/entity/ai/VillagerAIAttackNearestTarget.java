@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.Entity;
@@ -137,13 +137,13 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 	{
 		EntityLivingBase target = this.taskOwner.getAttackTarget();
 		
-		if(VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null && target != null) 
+		if(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null && target != null) 
 		{
-			double dist = target.getDistanceSq(VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
+			double dist = target.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
 			if(dist > CommonProxy.MAX_GUARD_DIST - 31) 
 			{
     			List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
-    			Collections.sort(list, new VillagerAIAttackNearestTarget.Sorter(taskOwner, VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.taskOwner)));
+    			Collections.sort(list, new VillagerAIAttackNearestTarget.Sorter(taskOwner, VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner)));
     			T targetEntity = list.size() > 0 ? list.get(0) : null;
     			
     			if(targetEntity != null && !targetEntity.equals(this.target)) 

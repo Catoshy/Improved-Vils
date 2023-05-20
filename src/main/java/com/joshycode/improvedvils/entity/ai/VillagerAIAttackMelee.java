@@ -8,7 +8,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandlerVil;
 import com.joshycode.improvedvils.util.VilAttributes;
@@ -63,26 +63,9 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	@Override
 	public boolean shouldExecute()
 	{
-		if(VilCapabilityMethods.getCommBlockPos((EntityVillager) this.attacker) != null)
+		if(isDoingSomethingMoreImportant())
 			return false;
-		if(VilCapabilityMethods.isOutsideHomeDist((EntityVillager) this.attacker))
-			return false;
-		if(VilCapabilityMethods.isReturning((EntityVillager) this.attacker))
-			return false;
-		if(VilCapabilityMethods.getMovingIndoors((EntityVillager) this.attacker))
-			return false;
-		if(((EntityVillager) this.attacker).isMating())
-    		return false;
-		if(VilCapabilityMethods.getFollowing((EntityVillager) this.attacker) && isDistanceTooGreat())
-			return false;
-		String s = this.attacker.getHeldItemMainhand().getUnlocalizedName();
-		for(String g : ConfigHandlerVil.configuredGuns.keySet()) 
-		{
-			if(s.equals(g)) 
-			{
-				return false;
-			}
-		}
+		
 		EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
 
         if (entitylivingbase == null)
@@ -121,6 +104,33 @@ public class VillagerAIAttackMelee extends EntityAIBase {
         }
     }
 	
+	private boolean isDoingSomethingMoreImportant() 
+	{
+		if(VilMethods.getCommBlockPos((EntityVillager) this.attacker) != null)
+			return true;
+		if(VilMethods.isOutsideHomeDist((EntityVillager) this.attacker))
+			return true;
+		if(VilMethods.isReturning((EntityVillager) this.attacker))
+			return true;
+		if(VilMethods.isRefillingFood((EntityVillager) this.attacker))
+			return true;
+		if(VilMethods.getMovingIndoors((EntityVillager) this.attacker))
+			return true;
+		if(((EntityVillager) this.attacker).isMating())
+    		return true;
+		if(VilMethods.getFollowing((EntityVillager) this.attacker) && isDistanceTooGreat())
+			return true;
+		String s = this.attacker.getHeldItemMainhand().getUnlocalizedName();
+		for(String g : ConfigHandlerVil.configuredGuns.keySet()) 
+		{
+			if(s.equals(g)) 
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
     public void startExecuting()
     {
         this.attacker.getNavigator().setPath(this.path, this.speedToTarget);
@@ -134,6 +144,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 		EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
 		double modifier = 0.0d;
 	    AttributeModifier mod = this.attacker.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getModifier(VillagerAIDrinkPotion.MODIFIER_UUID);
+	    
 	    if(mod != null) 
 	    {
 	    	modifier = mod.getAmount();
@@ -143,9 +154,9 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	    {
 	    	this.runAway = true;
 			modifier += .3d;
-		    if(VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.attacker) != null) 
+		    if(VilMethods.getGuardBlockPos((EntityVillager) this.attacker) != null) 
 		    {
-				path = this.attacker.getNavigator().getPathToPos(VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.attacker));
+				path = this.attacker.getNavigator().getPathToPos(VilMethods.getGuardBlockPos((EntityVillager) this.attacker));
 		    } 
 		    else 
 		    {
@@ -184,10 +195,10 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	    }
 	    if(path != null && !flag)
 	    {
-	    	if(VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.attacker) != null && 
-    			   path.getFinalPathPoint().distanceToSquared(VilCapabilityMethods.guardBlockAsPP((EntityVillager) this.attacker)) > CommonProxy.MAX_GUARD_DIST - 31) 
+	    	if(VilMethods.getGuardBlockPos((EntityVillager) this.attacker) != null && 
+    			   path.getFinalPathPoint().distanceToSquared(VilMethods.guardBlockAsPP((EntityVillager) this.attacker)) > CommonProxy.MAX_GUARD_DIST - 31) 
 	    	{
-	    		this.truncatePath(path, VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.attacker));
+	    		this.truncatePath(path, VilMethods.getGuardBlockPos((EntityVillager) this.attacker));
 	    	}
 	    }
 
@@ -241,52 +252,52 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	@Override
 	public boolean shouldContinueExecuting() 
 	{
-		BlockPos pos = VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.attacker);
+		BlockPos pos = VilMethods.getGuardBlockPos((EntityVillager) this.attacker);
 		if(pos != null && this.attacker.getDistanceSq(pos) > CommonProxy.MAX_GUARD_DIST - 31) 
 		{
 			return false;
 		}
-		if(VilCapabilityMethods.getCommBlockPos((EntityVillager) this.attacker) != null || VilCapabilityMethods.isOutsideHomeDist((EntityVillager) this.attacker)
-				|| VilCapabilityMethods.getMovingIndoors((EntityVillager) this.attacker))
+		if(VilMethods.getCommBlockPos((EntityVillager) this.attacker) != null || VilMethods.isOutsideHomeDist((EntityVillager) this.attacker)
+				|| VilMethods.getMovingIndoors((EntityVillager) this.attacker))
 		{
     		return false;
     	}
-		  EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
+		EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
 
-	        if (entitylivingbase == null)
-	        {
-	            return false;
-	        }
-	        else if (!entitylivingbase.isEntityAlive())
-	        {
-	            return false;
-	        }
-	        else
-	        {
-	            if (canPenalize)
-	            {
-	                if (--this.delayCounter <= 0)
-	                {
-	                    Path path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
-	                    this.delayCounter = 4 + this.attacker.getRNG().nextInt(7);
-	                    return path != null;
-	                }
-	                else
-	                {
-	                    return true;
-	                }
-	            }
-	            Path path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
+        if (entitylivingbase == null)
+        {
+            return false;
+        }
+        else if (!entitylivingbase.isEntityAlive())
+        {
+            return false;
+        }
+        else
+        {
+            if (canPenalize)
+            {
+                if (--this.delayCounter <= 0)
+                {
+                    Path path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
+                    this.delayCounter = 4 + this.attacker.getRNG().nextInt(7);
+                    return path != null;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            Path path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
 
-	            if (path != null)
-	            {
-	                return true;
-	            }
-	            else
-	            {
-	                return this.getAttackReachSqr(entitylivingbase) >= this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
-	            }
-	        }
+            if (path != null)
+            {
+                return true;
+            }
+            else
+            {
+                return this.getAttackReachSqr(entitylivingbase) >= this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
+            }
+        }
 	}
 	
 	private boolean attackEntityAsVillager(EntityLivingBase entityIn) 
@@ -405,7 +416,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	{
 		try
 		{	
-			UUID playerId = VilCapabilityMethods.getPlayerId((EntityVillager) this.attacker);
+			UUID playerId = VilMethods.getPlayerId((EntityVillager) this.attacker);
 			EntityPlayer player = this.attacker.getEntityWorld().getPlayerEntityByUUID(playerId);
 			double followRange = this.attacker.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
 			if(player.getDistanceSq(this.attacker) > (followRange - 2) * (followRange - 2)) {

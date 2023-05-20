@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.google.common.base.Predicate;
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -39,9 +39,9 @@ public class VillagerAIFollow extends EntityAIBase {
 
     public boolean shouldExecute()
     {
-    	if(VilCapabilityMethods.getHungry(this.villager))
+    	if(VilMethods.getHungry(this.villager))
     		return false;
-    	if(!VilCapabilityMethods.getFollowing(this.villager))
+    	if(!VilMethods.getFollowing(this.villager))
     		return false;
         List<EntityPlayer> list = this.villager.world.<EntityPlayer>getEntitiesWithinAABB(EntityPlayer.class, this.villager.getEntityBoundingBox().grow((double)this.areaSize), this.followPredicate);
 
@@ -62,7 +62,7 @@ public class VillagerAIFollow extends EntityAIBase {
 
     public boolean shouldContinueExecuting()
     {
-        return this.followingPlayer != null && !this.navigation.noPath() && this.villager.getDistanceSq(this.followingPlayer) > (double)(this.stopDistance * this.stopDistance) && !VilCapabilityMethods.getHungry(this.villager);
+        return this.followingPlayer != null && !this.navigation.noPath() && this.villager.getDistanceSq(this.followingPlayer) > (double)(this.stopDistance * this.stopDistance) && !VilMethods.getHungry(this.villager);
     }
 
     public void startExecuting()

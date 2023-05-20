@@ -5,39 +5,48 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.joshycode.improvedvils.util.Pair;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.math.BlockPos;
 
-public class MarshalsBatonCapability implements IMarshalsBatonCapability{
+public class MarshalsBatonCapability implements IMarshalsBatonCapability {
+	
 	public static final String BATON_NBT_KEY_C = "improved-vils:marshalsbatoncompany";
 	public static final String BATON_NBT_KEY_P = "improved-vils:marshalsbatonplatoon";
+	private static final String BATON_NBT_KEY_B = "improved-vils:marshalsbatonfoodstores";
 
-	
 	private Multimap<Integer, Integer> companys;
 	private Multimap<Integer, UUID> platoons;
+	private Map<Integer, Long> foodStorePos;
 	private int selectedUnit;
 	
 	public MarshalsBatonCapability() 
 	{
 		companys = ArrayListMultimap.create();
 		platoons = ArrayListMultimap.create();
+		foodStorePos = new HashMap();
 	}
 
 	@Override
 	public NBTTagCompound serializeNBT()
 	{
 		final NBTTagCompound nbt = new NBTTagCompound();
-		
+				
 		 ByteArrayOutputStream bacompany = new ByteArrayOutputStream();
 		 ByteArrayOutputStream baplatoon = new ByteArrayOutputStream();
+		 ByteArrayOutputStream bafoodstores = new ByteArrayOutputStream();
 		 ObjectOutputStream oos;
 		 
 	     try 
@@ -45,13 +54,17 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability{
 			oos = new ObjectOutputStream(bacompany);
 			oos.writeObject(this.companys);
 			oos.close();
-			
 		    nbt.setByteArray(BATON_NBT_KEY_C, bacompany.toByteArray());
+		    
 		    oos = new ObjectOutputStream(baplatoon);
 		    oos.writeObject(this.platoons);
 			oos.close();
-			
 		    nbt.setByteArray(BATON_NBT_KEY_P, baplatoon.toByteArray());    
+		    
+		    oos = new ObjectOutputStream(bafoodstores);
+		    oos.writeObject(this.foodStorePos);
+		    oos.close();
+		    nbt.setByteArray(BATON_NBT_KEY_B, bafoodstores.toByteArray());
 		} catch (IOException e) { e.printStackTrace(); }
 		return nbt;
 	}
@@ -66,7 +79,10 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability{
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_C)));
 			this.companys = (Multimap<Integer, Integer>) ois.readObject();
 			ois.close();
-		} catch (Exception e) {
+			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_B)));
+			this.foodStorePos = (Map<Integer, Long>) ois.readObject();
+			ois.close();
+		} catch (Exception e) { //TODO catches ALL exceptions?!
 			e.printStackTrace();
 		}
 	}
@@ -163,6 +179,22 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability{
 			return this.getVillagersCompany(Math.abs(selectedUnit) - 1);
 		else 
 			return this.getVillagersPlatoon(selectedUnit);
+	}
+
+	@Override
+	public BlockPos getPlatoonFoodStore(int platoon, int company) 
+	{
+		Long serialized = this.foodStorePos.get(platoon + 10 * company);
+		if(serialized != null)
+			return BlockPos.fromLong(this.foodStorePos.get(platoon + 10 * company));
+		else
+			return null;
+	}
+
+	@Override
+	public void setPlatoonFoodStore(BlockPos pos) 
+	{
+		this.foodStorePos.put(this.selectedUnit, pos.toLong());
 	}
 
 }

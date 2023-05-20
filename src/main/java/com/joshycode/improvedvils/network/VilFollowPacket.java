@@ -2,7 +2,8 @@ package com.joshycode.improvedvils.network;
 
 import java.util.UUID;
 
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.ServerProxy;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 
 import io.netty.buffer.ByteBuf;
@@ -49,26 +50,23 @@ public class VilFollowPacket implements IMessage {
 			EntityPlayerMP player = ctx.getServerHandler().player;
 			WorldServer world = ctx.getServerHandler().player.getServerWorld();
 			Entity e = world.getEntityByID(message.id);
-			int int2 = 0;
 			
 			if(e instanceof EntityVillager) 
 			{
-				if(player.getUniqueID().equals(VilCapabilityMethods.getPlayerId((EntityVillager) e))) 
+				if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e))) 
 				{
-					VilCapabilityMethods.setGuardBlock((EntityVillager) e, null);
+					VilMethods.setGuardBlock((EntityVillager) e, null);
 					if(message.followState) 
 					{
-						VilCapabilityMethods.setFollowState((EntityVillager) e, true);
-						int2 = 2;
+						VilMethods.setFollowState((EntityVillager) e, true);
 					} 
 					else
 					{
-						VilCapabilityMethods.setFollowState((EntityVillager) e, false);
-						int2 = 1;
+						VilMethods.setFollowState((EntityVillager) e, false);
 					}
 				}
 			}
-			return new VilStateQuery(1, int2);
+			return ServerProxy.getUpdateGuiForClient(e, player, false);
 		}
 	}
 }

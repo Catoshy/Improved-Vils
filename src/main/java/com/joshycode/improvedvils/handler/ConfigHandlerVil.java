@@ -47,6 +47,8 @@ public class ConfigHandlerVil {
 	public static float attackReachSq;
 	public static float blockChance;
 	public static float commandDist;
+	public static float dailyBread;
+	public static float collectFoodThreshold;
 	public static boolean openBlocksLoaded = false;
 	
 	public static void load(com.joshycode.improvedvils.CommonProxy.LoadState postinit) throws IOException {
@@ -70,6 +72,8 @@ public class ConfigHandlerVil {
 		attackReachSq = attackReach * attackReach;
 		blockChance = config.getFloat("Block Chance", "general", .6f, 0f, 1f, "how likely a villager's attempted block is to succeed");
 		commandDist = config.getFloat("Command Distance", "general", 250f, 0f, 300f, "maximum distance in blocks a ray trace will go when right click the baton to order a villager movement");
+		dailyBread = config.getFloat("Daily Bread", "general", 3f, 1f, 20f, "how much food saturation a villager will consume as measured in \"bread per day\" while drafted");
+		collectFoodThreshold = config.getFloat("Food Refill Threshold", "general", 32f, 1f, 256f, "how far the food saturation of a villager will decrease before villager goes to refill inventory at food store");
 		if(postinit == LoadState.SYNC || postinit == LoadState.POSTINIT)
 		{
 			readEntryJson();

@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -17,12 +18,10 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class EntityVillagerContainer extends Container {
-
-	static final int ACTIVE_SLOT = 13;
 	
     private static final EntityEquipmentSlot[] VALID_EQUIPMENT_SLOTS = new EntityEquipmentSlot[] 
     				{EntityEquipmentSlot.FEET, EntityEquipmentSlot.LEGS, EntityEquipmentSlot.CHEST, EntityEquipmentSlot.HEAD};
-	private static final int INV_START = ACTIVE_SLOT+1, INV_END = INV_START+26, HOTBAR_START = INV_END+1, HOTBAR_END = HOTBAR_START+8;
+	private static final int VIL_INV_START = 6, VIL_INV_END = VIL_INV_START+7, INV_START = VIL_INV_END+1, INV_END = INV_START+26, HOTBAR_START = INV_END+1, HOTBAR_END = HOTBAR_START+8;
 
 	private InventoryHands villagerHands;
 		
@@ -105,12 +104,10 @@ public class EntityVillagerContainer extends Container {
 				EntityEquipmentSlot armourSlot = EntityVillager.getSlotForItemStack(itemstack);
 				if(armourSlot != null) 
 				{
-					ItemStack prevArmourStack = this.villagerHands.getEntity().getItemStackFromSlot(armourSlot);
-					this.villagerHands.setEquipmentSlot(armourSlot, itemstack1);
-					return prevArmourStack;
+					return this.putStackInEquip(armourSlot, itemstack1);
 				}
 				// place in action bar
-				else if (!this.mergeItemStack(itemstack1, 6, ACTIVE_SLOT + 1, false))	
+				else if (!this.mergeItemStack(itemstack1, 6, VIL_INV_END + 1, false))	
 				{
 					return ItemStack.EMPTY;
 				}
@@ -121,11 +118,9 @@ public class EntityVillagerContainer extends Container {
 				EntityEquipmentSlot armourSlot = EntityVillager.getSlotForItemStack(itemstack);
 				if(armourSlot != null) 
 				{
-					ItemStack prevArmourStack = this.villagerHands.getEntity().getItemStackFromSlot(armourSlot);
-					this.villagerHands.setEquipmentSlot(armourSlot, itemstack1);
-					return prevArmourStack;
+					return this.putStackInEquip(armourSlot, itemstack1);
 				}
-				else if (!this.mergeItemStack(itemstack1, 6, ACTIVE_SLOT + 1, false))
+				else if (!this.mergeItemStack(itemstack1, VIL_INV_START, VIL_INV_END + 1, false))
 				{
 					return ItemStack.EMPTY;
 				}
@@ -145,6 +140,48 @@ public class EntityVillagerContainer extends Container {
 			}
 		}
 		return itemstack;
+	}
+
+	private ItemStack putStackInEquip(EntityEquipmentSlot armourSlot, ItemStack itemstack1) {
+		ItemStack villStack = this.villagerHands.getStackInSlot(armourSlot);
+
+		if(!villStack.isEmpty() ||
+				(armourSlot.equals(EntityEquipmentSlot.MAINHAND) && 
+						itemstack1.getItem().getAttributeModifiers(armourSlot, villStack).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()).size() == 0))
+		{
+			if (!this.mergeItemStack(itemstack1, VIL_INV_START, VIL_INV_END + 1, false))
+			{
+				return ItemStack.EMPTY;
+			}
+		}
+
+		if(this.setEquipmentSlot(armourSlot, itemstack1))
+		{
+			return itemstack1;
+		}
+		else 
+		{
+			return ItemStack.EMPTY;
+		}
+	}
+
+	private boolean setEquipmentSlot(EntityEquipmentSlot armourSlot, ItemStack itemstack1) {
+		switch(armourSlot) 
+		{
+		case MAINHAND:
+			return this.mergeItemStack(itemstack1, 4, 5, false);
+		case OFFHAND:
+			return this.mergeItemStack(itemstack1, 5, 6, false);
+		case FEET:
+			return this.mergeItemStack(itemstack1, 3, 4, false);
+		case LEGS:
+			return this.mergeItemStack(itemstack1, 2, 3, false);
+		case CHEST:
+			return this.mergeItemStack(itemstack1, 1, 2, false);
+		case HEAD:
+			return this.mergeItemStack(itemstack1, 0, 1, false);
+		}
+		return false;
 	}
 
 	@Override

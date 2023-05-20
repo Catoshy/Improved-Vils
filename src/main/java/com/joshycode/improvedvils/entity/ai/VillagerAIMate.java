@@ -1,7 +1,6 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import java.util.Set;
-
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.handler.ConfigHandlerVil;
 import com.joshycode.improvedvils.util.InventoryUtil;
 
@@ -38,6 +37,10 @@ public class VillagerAIMate extends EntityAIBase
         else if (this.villager.getRNG().nextInt(500) != 0)
         {
             return false;
+        } 
+        else if (InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0) 
+        {
+        	return false;
         }
         else
         {
@@ -47,7 +50,7 @@ public class VillagerAIMate extends EntityAIBase
             {
                 return false;
             }
-            else if (this.checkSufficientDoorsPresentForNewVillager() && this.villager.getIsWillingToMate(true) && this.hasSufficientSaturationToBreed())
+            else if (this.checkSufficientDoorsPresentForNewVillager() && this.villager.getIsWillingToMate(true) && this.hasEnoughSaturationToBreed())
             {
                 Entity entity = this.world.findNearestEntityWithinAABB(EntityVillager.class, this.villager.getEntityBoundingBox().grow(16.0D, 3.0D, 16.0D), this.villager);
 
@@ -106,15 +109,9 @@ public class VillagerAIMate extends EntityAIBase
         }
     }
     
-    private boolean hasSufficientSaturationToBreed() 
+    private boolean hasEnoughSaturationToBreed()
     {
-    	Set<ItemStack> food = InventoryUtil.getStacksByItem(this.villager.getVillagerInventory(), ItemFood.class);
-    	float runningTotal = 0;
-    	for(ItemStack foodItem  : food)
-    	{
-    		runningTotal += ((ItemFood)foodItem.getItem()).getSaturationModifier(foodItem) * foodItem.getCount();
-    	}
-    	return runningTotal >= 4.8f;
+    	return InventoryUtil.getFoodSaturation(this.villager.getVillagerInventory()) > 4.8f;
     }
     
     private boolean consumeBreedingMaterials()
@@ -133,8 +130,10 @@ public class VillagerAIMate extends EntityAIBase
     			float saturation = ((ItemFood)stack.getItem()).getSaturationModifier(stack);
     			if(stack.getCount() > Math.ceil(runningTotal / saturation)) 
     			{
-    				this.villager.getVillagerInventory().decrStackSize(i, (int) Math.ceil(runningTotal / saturation));
-    			} 
+    				int neededCount = (int) Math.ceil(runningTotal / saturation);
+    				this.villager.getVillagerInventory().decrStackSize(i, neededCount);
+    				runningTotal -= neededCount * saturation;
+    			}
     			else 
     			{
     				runningTotal -= stack.getCount() * saturation;

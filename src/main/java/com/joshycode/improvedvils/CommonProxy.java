@@ -2,6 +2,8 @@ package com.joshycode.improvedvils;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.UUID;
+import java.util.Vector;
 import java.util.concurrent.Callable;
 
 import com.joshycode.improvedvils.capabilities.CapabilityStorage;
@@ -17,14 +19,18 @@ import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilCommandPacket;
 import com.joshycode.improvedvils.network.VilEnlistPacket;
 import com.joshycode.improvedvils.network.VilFollowPacket;
+import com.joshycode.improvedvils.network.VilFoodStorePacket;
 import com.joshycode.improvedvils.network.VilGuardPacket;
+import com.joshycode.improvedvils.network.VilGuiQuery;
 import com.joshycode.improvedvils.network.VilStateQuery;
+import com.joshycode.improvedvils.network.VilStateUpdate;
 import com.joshycode.improvedvils.util.InventoryUtil;
 import com.joshycode.improvedvils.util.Pair;
 
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -58,7 +64,7 @@ public abstract class CommonProxy {
 	
 	public static final double GUARD_MAX_PATH = 576;
 	public static final int MAX_GUARD_DIST = 256;
-	public static final int GUARD_IGNORE_LIMIT = 16384;
+	public static final int GUARD_IGNORE_LIMIT = 4096;
 	
 	@SuppressWarnings("rawtypes")
 	public static final HashSet<Class> TARGETS = new HashSet<Class>();
@@ -108,52 +114,12 @@ public abstract class CommonProxy {
     	NetWrapper.NETWORK.registerMessage(VilEnlistPacket.ClientHandler.class, VilEnlistPacket.class, 1, Side.CLIENT);
     	NetWrapper.NETWORK.registerMessage(VilCommandPacket.Handler.class, VilCommandPacket.class, 2, Side.SERVER);
     	NetWrapper.NETWORK.registerMessage(VilGuardPacket.ServerHandler.class, VilGuardPacket.class, 3, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilStateQuery.ServerHandler.class, VilStateQuery.class, 5, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilStateQuery.ClientHandler.class, VilStateQuery.class, 6, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(VilStateQuery.Handler.class, VilStateQuery.class, 5, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilStateUpdate.ClientHandler.class, VilStateUpdate.class, 6, Side.CLIENT);
     	NetWrapper.NETWORK.registerMessage(VilFollowPacket.Handler.class, VilFollowPacket.class, 7, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilFoodStorePacket.Handler.class, VilFoodStorePacket.class, 8, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilGuiQuery.Handler.class, VilGuiQuery.class, 9, Side.SERVER);
     }
-    
-	public static void openVillagerGUI(EntityPlayer player, World world, EntityVillager entityIn) 
-	{
-		if(!entityIn.isChild()) 
-		{
-			setPlayerId(player, entityIn);
-			
-			int intA = -2;
-			int intB = 0;
-			
-			ItemStack stack = InventoryUtil.get1StackByItem(player.inventory, CommonProxy.ItemHolder.BATON);
-			
-			if(stack != null) 
-			{
-				IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
-				if(cap != null) 
-				{
-					Pair<Integer, Integer> p = cap.getVillagerPlace(entityIn.getUniqueID());
-					intA = -1; /* Has the Baton but is not Enlisted*/
-					
-					if(p != null) 
-					{
-						intA = p.a;
-						intB = p.b % 10;
-					}
-				}
-			} 
-			else 
-			{
-				intA = -2; /*Does not have baton, cannot be Enlisted*/
-			}
-			player.openGui(ImprovedVils.instance, 100, world, entityIn.getEntityId(), intA, intB);
-		}
-	}
-	
-	private static void setPlayerId(EntityPlayer player, EntityVillager entityIn) 
-	{
-		try 
-		{
-			entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerId(player.getUniqueID());
-		} catch (NullPointerException ex) {}
-	}
 
 	@SubscribeEvent
 	public void registerItems(RegistryEvent.Register<Item> e) 

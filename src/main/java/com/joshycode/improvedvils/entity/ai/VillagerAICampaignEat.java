@@ -2,6 +2,7 @@ package com.joshycode.improvedvils.entity.ai;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
+import com.joshycode.improvedvils.handler.ConfigHandlerVil;
 import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.ai.EntityAIBase;
@@ -62,7 +63,7 @@ public class VillagerAICampaignEat extends EntityAIBase implements IInventoryCha
 		{
 			setHungry(false);
 			float saturation = ((ItemFood)stack.getItem()).getSaturationModifier(stack);
-			this.hungerCooldown = (int) (saturation * 2000); /* .1F sat should mean 10 seconds of "fullness". 20 ticks/sec * 10 seconds * 1/.1F sat(10) */
+			this.hungerCooldown = (int) (saturation * (40000 * ConfigHandlerVil.dailyBread)); /* .1F sat should mean 10 seconds of "fullness". 20 ticks/sec * 10 seconds * 1/.1F sat(10) */
 		}
 		else 
 		{

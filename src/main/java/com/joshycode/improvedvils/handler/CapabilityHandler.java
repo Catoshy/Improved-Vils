@@ -9,6 +9,7 @@ import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.entity.ImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityVillager;
@@ -32,6 +33,11 @@ public final class CapabilityHandler {
 	    @Nonnull
 	    public static Capability<IMarshalsBatonCapability> MARSHALS_BATON_CAPABILITY = null;
 	    public static final ResourceLocation MARSHALS_BATON_CAPABILITYR = new ResourceLocation(ImprovedVils.MODID, "vil_baton");
+	    
+	    @CapabilityInject(IVillageCapability.class)
+	    @Nonnull
+	    public static Capability<IVillageCapability> VILLAGE_CAPABILITY = null;
+	    public static final ResourceLocation VILLAGE_CAPABILITYR = new ResourceLocation(ImprovedVils.MODID, "vil_village");
 	    
 	    @SubscribeEvent
 	    public void onEntityAttachCapabilities(@Nonnull AttachCapabilitiesEvent<Entity> e)

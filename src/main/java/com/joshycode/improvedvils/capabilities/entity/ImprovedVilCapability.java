@@ -1,53 +1,47 @@
 package com.joshycode.improvedvils.capabilities.entity;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.HashMap;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang3.tuple.MutablePair;
+
 import com.joshycode.improvedvils.entity.VillagerInvListener;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 
 public final class ImprovedVilCapability implements IImprovedVilCapability{
+	
 	public static final String VILPLAYER_NBT_KEY = "improved-vils:player";
 	
 	public ImprovedVilCapability() {}
 
-	private UUID player;	
+	private UUID player, homeVillageId;
+	private HashMap<UUID, MutablePair<Float, Integer>> playerReputations;
+	private String teamName;
 	private boolean isHungry;
 	private BlockPos guardObj;
 	private boolean isReturning;
 	private BlockPos commObj;
+	private BlockPos foodStorePos;
 	private boolean movingIndoors;
 	private boolean following;
 	private VillagerInvListener invListener;
 	private boolean isDrinking;
-
-	@Override
-	public void setPlayerId(UUID id) 
-	{
-		this.player = id;
-	}
-
-	@Override
-	public UUID getPlayerId() 
-	{
-		return this.player;
-	}
-	
-	@Override
-	public void setInvListener(VillagerInvListener listenerIn) 
-	{
-		this.invListener = listenerIn;
-	}
-
-	@Override
-	public VillagerInvListener getListener() 
-	{
-		return this.invListener;
-	}
-
+	private boolean isRefilling;
+	private int armourValue;
+	private float attackValue;
+	private boolean hasShield;
+	private float foodSaturationValue;
 
 	@Override
 	public NBTTagCompound serializeNBT() 
@@ -56,10 +50,15 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "b", isHungry); /*b for boolean!*/
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "br", isReturning);
+		nbt.setBoolean(VILPLAYER_NBT_KEY + "brf", isRefilling);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bm", movingIndoors);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bf", following);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bd", isDrinking);
-
+		nbt.setBoolean(VILPLAYER_NBT_KEY + "bSh", hasShield);
+		nbt.setInteger(VILPLAYER_NBT_KEY + "iav", armourValue);
+		nbt.setFloat(VILPLAYER_NBT_KEY + "fav", attackValue);
+		nbt.setFloat(VILPLAYER_NBT_KEY + "ffs", foodSaturationValue);
+		
 		if(this.guardObj == null)
 			nbt.setLong(VILPLAYER_NBT_KEY + "bp", Long.MAX_VALUE);
 		else
@@ -69,10 +68,30 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 			nbt.setLong(VILPLAYER_NBT_KEY + "bc", Long.MAX_VALUE);
 		else
 			nbt.setLong(VILPLAYER_NBT_KEY + "bc", this.commObj.toLong());
+		
+		if(this.foodStorePos == null)
+			nbt.setLong(VILPLAYER_NBT_KEY + "bs", Long.MAX_VALUE);
+		else
+			nbt.setLong(VILPLAYER_NBT_KEY + "bs", this.foodStorePos.toLong());
 			
         if(this.player != null)	
 			nbt.setString(VILPLAYER_NBT_KEY, this.player.toString());
         
+        if(this.homeVillageId != null)
+        	nbt.setString(VILPLAYER_NBT_KEY + "shv", this.player.toString());
+        
+        if(this.teamName != null)
+        	nbt.setString(VILPLAYER_NBT_KEY + "stn", this.teamName);
+        
+        ByteArrayOutputStream playerReputations = new ByteArrayOutputStream();
+		try 
+		{
+			ObjectOutputStream oos = new ObjectOutputStream(playerReputations);
+			oos.writeObject(this.playerReputations);
+			oos.close();
+			nbt.setByteArray(VILPLAYER_NBT_KEY + "PR", playerReputations.toByteArray());
+		} catch (IOException e) {e.printStackTrace();}
+		
         return nbt;
 	}
 
@@ -81,9 +100,14 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	{
 		this.isHungry = nbt.getBoolean(VILPLAYER_NBT_KEY + "b");
 		this.isReturning = nbt.getBoolean(VILPLAYER_NBT_KEY + "br");
+		this.isRefilling = nbt.getBoolean(VILPLAYER_NBT_KEY + "brf");
 		this.movingIndoors = nbt.getBoolean(VILPLAYER_NBT_KEY + "bm");
 		this.following = nbt.getBoolean(VILPLAYER_NBT_KEY + "bf");
 		this.isDrinking = nbt.getBoolean(VILPLAYER_NBT_KEY + "bd");
+		this.hasShield = nbt.getBoolean(VILPLAYER_NBT_KEY + "bSh");
+		this.armourValue = nbt.getInteger(VILPLAYER_NBT_KEY + "iav");
+		this.attackValue = nbt.getFloat(VILPLAYER_NBT_KEY + "fav");
+		this.foodSaturationValue = nbt.getFloat(VILPLAYER_NBT_KEY + "ffs");
 		
 		long l = nbt.getLong(VILPLAYER_NBT_KEY + "bp");
 		
@@ -98,12 +122,48 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		else
 			this.commObj = BlockPos.fromLong(lc);
 		
+		long lf = nbt.getLong(VILPLAYER_NBT_KEY + "bs");
+		if(lf == Long.MAX_VALUE)
+			this.foodStorePos = null;
+		else
+			this.foodStorePos = BlockPos.fromLong(lf);
+		
 		String s = nbt.getString(VILPLAYER_NBT_KEY);
 		if(!s.isEmpty()) 
-		{
 			this.player = UUID.fromString(s);
-		}
+		
+		String hvId = nbt.getString(VILPLAYER_NBT_KEY + "shv");
+		if(!hvId.isEmpty())
+			this.homeVillageId = UUID.fromString(hvId);
+		
+		String tn = nbt.getString(VILPLAYER_NBT_KEY + "stn");
+		if(!tn.isEmpty())
+			this.teamName = tn;
+		
+		ObjectInputStream ois;
+		try 
+		{
+			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(VILPLAYER_NBT_KEY + "PR")));
+			this.playerReputations = (HashMap<UUID, MutablePair<Float, Integer>>) ois.readObject();
+			ois.close();
+		} catch (IOException | ClassNotFoundException e) {e.printStackTrace();}
 	}
+	
+	@Override
+	public void setPlayerId(UUID id) 
+	{
+		//TODO
+		this.player = id;
+	}
+
+	@Override
+	public UUID getPlayerId() { return this.player; }
+	
+	@Override
+	public void setInvListener(VillagerInvListener listenerIn) { this.invListener = listenerIn;}
+
+	@Override
+	public VillagerInvListener getListener() { return this.invListener; }
 
 	@Override
 	public void setHungry(boolean isHungry) { this.isHungry = isHungry; }
@@ -114,7 +174,6 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	@Override
 	public void setGuardBlockPos(BlockPos pos) { this.guardObj = pos; }
 
-	@Nullable
 	@Override
 	public BlockPos getGuardBlockPos() { return this.guardObj; }
 
@@ -127,7 +186,6 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	@Override
 	public void setCommBlock(BlockPos posIn) { this.commObj = posIn; }
 
-	@Nullable
 	@Override
 	public BlockPos getCommBlockPos() { return this.commObj; }
 
@@ -148,4 +206,102 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 
 	@Override
 	public void setDrinking(boolean b) { this.isDrinking = b; }
+
+	@Override
+	public BlockPos getFoodStorePos() { return this.foodStorePos; }
+
+	@Override
+	public void setFoodStore(BlockPos pos) { this.foodStorePos = pos; }
+
+	@Override
+	public boolean getRefillingFood() { return this.isRefilling; }
+
+	@Override
+	public void setRefilling(boolean b) { this.isRefilling = b; }
+
+	@Override
+	public String getTeam() { return this.teamName; }
+
+	@Override
+	public void setTeam(@Nullable Team team) { this.teamName = team.getName(); }
+
+	@Override
+	public float getPlayerReputation(UUID uniqueID) 
+	{
+		if(this.playerReputations.get(uniqueID) != null)
+		{
+			return this.playerReputations.get(uniqueID).getLeft();
+		}
+		return 0;
+	}
+
+	@Override
+	public void setPlayerReputation(UUID uniqueID, float f) 
+	{
+		if(this.playerReputations.get(uniqueID) != null)
+		{
+			this.playerReputations.get(uniqueID).setLeft(MathHelper.clamp(f, -30, 40.5f));
+		}
+		else
+		{
+			MutablePair<Float, Integer> pair = new MutablePair<Float, Integer>();
+			pair.setLeft(MathHelper.clamp(f, -30, 40.5f));
+			this.playerReputations.put(uniqueID, pair);
+		}
+	}
+
+	@Override
+	public UUID getHomeVillageID() { return this.homeVillageId; }
+
+	@Override
+	public int getHomeVillagePlayerReputationReference(UUID uniqueID) 
+	{
+		if(this.playerReputations.get(uniqueID) != null)
+		{
+			return this.playerReputations.get(uniqueID).getRight();
+		}
+		return 0;
+	}
+	
+	@Override
+	public void setHomeVillagePlayerReputationReference(UUID uniqueID, int i) 
+	{
+		if(this.playerReputations.get(uniqueID) != null)
+		{
+			this.playerReputations.get(uniqueID).setRight(MathHelper.clamp(i, -30, 10));
+		}
+		else
+		{
+			MutablePair<Float, Integer> pair = new MutablePair<Float, Integer>();
+			pair.setRight(MathHelper.clamp(i, -30, 10));
+			this.playerReputations.put(uniqueID, pair);
+		}
+	}
+
+	@Override
+	public void setHomeVillageID(UUID uuid) { this.homeVillageId = uuid; }
+
+	@Override
+	public int getArmourValue() { return this.armourValue; }
+
+	@Override
+	public float getAttackValue() { return this.attackValue; }
+
+	@Override
+	public boolean getShieldValue() { return this.hasShield; }
+
+	@Override
+	public float getFoodSaturation() { return this.foodSaturationValue; }
+
+	@Override
+	public void setArmourValue(int armour) { this.armourValue = armour; }
+
+	@Override
+	public void setAttackValue(float attackVal) { this.attackValue = attackVal; }
+
+	@Override
+	public void setShield(boolean hasShield) { this.hasShield = hasShield; }
+
+	@Override
+	public void setSaturation(float foodSaturation) { this.foodSaturationValue = foodSaturation; }
 }

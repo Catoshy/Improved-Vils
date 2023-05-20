@@ -1,10 +1,9 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import javax.annotation.Nullable;
-
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.capabilities.VilCapabilityMethods;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.util.InventoryUtil;
+import com.joshycode.improvedvils.util.PathUtil;
 
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
@@ -26,6 +25,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 	private PathNavigate navigator;
 	private Path path;
 	private BlockPos ppos;
+	private boolean finished;
 
 	public VillagerAICampaignMove(EntityVillager entityHost, int pathFailMax) 
 	{
@@ -36,21 +36,22 @@ public class VillagerAICampaignMove extends EntityAIBase {
 		this.pathfindingFailMax = pathFailMax;
 		this.entityHost = entityHost;
 		this.navigator = entityHost.getNavigator();
+		this.finished = false;
 		this.setMutexBits(1);
 	}
 	
 	@Override
 	public boolean shouldExecute() 
 	{
-		if(VilCapabilityMethods.getCommBlockPos((EntityVillager) this.entityHost) == null)
+		if(VilMethods.getCommBlockPos((EntityVillager) this.entityHost) == null)
 			return false;
-		if(VilCapabilityMethods.getGuardBlockPos((EntityVillager) this.entityHost) != null)
+		if(VilMethods.getGuardBlockPos((EntityVillager) this.entityHost) != null)
 			return false;
 		if(((EntityVillager) this.entityHost).isMating())
     		return false;
-		if(VilCapabilityMethods.getFollowing((EntityVillager) this.entityHost))
+		if(VilMethods.getFollowing((EntityVillager) this.entityHost))
 			return false;
-		if(InventoryUtil.doesInventoryHaveItem(this.entityHost.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0 && !VilCapabilityMethods.getHungry(this.entityHost)) {
+		if(InventoryUtil.doesInventoryHaveItem(this.entityHost.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0 && !VilMethods.getHungry(this.entityHost)) {
 			return true;
 		}
 		return false;
@@ -58,7 +59,8 @@ public class VillagerAICampaignMove extends EntityAIBase {
 
 	public void startExecuting() 
 	{
-		BlockPos object = VilCapabilityMethods.getCommBlockPos(this.entityHost);
+		this.finished = false;
+		BlockPos object = VilMethods.getCommBlockPos(this.entityHost);
 		if(generatePath())
 		{
 			PathPoint pp = this.path.getFinalPathPoint();
@@ -74,7 +76,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 	@Override
 	public void updateTask() 
 	{
-		BlockPos object = VilCapabilityMethods.getCommBlockPos(this.entityHost);
+		BlockPos object = VilMethods.getCommBlockPos(this.entityHost);
 		if(object != null) 
 		{
 			if(this.idleTicks > 20) 
@@ -89,6 +91,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 				this.resetTask();
 				Vec3d vec = getPosition();
 				this.navigator.clearPath();
+				this.finished = true;
 				
 				if(vec != null)
 					this.navigator.tryMoveToXYZ(vec.x, vec.y, vec.z, .6D);
@@ -96,13 +99,17 @@ public class VillagerAICampaignMove extends EntityAIBase {
 			} 
 			else if(this.path != null && this.path.isFinished())
 			{
-				this.tryToGetCloser(object);
+				if(!this.finished)
+					this.tryToGetCloser(object);
+				else
+					this.resetTask();
 			} 
 			else if(this.path == null)
 			{
 				this.pathfindingFails++;
 				this.generatePath();
 			}
+			
 			if(this.entityHost.getPosition().equals(ppos)) 
 			{
 				this.idleTicks++;
@@ -122,16 +129,12 @@ public class VillagerAICampaignMove extends EntityAIBase {
 	@Override
 	public boolean shouldContinueExecuting() 
 	{
-		if(VilCapabilityMethods.getGuardBlockPos(this.entityHost) == null && VilCapabilityMethods.getCommBlockPos(this.entityHost) != null)
+		if(VilMethods.getGuardBlockPos(this.entityHost) == null && VilMethods.getCommBlockPos(this.entityHost) != null)
 		{
 			if(this.pathfindingFails < this.pathfindingFailMax)
 			{
 				return true;
 			} 
-			else 
-			{
-				this.resetTask();
-			}
 		}
 		return false;
 	}
@@ -139,7 +142,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 	@Override
 	public void resetTask() 
 	{
-		VilCapabilityMethods.setCommBlockPos(this.entityHost, null);
+		VilMethods.setCommBlockPos(this.entityHost, null);
 		this.distanceToObj = 0;
 		this.pathfindingFails = 0;
 	}
@@ -147,21 +150,21 @@ public class VillagerAICampaignMove extends EntityAIBase {
 	private boolean generatePath() 
 	{
 		Vec3d pos;
-		if(this.entityHost.getDistanceSq(VilCapabilityMethods.getCommBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH)
+		if(this.entityHost.getDistanceSq(VilMethods.getCommBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH)
 		{
-			Vec3d pos1 = VillagerAICampaignMove.findBlockInDirection(this.entityHost.getPosition(), VilCapabilityMethods.getCommBlockPos(this.entityHost));
+			Vec3d pos1 = PathUtil.findBlockInDirection(this.entityHost.getPosition(), VilMethods.getCommBlockPos(this.entityHost));
 			if(pos1 != null) 
 			{
 				pos = pos1;
 			}
 			else 
 			{
-				pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 16, 7, VilCapabilityMethods.commPosAsVec(this.entityHost));
+				pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 16, 7, VilMethods.commPosAsVec(this.entityHost));
 			}
 		}
 		else
 		{
-			pos = VilCapabilityMethods.commPosAsVec(this.entityHost);
+			pos = VilMethods.commPosAsVec(this.entityHost);
 		}
 		if(pos == null) 
 		{
@@ -226,11 +229,11 @@ public class VillagerAICampaignMove extends EntityAIBase {
     			BlockPos pos = new BlockPos(runX, entY, runZ);
     			if(this.entityHost.getWorld().getChunkFromBlockCoords(pos).equals(c)) 
     			{
-    				VilCapabilityMethods.setCommBlockPos(this.entityHost, pos);
+    				VilMethods.setCommBlockPos(this.entityHost, pos);
     				return;
     			}
     		}
-    		VilCapabilityMethods.setCommBlockPos(this.entityHost, new BlockPos((c.x << 4) + this.entityHost.getRNG().nextInt(15),
+    		VilMethods.setCommBlockPos(this.entityHost, new BlockPos((c.x << 4) + this.entityHost.getRNG().nextInt(15),
     				this.entityHost.posY, (c.z << 4) + this.entityHost.getRNG().nextInt(15)));
     	} 
     	else 
@@ -249,65 +252,12 @@ public class VillagerAICampaignMove extends EntityAIBase {
     			BlockPos pos = new BlockPos(runX, entY, runZ);
     			if(this.entityHost.getWorld().getChunkFromBlockCoords(pos).equals(c)) 
     			{
-    				VilCapabilityMethods.setCommBlockPos(this.entityHost, pos);
+    				VilMethods.setCommBlockPos(this.entityHost, pos);
     				return;
     			}
     		}
-    		VilCapabilityMethods.setCommBlockPos(this.entityHost, new BlockPos((c.x << 4) + this.entityHost.getRNG().nextInt(15),
+    		VilMethods.setCommBlockPos(this.entityHost, new BlockPos((c.x << 4) + this.entityHost.getRNG().nextInt(15),
     				this.entityHost.posY, (c.z << 4) + this.entityHost.getRNG().nextInt(15)));
     	}
     }
-    
-    @Nullable
-	private static Vec3d findBlockInDirection(BlockPos start, BlockPos dest) 
-    {
-    	int entX = start.getX();
-    	int entY = start.getY();
-    	int entZ = start.getZ();
-
-    	int dX = dest.getX() - entX;
-    	int dZ = dest.getZ() - entZ;
-
-    	if(Math.abs(dX) > Math.abs(dZ)) 
-    	{
-    		double slope = dZ / Math.abs(dX);
-    		double runZ = entZ;
-    		int runX = entX;
-    		int step = 1;
-    		if(dX < 0)
-    			step = -1;
-    		
-    		for(int i = 0; i < 32; i++) 
-    		{
-    			runZ += slope;
-    			runX += step;
-    			BlockPos pos = new BlockPos(runX, entY, runZ);
-    			if(pos.getDistance(entX, entY, entZ) >= 16)
-    			{
-    				return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
-    			}
-    		}
-    	}
-    	else 
-    	{
-    		double slope = dX / Math.abs(dZ);
-    		double runX = entX;
-    		int runZ = entZ;
-    		int step = 1;
-    		if(dZ < 0)
-    			step = -1;
-    		
-    		for(int i = 0; i < 200; i++) 
-    		{
-    			runX += slope;
-    			runZ += step;
-    			BlockPos pos = new BlockPos(runX, entY, runZ);
-    			if(pos.getDistance(entX, entY, entZ) >= 16)
-    			{
-    				return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
-    			}
-    		}
-    	}
-    	return null;
-	}
 }
