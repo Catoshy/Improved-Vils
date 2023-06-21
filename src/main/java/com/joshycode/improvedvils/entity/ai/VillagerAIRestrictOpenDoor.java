@@ -10,18 +10,18 @@ public class VillagerAIRestrictOpenDoor extends EntityAIRestrictOpenDoor {
 
 	private EntityVillager villager;
 
-	public VillagerAIRestrictOpenDoor(EntityCreature creatureIn) 
+	public VillagerAIRestrictOpenDoor(EntityCreature creatureIn)
 	{
 		super(creatureIn);
 		this.villager = (EntityVillager) creatureIn;
 	}
-	
-	@Override 
-	public boolean shouldExecute() 
+
+	@Override
+	public boolean shouldExecute()
 	{
 		if(VilMethods.getGuardBlockPos(villager) != null)
 			return false;
-		
+
 		return super.shouldExecute();
 	}
 }

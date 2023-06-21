@@ -11,8 +11,8 @@ public class VillagerAIEatHeal extends EntityAIBase {
 
 	private final EntityVillager entityHost;
 	private int hungerCooldown;
-	
-	public VillagerAIEatHeal(EntityVillager entity) 
+
+	public VillagerAIEatHeal(EntityVillager entity)
 	{
 		super();
 		this.entityHost = entity;
@@ -20,32 +20,34 @@ public class VillagerAIEatHeal extends EntityAIBase {
 	}
 
 	@Override
-	public boolean shouldExecute() 
+	public boolean shouldExecute()
 	{
-		if(this.hungerCooldown <= 0) 
+		if(this.hungerCooldown <= 0)
 		{
 			if(InventoryUtil.getStacksByItem(this.entityHost.getVillagerInventory(), ItemFood.class).size() > 0 && this.entityHost.getHealth() < this.entityHost.getMaxHealth())
 				return true;
-		} 
-		else 
+		}
+		else
 		{
 			this.hungerCooldown--;
 		}
 		return false;
 	}
-	
-	public void startExecuting() 
+
+	@Override
+	public void startExecuting()
 	{
 		ItemStack stack = InventoryUtil.findAndDecrItem(entityHost.getVillagerInventory(), ItemFood.class);
-		if(stack != null) 
+		if(stack != null)
 		{
 			float saturation = ((ItemFood)stack.getItem()).getSaturationModifier(stack);
 			this.entityHost.heal(saturation * 2);
-		} 
+		}
 		this.hungerCooldown = 300;
 	}
-	
-	 public boolean shouldContinueExecuting() 
+
+	 @Override
+	public boolean shouldContinueExecuting()
 	 {
 		 return false;
 	 }

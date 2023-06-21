@@ -29,13 +29,14 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 	{
 		if(!super.shouldExecute())
 			return false;
-		
+
 		int i = this.taskOwner.getRevengeTimer();
         EntityLivingBase entitylivingbase = this.taskOwner.getRevengeTarget();
         return i != this.revengeTimerOld && entitylivingbase != null && this.isSuitableTarget(entitylivingbase, false);
 	}
-	
-	 public void startExecuting()
+
+	 @Override
+	public void startExecuting()
 	 {
         this.taskOwner.setAttackTarget(this.taskOwner.getRevengeTarget());
         this.target = this.taskOwner.getAttackTarget();
@@ -50,7 +51,7 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
         super.startExecuting();
 	 }
 
-	protected void alertOthers() 
+	protected void alertOthers()
 	{
 		double d0 = this.getTargetDistance();
 
@@ -60,14 +61,14 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
             {
                 boolean flag = true;
 
-                if(entitycreature instanceof EntityVillager) 
+                if(entitycreature instanceof EntityVillager)
                 {
                 	flag = false;
-                	if(VilMethods.getGuardBlockPos((EntityVillager) entitycreature) != null && entitycreature.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) entitycreature)) > CommonProxy.MAX_GUARD_DIST - 31) 
+                	if(VilMethods.getGuardBlockPos((EntityVillager) entitycreature) != null && entitycreature.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) entitycreature)) > CommonProxy.MAX_GUARD_DIST - 31)
                 	{
                 		 flag = true;
                 	}
-                }	
+                }
                 if(!flag)
                 {
                     this.setEntityAttackTarget(entitycreature, this.taskOwner.getRevengeTarget());
@@ -75,15 +76,16 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
             }
         }
     }
-	
-	protected boolean isSuitableTarget(@Nullable EntityLivingBase target, boolean includeInvincibles) 
+
+	@Override
+	protected boolean isSuitableTarget(@Nullable EntityLivingBase target, boolean includeInvincibles)
 	{
-		
+
 		if(!super.isSuitableTarget(target, includeInvincibles))
 			return false;
-		if(target != null) 
+		if(target != null)
 		{
-			for(Class c : CommonProxy.TARGETS) 
+			for(Class c : CommonProxy.TARGETS)
 			{
 				if(c.isInstance(target)) {
 					return true;
@@ -92,8 +94,8 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 		}
 		return false;
 	}
-	
-	private void setEntityAttackTarget(EntityCreature entitycreature, EntityLivingBase revengeTarget) 
+
+	private void setEntityAttackTarget(EntityCreature entitycreature, EntityLivingBase revengeTarget)
 	{
 		entitycreature.setAttackTarget(revengeTarget);
 	}

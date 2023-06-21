@@ -19,31 +19,30 @@ import net.minecraft.potion.PotionEffect;
 import net.minecraft.potion.PotionHealth;
 import net.minecraft.potion.PotionUtils;
 import net.minecraft.util.EnumHand;
-import scala.util.Random;
 
 public class VillagerAIDrinkPotion extends EntityAIBase {
-	
+
 	EntityVillager villager;
 	ItemStack potionStack;
 	ItemStack returnItem;
 	private int slot;
 	private int tickCounter;
 	private int potionUseTimer;
-	
+
 	protected static final UUID MODIFIER_UUID = UUID.fromString("bca14a1e-cfcf-11ed-afa1-0242ac120002");
 	private static final AttributeModifier MODIFIER = (new AttributeModifier(MODIFIER_UUID, "Drinking speed penalty", -0.25D, 0)).setSaved(false);
-	
-	public VillagerAIDrinkPotion(EntityVillager villager) 
+
+	public VillagerAIDrinkPotion(EntityVillager villager)
 	{
 		super();
 		this.villager = villager;
 		this.tickCounter = ThreadLocalRandom.current().nextInt(40, 80 + 1);
 	}
-	
+
 	@Override
 	public boolean shouldExecute()
 	{
-		if(!isDrinking() && this.villager.getLastAttackedEntityTime() - this.villager.ticksExisted <= 40) 
+		if(!isDrinking() && this.villager.getLastAttackedEntityTime() - this.villager.ticksExisted <= 40)
 		{
 			if(this.tickCounter % 5 != 0)
 			{
@@ -59,15 +58,15 @@ public class VillagerAIDrinkPotion extends EntityAIBase {
 		if(isDrinking() && this.villager.getHeldItemMainhand().getItem().equals(Items.POTIONITEM))
 		{
 			return true;
-		} 
+		}
 		else if((this.villager.getHealth() / this.villager.getMaxHealth()) < .33f && !this.villager.getVillagerInventory().isEmpty())
 		{
-			for(int i = 0; i < this.villager.getVillagerInventory().getSizeInventory(); i++) 
+			for(int i = 0; i < this.villager.getVillagerInventory().getSizeInventory(); i++)
 			{
 				ItemStack stack = this.villager.getVillagerInventory().getStackInSlot(i);
-				for(PotionEffect effect : PotionUtils.getEffectsFromStack(stack)) 
+				for(PotionEffect effect : PotionUtils.getEffectsFromStack(stack))
 				{
-					if(effect.getPotion() instanceof PotionHealth) 
+					if(effect.getPotion() instanceof PotionHealth)
 					{
 						this.potionStack = stack;
 						this.slot = i;
@@ -79,9 +78,9 @@ public class VillagerAIDrinkPotion extends EntityAIBase {
 		this.tickCounter = ThreadLocalRandom.current().nextInt(40, 80 + 1);
 		return false;
 	}
-	
+
 	@Override
-	public void startExecuting() 
+	public void startExecuting()
 	{
 		setDrinking(true);
 		if(!this.villager.getHeldItemMainhand().getItem().equals(Items.POTIONITEM))
@@ -96,7 +95,7 @@ public class VillagerAIDrinkPotion extends EntityAIBase {
         iattributeinstance.applyModifier(MODIFIER);
 		this.villager.world.playSound((EntityPlayer)null, this.villager.posX, this.villager.posY, this.villager.posZ, SoundEvents.ENTITY_WITCH_DRINK, this.villager.getSoundCategory(), 1.0F, 0.8F + ThreadLocalRandom.current().nextFloat() * 0.4F);
 	}
-	
+
 	@Override
 	public void updateTask()
 	{
@@ -108,22 +107,22 @@ public class VillagerAIDrinkPotion extends EntityAIBase {
 		List<PotionEffect> list = PotionUtils.getEffectsFromStack(this.potionStack);
 		if (list != null)
 		{
-			for (PotionEffect potioneffect : list) 
+			for (PotionEffect potioneffect : list)
 			{
             	 this.villager.addPotionEffect(new PotionEffect(potioneffect));
             }
 		}
 		this.potionStack = new ItemStack(Items.GLASS_BOTTLE);
 	}
-	
+
 	@Override
 	public boolean shouldContinueExecuting()
 	{
 		return !this.villager.isDead && this.villager.getHeldItemMainhand().equals(potionStack) && this.potionUseTimer > 0;
 	}
-	
+
 	@Override
-	public void resetTask() 
+	public void resetTask()
 	{
 		this.tickCounter = ThreadLocalRandom.current().nextInt(40, 80 + 1);
 		this.villager.setHeldItem(EnumHand.MAIN_HAND, this.returnItem);
@@ -134,18 +133,18 @@ public class VillagerAIDrinkPotion extends EntityAIBase {
 		setDrinking(false);
 		this.villager.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).removeModifier(MODIFIER);
 	}
-	
+
 	private void setDrinking(boolean b)
 	{
-		try 
+		try
 		{
 	        this.villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setDrinking(b);
 		} catch(NullPointerException e) {}
 	}
-	
+
 	private boolean isDrinking()
 	{
-		try 
+		try
 		{
 	       return this.villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isDrinking();
 		} catch(NullPointerException e) {}

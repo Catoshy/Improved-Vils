@@ -23,11 +23,12 @@ public class VillagerAIVillagerInteract extends EntityAIWatchClosest2
         this.villager = villagerIn;
     }
 
-    public void startExecuting()
+    @Override
+	public void startExecuting()
     {
         super.startExecuting();
 
-        if (this.villager.canAbondonItems() && this.closestEntity instanceof EntityVillager && ((EntityVillager)this.closestEntity).wantsMoreFood() && 
+        if (this.villager.canAbondonItems() && this.closestEntity instanceof EntityVillager && ((EntityVillager)this.closestEntity).wantsMoreFood() &&
         		InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) == 0)
         {
             this.interactionDelay = 10;
@@ -38,7 +39,8 @@ public class VillagerAIVillagerInteract extends EntityAIWatchClosest2
         }
     }
 
-    public void updateTask()
+    @Override
+	public void updateTask()
     {
         super.updateTask();
 
@@ -81,14 +83,14 @@ public class VillagerAIVillagerInteract extends EntityAIWatchClosest2
 
                     if (!itemstack1.isEmpty())
                     {
-                        double d0 = this.villager.posY - 0.30000001192092896D + (double)this.villager.getEyeHeight();
+                        double d0 = this.villager.posY - 0.30000001192092896D + this.villager.getEyeHeight();
                         EntityItem entityitem = new EntityItem(this.villager.world, this.villager.posX, d0, this.villager.posZ, itemstack1);
                         float f = 0.3F;
                         float f1 = this.villager.rotationYawHead;
                         float f2 = this.villager.rotationPitch;
-                        entityitem.motionX = (double)(-MathHelper.sin(f1 * 0.017453292F) * MathHelper.cos(f2 * 0.017453292F) * 0.3F);
-                        entityitem.motionZ = (double)(MathHelper.cos(f1 * 0.017453292F) * MathHelper.cos(f2 * 0.017453292F) * 0.3F);
-                        entityitem.motionY = (double)(-MathHelper.sin(f2 * 0.017453292F) * 0.3F + 0.1F);
+                        entityitem.motionX = -MathHelper.sin(f1 * 0.017453292F) * MathHelper.cos(f2 * 0.017453292F) * 0.3F;
+                        entityitem.motionZ = MathHelper.cos(f1 * 0.017453292F) * MathHelper.cos(f2 * 0.017453292F) * 0.3F;
+                        entityitem.motionY = -MathHelper.sin(f2 * 0.017453292F) * 0.3F + 0.1F;
                         entityitem.setDefaultPickupDelay();
                         this.villager.world.spawnEntity(entityitem);
                         break;

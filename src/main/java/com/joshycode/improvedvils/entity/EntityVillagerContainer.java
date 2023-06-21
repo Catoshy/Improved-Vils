@@ -3,9 +3,8 @@ package com.joshycode.improvedvils.entity;
 import javax.annotation.Nullable;
 
 import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
@@ -18,37 +17,41 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class EntityVillagerContainer extends Container {
-	
-    private static final EntityEquipmentSlot[] VALID_EQUIPMENT_SLOTS = new EntityEquipmentSlot[] 
+
+    private static final EntityEquipmentSlot[] VALID_EQUIPMENT_SLOTS = new EntityEquipmentSlot[]
     				{EntityEquipmentSlot.FEET, EntityEquipmentSlot.LEGS, EntityEquipmentSlot.CHEST, EntityEquipmentSlot.HEAD};
 	private static final int VIL_INV_START = 6, VIL_INV_END = VIL_INV_START+7, INV_START = VIL_INV_END+1, INV_END = INV_START+26, HOTBAR_START = INV_END+1, HOTBAR_END = HOTBAR_START+8;
 
 	private InventoryHands villagerHands;
-		
-	public EntityVillagerContainer(InventoryPlayer playerInv, IInventory villagerInventory, InventoryHands villagerHand) 
+
+	public EntityVillagerContainer(InventoryPlayer playerInv, IInventory villagerInventory, InventoryHands villagerHand)
 	{
 		this.villagerHands = villagerHand;
-		for (int i = 2; i > 0; --i) 
+		for (int i = 2; i > 0; --i)
 		{
-			for(int ii = 1; ii >= 0; --ii) 
+			for(int ii = 1; ii >= 0; --ii)
 			{
 	            final EntityEquipmentSlot entityequipmentslot = VALID_EQUIPMENT_SLOTS[(ii + i * 2) - 2];
 	            this.addSlotToContainer(new Slot(villagerHand, ii + i * 2, 26 - (18 * (i - 1)), 26 - (18 * ii))
 	            {
-	                public int getSlotStackLimit()
+	                @Override
+					public int getSlotStackLimit()
 	                {
 	                    return 1;
 	                }
-	                public boolean isItemValid(ItemStack stack)
+	                @Override
+					public boolean isItemValid(ItemStack stack)
 	                {
 	                    return stack.getItem().isValidArmor(stack, entityequipmentslot, villagerHands.getEntity());
 	                }
-	                public boolean canTakeStack(EntityPlayer playerIn)
+	                @Override
+					public boolean canTakeStack(EntityPlayer playerIn)
 	                {
 	                    ItemStack itemstack = this.getStack();
 	                    return !itemstack.isEmpty() && !playerIn.isCreative() && EnchantmentHelper.hasBindingCurse(itemstack) ? false : super.canTakeStack(playerIn);
 	                }
-	                @Nullable
+	                @Override
+					@Nullable
 	                @SideOnly(Side.CLIENT)
 	                public String getSlotTexture()
 	                {
@@ -73,7 +76,7 @@ public class EntityVillagerContainer extends Container {
 		for (int i = 0; i < 9; i++)
 			addSlotToContainer(new Slot(playerInv, i, 8+i*18, 160));
 	}
-	
+
 	/**
 	* Called when a player shift-clicks on a slot. You must override this or you will crash when someone does that.
 	* special thanks to "coolAlias" on MC forums for providing this code
@@ -82,7 +85,7 @@ public class EntityVillagerContainer extends Container {
 	public ItemStack transferStackInSlot(EntityPlayer par1EntityPlayer, int par2)
 	{
 	ItemStack itemstack = ItemStack.EMPTY;
-	Slot slot = (Slot)this.inventorySlots.get(par2);
+	Slot slot = this.inventorySlots.get(par2);
 
 		if (slot != null && slot.getHasStack())
 		{
@@ -101,13 +104,13 @@ public class EntityVillagerContainer extends Container {
 			// item in player's inventory, but not in action bar
 			else if (par2 >= INV_START && par2 < HOTBAR_START)
 			{
-				EntityEquipmentSlot armourSlot = EntityVillager.getSlotForItemStack(itemstack);
-				if(armourSlot != null) 
+				EntityEquipmentSlot armourSlot = EntityLiving.getSlotForItemStack(itemstack);
+				if(armourSlot != null)
 				{
 					return this.putStackInEquip(armourSlot, itemstack1);
 				}
 				// place in action bar
-				else if (!this.mergeItemStack(itemstack1, 6, VIL_INV_END + 1, false))	
+				else if (!this.mergeItemStack(itemstack1, 6, VIL_INV_END + 1, false))
 				{
 					return ItemStack.EMPTY;
 				}
@@ -115,8 +118,8 @@ public class EntityVillagerContainer extends Container {
 			// item in action bar - place in player inventory
 			else if (par2 >= HOTBAR_START && par2 < HOTBAR_END + 1)
 			{
-				EntityEquipmentSlot armourSlot = EntityVillager.getSlotForItemStack(itemstack);
-				if(armourSlot != null) 
+				EntityEquipmentSlot armourSlot = EntityLiving.getSlotForItemStack(itemstack);
+				if(armourSlot != null)
 				{
 					return this.putStackInEquip(armourSlot, itemstack1);
 				}
@@ -133,7 +136,7 @@ public class EntityVillagerContainer extends Container {
 			{
 				slot.onSlotChanged();
 			}
-	
+
 			if (itemstack1.getCount() == itemstack.getCount())
 			{
 				return ItemStack.EMPTY;
@@ -146,7 +149,7 @@ public class EntityVillagerContainer extends Container {
 		ItemStack villStack = this.villagerHands.getStackInSlot(armourSlot);
 
 		if(!villStack.isEmpty() ||
-				(armourSlot.equals(EntityEquipmentSlot.MAINHAND) && 
+				(armourSlot.equals(EntityEquipmentSlot.MAINHAND) &&
 						itemstack1.getItem().getAttributeModifiers(armourSlot, villStack).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()).size() == 0))
 		{
 			if (!this.mergeItemStack(itemstack1, VIL_INV_START, VIL_INV_END + 1, false))
@@ -159,14 +162,14 @@ public class EntityVillagerContainer extends Container {
 		{
 			return itemstack1;
 		}
-		else 
+		else
 		{
 			return ItemStack.EMPTY;
 		}
 	}
 
 	private boolean setEquipmentSlot(EntityEquipmentSlot armourSlot, ItemStack itemstack1) {
-		switch(armourSlot) 
+		switch(armourSlot)
 		{
 		case MAINHAND:
 			return this.mergeItemStack(itemstack1, 4, 5, false);
@@ -185,11 +188,11 @@ public class EntityVillagerContainer extends Container {
 	}
 
 	@Override
-	public boolean canInteractWith(EntityPlayer playerIn) 
+	public boolean canInteractWith(EntityPlayer playerIn)
 	{
 		return true;
 	}
-	
+
 	@Override
 	public void onContainerClosed(EntityPlayer playerIn)
 	{

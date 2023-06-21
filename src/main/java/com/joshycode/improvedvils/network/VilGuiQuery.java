@@ -1,6 +1,7 @@
 package com.joshycode.improvedvils.network;
 
-import com.joshycode.improvedvils.ServerProxy;
+import com.joshycode.improvedvils.ImprovedVils;
+import com.joshycode.improvedvils.handler.VilPlayerDealData;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -10,22 +11,22 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 public class VilGuiQuery implements IMessage {
 
 	private int villagerId;
-	
+
 	public VilGuiQuery() {}
-	
-	public VilGuiQuery(int villagerId) 
+
+	public VilGuiQuery(int villagerId)
 	{
 		this.villagerId = villagerId;
 	}
-	
+
 	@Override
-	public void fromBytes(ByteBuf buf) 
+	public void fromBytes(ByteBuf buf)
 	{
 		this.villagerId = buf.readInt();
 	}
 
 	@Override
-	public void toBytes(ByteBuf buf) 
+	public void toBytes(ByteBuf buf)
 	{
 		buf.writeInt(this.villagerId);
 	}
@@ -34,7 +35,7 @@ public class VilGuiQuery implements IMessage {
 
 		@Override
 		public IMessage onMessage(VilGuiQuery message, MessageContext ctx) {
-			ServerProxy.openVillagerGUI(ctx.getServerHandler().player, message.villagerId, ctx.getServerHandler().player.getServerWorld());
+			ImprovedVils.proxy.getListener(ctx).addScheduledTask(new VilPlayerDealData(message.villagerId, ImprovedVils.proxy.getPlayerEntity(ctx), ImprovedVils.proxy.getWorld(ctx)));
 			return null;
 		}
 	}

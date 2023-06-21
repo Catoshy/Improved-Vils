@@ -6,13 +6,13 @@ import net.minecraftforge.fml.common.eventhandler.Event;
 public class ChildGrowEvent extends Event {
 
 	private final EntityAgeable entity;
-	
-	public ChildGrowEvent(EntityAgeable entity) 
+
+	public ChildGrowEvent(EntityAgeable entity)
 	{
 		this.entity = entity;
 	}
-	
-	public EntityAgeable getEntity() 
+
+	public EntityAgeable getEntity()
 	{
 		return entity;
 	}

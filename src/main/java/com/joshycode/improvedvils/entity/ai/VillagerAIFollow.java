@@ -37,13 +37,12 @@ public class VillagerAIFollow extends EntityAIBase {
         this.setMutexBits(3);
     }
 
-    public boolean shouldExecute()
+    @Override
+	public boolean shouldExecute()
     {
-    	if(VilMethods.getHungry(this.villager))
+    	if(VilMethods.getHungry(this.villager) || !VilMethods.getFollowing(this.villager))
     		return false;
-    	if(!VilMethods.getFollowing(this.villager))
-    		return false;
-        List<EntityPlayer> list = this.villager.world.<EntityPlayer>getEntitiesWithinAABB(EntityPlayer.class, this.villager.getEntityBoundingBox().grow((double)this.areaSize), this.followPredicate);
+        List<EntityPlayer> list = this.villager.world.<EntityPlayer>getEntitiesWithinAABB(EntityPlayer.class, this.villager.getEntityBoundingBox().grow(this.areaSize), this.followPredicate);
 
         if (!list.isEmpty())
         {
@@ -60,30 +59,34 @@ public class VillagerAIFollow extends EntityAIBase {
         return false;
     }
 
-    public boolean shouldContinueExecuting()
+    @Override
+	public boolean shouldContinueExecuting()
     {
-        return this.followingPlayer != null && !this.navigation.noPath() && this.villager.getDistanceSq(this.followingPlayer) > (double)(this.stopDistance * this.stopDistance) && !VilMethods.getHungry(this.villager);
+        return this.followingPlayer != null && !this.navigation.noPath() && this.villager.getDistanceSq(this.followingPlayer) > this.stopDistance * this.stopDistance && !VilMethods.getHungry(this.villager);
     }
 
-    public void startExecuting()
+    @Override
+	public void startExecuting()
     {
         this.timeToRecalcPath = 0;
         this.oldWaterCost = this.villager.getPathPriority(PathNodeType.WATER);
         this.villager.setPathPriority(PathNodeType.WATER, 0.0F);
     }
 
-    public void resetTask()
+    @Override
+	public void resetTask()
     {
         this.followingPlayer = null;
         this.navigation.clearPath();
         this.villager.setPathPriority(PathNodeType.WATER, this.oldWaterCost);
     }
 
-    public void updateTask()
+    @Override
+	public void updateTask()
     {
         if (this.followingPlayer != null && !this.villager.getLeashed())
         {
-            this.villager.getLookHelper().setLookPositionWithEntity(this.followingPlayer, 10.0F, (float)this.villager.getVerticalFaceSpeed());
+            this.villager.getLookHelper().setLookPositionWithEntity(this.followingPlayer, 10.0F, this.villager.getVerticalFaceSpeed());
 
             if (--this.timeToRecalcPath <= 0)
             {
@@ -93,7 +96,7 @@ public class VillagerAIFollow extends EntityAIBase {
                 double d2 = this.villager.posZ - this.followingPlayer.posZ;
                 double d3 = d0 * d0 + d1 * d1 + d2 * d2;
 
-                if (d3 > (double)(this.stopDistance * this.stopDistance))
+                if (d3 > this.stopDistance * this.stopDistance)
                 {
                     this.navigation.tryMoveToEntityLiving(this.followingPlayer, this.speedModifier);
                 }
@@ -102,7 +105,7 @@ public class VillagerAIFollow extends EntityAIBase {
                     this.navigation.clearPath();
                     Vec3d lookVector = this.followingPlayer.getLookVec();
 
-                    if (d3 <= (double)this.stopDistance || lookVector.x == this.villager.posX && lookVector.y == this.villager.posY && lookVector.z == this.villager.posZ)
+                    if (d3 <= this.stopDistance || lookVector.x == this.villager.posX && lookVector.y == this.villager.posY && lookVector.z == this.villager.posZ)
                     {
                         double d4 = this.followingPlayer.posX - this.villager.posX;
                         double d5 = this.followingPlayer.posZ - this.villager.posZ;
@@ -112,15 +115,15 @@ public class VillagerAIFollow extends EntityAIBase {
             }
         }
     }
-    
+
     protected class VilFollowPredicate<T extends EntityPlayer> implements Predicate<T> {
 
     	EntityVillager villager;
-    	
+
     	protected VilFollowPredicate(EntityVillager villager) {
     		this.villager = villager;
     	}
-    	
+
 		@Override
 		public boolean apply(T input) {
 			UUID id = UUID.randomUUID();
@@ -132,6 +135,6 @@ public class VillagerAIFollow extends EntityAIBase {
 			}
 			return false;
 		}
-    	
+
     }
 }

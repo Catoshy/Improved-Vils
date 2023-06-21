@@ -9,6 +9,7 @@ import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.EventHandlerVil;
 import com.joshycode.improvedvils.handler.GraveStoneCompHandler;
 
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -29,28 +30,36 @@ public class ImprovedVils {
 
 	@Instance
 	public static ImprovedVils instance = new ImprovedVils();
-	@SidedProxy(clientSide = "com.joshycode.improvedvils.ClientProxy", serverSide = "com.joshycode.improvedvils.ServerProxy")
+	@SidedProxy(clientSide = "com.joshycode.improvedvils.ClientProxy", serverSide = "com.joshycode.improvedvils.CommonProxy")
 	public static CommonProxy proxy;
 
 	@EventHandler
-	public void onCommonSetup(FMLPreInitializationEvent event) throws IOException 
+	public void onCommonSetup(FMLPreInitializationEvent event) throws IOException
 	{
 		MinecraftForge.EVENT_BUS.register(new CapabilityHandler());
 		MinecraftForge.EVENT_BUS.register(new EventHandlerVil());
 		MinecraftForge.EVENT_BUS.register(proxy);
-		if(Loader.isModLoaded("openblocks"))	
+		if(Loader.isModLoaded("openblocks"))
 			MinecraftForge.EVENT_BUS.register(new GraveStoneCompHandler());
 		proxy.preInit();
 	}
-	
+
 	@EventHandler
-	public void init(FMLInitializationEvent e) {}
-	
+	public void init(FMLInitializationEvent e) 
+	{
+		proxy.init();
+	}
+
 	@EventHandler
-	public void postInit(FMLPostInitializationEvent e) throws IOException 
+	public void postInit(FMLPostInitializationEvent e) throws IOException
 	{
 		proxy.postInit();
 	}
-	
-	
+
+	public static ResourceLocation location(String string) 
+	{
+		return new ResourceLocation(MODID, string);
+	}
+
+
 }

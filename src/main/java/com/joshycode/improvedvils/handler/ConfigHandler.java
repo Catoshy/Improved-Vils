@@ -5,20 +5,28 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
+import javax.annotation.Nullable;
+
+import org.jline.utils.Log;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.CommonProxy.LoadState;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry;
+import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.BallisticData;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.RangeAttackType;
+import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.WeaponBrooksData;
 
+import net.minecraft.entity.monster.EntityEnderman;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.init.Items;
@@ -30,14 +38,15 @@ import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
-public class ConfigHandlerVil {
-	
+public class ConfigHandler {
+
 	public static Configuration config;
-	
-	//public static boolean villagerGreifing; 
+
+	//public static boolean villagerGreifing;
 	public static boolean whiteListMobs;
-	public static Multimap<String, RangeAttackEntry> configuredGuns = ArrayListMultimap.create();
+	public static Map<WeaponBrooksData, ArrayList<RangeAttackEntry>> configuredGuns = new HashMap<WeaponBrooksData, ArrayList<RangeAttackEntry>>();
 	public static String[] attackableMobs;
+	public static String[] rangeAttackBlacklist;
 	public static float villagerDeBuffMelee;
 	public static float villagersPerDoor;
 	public static float villagerHealth;
@@ -50,19 +59,24 @@ public class ConfigHandlerVil {
 	public static float dailyBread;
 	public static float collectFoodThreshold;
 	public static boolean openBlocksLoaded = false;
-	
+	public static boolean debug = false;
+	public static boolean useReliquary;
+	public static boolean useReforged;
+
 	public static void load(com.joshycode.improvedvils.CommonProxy.LoadState postinit) throws IOException {
-		if(config == null) 
+		if(config == null)
 		{
 			config = new Configuration(new File(Loader.instance().getConfigDir(), "improvedvils/main.cfg"));
 			config.load();
 		}
 		ConfigCategory general = config.getCategory("general");
 		general.setLanguageKey("improvedvils.general");
-		whiteListMobs = config.getBoolean("whitelist only", "general", false, "Set to true to have Villagers only attack whitelisted Mobs, "
+		whiteListMobs = config.getBoolean("Whitelist Only", "general", false, "Set to true to have Villagers only attack whitelisted Mobs, "
 				+ "otherwise Villagers will attack all instances of \"EntityMob\" + any mobs listed in whitelist");
-		attackableMobs = config.getStringList("mob whitelist", "general", new String[]{EntityRegistry.getEntry(EntitySlime.class).getRegistryName().toString()}, "use the forge-registered name of the mob, this can generally "
+		attackableMobs = config.getStringList("Mob Whitelist", "general", new String[]{EntityRegistry.getEntry(EntitySlime.class).getRegistryName().toString()}, "Use the forge-registered name of the mob, this can generally "
 				+ "be found in the entity registring method for the applicable mod");
+		rangeAttackBlacklist = config.getStringList("Ranged Attack Blacklist", "general", new String[]{EntityRegistry.getEntry(EntityEnderman.class).getRegistryName().toString()}, "Entities in this list will not be"
+				+ " attacked with ranged weapons, generally the Enderman, and will instead be attacked by melee (if the weapon is also configured for melee)");
 		villagerDeBuffMelee = config.getFloat("VillagerDe-BuffMelee", "general", .75F, .25F, 1.0F, "How much of a fraction of damage an item would cause if held by player will be caused by villager");
 		villagersPerDoor = config.getFloat("Villagers per door", "general", 1, .33f, 4, "Villagers will increase population size (given they are well fed) to a maximum of \"this number\" x \"# of village doors\"");
 		villagerHealth = config.getFloat("Villager health", "general", 20f, 20f, 60f, "Base health of villager");
@@ -74,19 +88,24 @@ public class ConfigHandlerVil {
 		commandDist = config.getFloat("Command Distance", "general", 250f, 0f, 300f, "maximum distance in blocks a ray trace will go when right click the baton to order a villager movement");
 		dailyBread = config.getFloat("Daily Bread", "general", 3f, 1f, 20f, "how much food saturation a villager will consume as measured in \"bread per day\" while drafted");
 		collectFoodThreshold = config.getFloat("Food Refill Threshold", "general", 32f, 1f, 256f, "how far the food saturation of a villager will decrease before villager goes to refill inventory at food store");
+		debug = config.getBoolean("Debug", "general", false, "more Log info");
+		
 		if(postinit == LoadState.SYNC || postinit == LoadState.POSTINIT)
 		{
 			readEntryJson();
-			if(!whiteListMobs) 
+			if(!whiteListMobs)
 			{
 				CommonProxy.TARGETS.add(EntityMob.class);
 			}
 			for(String s : attackableMobs)
 				CommonProxy.TARGETS.add(ForgeRegistries.ENTITIES.getValue(new ResourceLocation(s)).getEntityClass());
-
-			for(ModContainer s : Loader.instance().getModList()) 
+			
+			for(String s : rangeAttackBlacklist)
+				CommonProxy.RANGE_BLACKLIST.add(ForgeRegistries.ENTITIES.getValue(new ResourceLocation(s)).getEntityClass());
+			
+			for(ModContainer s : Loader.instance().getModList())
 			{
-				if(s.getModId() == "openblocks") 
+				if(s.getModId() == "openblocks")
 				{
 					openBlocksLoaded = true;
 				}
@@ -94,33 +113,31 @@ public class ConfigHandlerVil {
 			config.save();
 		}
 	}
-	
-	public static void readEntryJson() throws IOException 
+
+	public static void readEntryJson() throws IOException
 	{
-		Gson gson = new GsonBuilder().create();
+		Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
 		File dir = new File(Loader.instance().getConfigDir(), "improvedvils/rangedAttackEntries/");
 		File[] directoryListing = dir.listFiles();
-		if (directoryListing != null) 
+		if (directoryListing != null)
 		{
 			boolean flag = false;
-			for (File child : directoryListing) 
+			for (File child : directoryListing)
 			{
-				if(!flag && child.getName().equals("bowBasic.json")) 
+				if(!flag && child.getName().equals("gunConfigFile.json"))
 				{
 					flag = true;
-				}
-				if(child.getName().endsWith("json")) 
-				{
 					JsonReader jsonReader = new JsonReader(new FileReader(child));
-					RangeAttackEntry entry = gson.fromJson(jsonReader, RangeAttackEntry.class);
-					ConfigHandlerVil.configuredGuns.put(entry.getHandItem(), entry);
+					Type type = new TypeToken<Map<WeaponBrooksData, ArrayList<RangeAttackEntry>>>(){}.getType();
+					ConfigHandler.configuredGuns = gson.fromJson(jsonReader, type);
+					Log.info("Json read output; %s", configuredGuns);
 				}
 			}
-			if(!flag) 
+			if(!flag)
 			{
 				generateDefaultJson(gson);
 			}
-		} 
+		}
 		else
 		{
 			Files.createDirectory(dir.toPath());
@@ -128,16 +145,32 @@ public class ConfigHandlerVil {
 		}
 	}
 
-	public static void generateDefaultJson(Gson  gson) throws IOException 
+	public static void generateDefaultJson(Gson  gson) throws IOException
 	{
-		Map<String, Integer> bow = new HashMap();
-		bow.put(Items.ARROW.getUnlocalizedName(), 1);
-		RangeAttackEntry entry =  new RangeAttackEntry(Items.BOW.getUnlocalizedName(), 0, 100, 0, 1, RangeAttackType.BOW, bow);
-		try(Writer bowBasic = new FileWriter
-				(new File(Loader.instance().getConfigDir(), "improvedvils/rangedAttackEntries/bowBasic.json"))) {
-			gson.toJson(entry, bowBasic);
-			bowBasic.close();
-			configuredGuns.put(entry.getHandItem(), entry);
+		Map<String, Integer> bowConsumables = new HashMap<String, Integer>();
+		bowConsumables.put(Items.ARROW.getUnlocalizedName(), 1);
+		
+		ArrayList<RangeAttackEntry> list = new ArrayList<RangeAttackEntry>();
+		list.add(new RangeAttackEntry(RangeAttackType.BOW, bowConsumables, new BallisticData(0, 0, 0, 0, 0)));
+		
+		configuredGuns.put(new WeaponBrooksData(Items.BOW.getUnlocalizedName(), 60, 0, 0, 0, false),
+				list);
+		
+		try(Writer gunConfigFile = new FileWriter
+				(new File(Loader.instance().getConfigDir(), "improvedvils/rangedAttackEntries/gunConfigFile.json"))) {
+			gson.toJson(configuredGuns, gunConfigFile);
+			gunConfigFile.close();
 		}
+	}
+
+	@Nullable
+	public static WeaponBrooksData weaponFromItemName(String s) 
+	{
+		for(WeaponBrooksData data : configuredGuns.keySet())
+		{
+			if(data.itemUnlocalizedName.equals(s))
+				return data;
+		}
+		return null;
 	}
 }

@@ -9,13 +9,15 @@ import net.minecraft.scoreboard.Team;
 import net.minecraftforge.common.util.INBTSerializable;
 
 public interface IVillageCapability extends INBTSerializable<NBTTagCompound> {
-	
+
 	public UUID getUUID();
 	public void setUUID(UUID id);
 	public double getPlayerMeanReputation(UUID playerId);
 	public void setMeanPlayerReputation(UUID playerId, double reputation);
 	public int getTeamReputation(Team team);
 	public int getCurrentTeamReputation();
+	public void setLastTeamDealing(int time);
+	public int lastTeamDealing();
 	@Nullable
 	public String getTeam();
 	public void setTeam(@Nullable Team teamName);

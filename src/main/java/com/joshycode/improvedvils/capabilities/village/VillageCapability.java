@@ -14,32 +14,38 @@ import net.minecraft.scoreboard.Team;
 public class VillageCapability implements IVillageCapability{
 
 	public static final String VILLAGE_NBT_KEY = "improved-vils:village";
-	
+
 	private UUID id;
 	private HashMap<String, Integer> teamRepuatations;
 	private HashMap<UUID, Double> playerRepuationMeans;
 	private String currentTeam;
-	
-	public VillageCapability() 
-	{ 
-		this.teamRepuatations = new HashMap(); 
-		this.playerRepuationMeans = new HashMap();
+
+	private int lastTeamTime;
+
+	public VillageCapability()
+	{
+		this.teamRepuatations = new HashMap<>();
+		this.playerRepuationMeans = new HashMap<>();
 	}
-	
+
 	@Override
-	public NBTTagCompound serializeNBT() 
+	public NBTTagCompound serializeNBT()
 	{
 		final NBTTagCompound nbt = new NBTTagCompound();
+
 		nbt.setString(VILLAGE_NBT_KEY + "ID", this.id.toString());
+		nbt.setInteger(VILLAGE_NBT_KEY + "LT", this.lastTeamTime);
+
 		ByteArrayOutputStream teamReputations = new ByteArrayOutputStream();
 		ByteArrayOutputStream playerReputationMeans = new ByteArrayOutputStream();
-		try 
+
+		try
 		{
 			ObjectOutputStream oos = new ObjectOutputStream(teamReputations);
 			oos.writeObject(this.teamRepuatations);
 			oos.close();
 			nbt.setByteArray(VILLAGE_NBT_KEY + "TR", teamReputations.toByteArray());
-			
+
 			oos = new ObjectOutputStream(playerReputationMeans);
 			oos.writeObject(this.playerRepuationMeans);
 			oos.close();
@@ -49,25 +55,37 @@ public class VillageCapability implements IVillageCapability{
 	}
 
 	@Override
-	public void deserializeNBT(NBTTagCompound nbt) 
+	public void deserializeNBT(NBTTagCompound nbt)
 	{
+		this.lastTeamTime = nbt.getInteger(VILLAGE_NBT_KEY + "LT");
 		String stringId = nbt.getString(VILLAGE_NBT_KEY + "ID");
-		this.id = UUID.fromString(stringId);
+
+		if(stringId != null)
+			this.id = UUID.fromString(stringId);
+
 		ObjectInputStream ois;
-		try 
+		try
 		{
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(VILLAGE_NBT_KEY + "TR")));
 			this.teamRepuatations = (HashMap<String, Integer>) ois.readObject();
 			ois.close();
-			
+
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(VILLAGE_NBT_KEY + "PR")));
 			this.playerRepuationMeans = (HashMap<UUID, Double>) ois.readObject();
 			ois.close();
 		} catch (IOException | ClassNotFoundException e) { e.printStackTrace(); }
+
+		if(this.teamRepuatations == null) {
+			this.teamRepuatations = new  HashMap<>();
+		}
+		if(this.playerRepuationMeans == null) {
+			this.playerRepuationMeans = new  HashMap<>();
+		}
+
 	}
 
 	@Override
-	public UUID getUUID() 
+	public UUID getUUID()
 	{
 		return this.id;
 	}
@@ -76,15 +94,15 @@ public class VillageCapability implements IVillageCapability{
 	 * Should only be called once - during attach event!
 	 */
 	@Override
-	public void setUUID(UUID id) 
+	public void setUUID(UUID id)
 	{
 		this.id = id;
 	}
 
 	@Override
-	public int getTeamReputation(Team team) 
+	public int getTeamReputation(Team team)
 	{
-		if(this.teamRepuatations.containsKey(team.getName()))
+		if(team != null && this.teamRepuatations.containsKey(team.getName()))
 		{
 			return this.teamRepuatations.get(team.getName());
 		}
@@ -92,7 +110,7 @@ public class VillageCapability implements IVillageCapability{
 	}
 
 	@Override
-	public int getCurrentTeamReputation() 
+	public int getCurrentTeamReputation()
 	{
 		if(this.currentTeam != null && this.teamRepuatations.containsKey(this.currentTeam))
 		{
@@ -102,13 +120,13 @@ public class VillageCapability implements IVillageCapability{
 	}
 
 	@Override
-	public String getTeam() 
+	public String getTeam()
 	{
 		return this.currentTeam;
 	}
 
 	@Override
-	public void setTeam(Team team) 
+	public void setTeam(Team team)
 	{
 		this.currentTeam = team.getName();
 	}
@@ -128,7 +146,7 @@ public class VillageCapability implements IVillageCapability{
 	}
 
 	@Override
-	public void setTeamReputation(Team team, int reputation) 
+	public void setTeamReputation(Team team, int reputation)
 	{
 		this.teamRepuatations.put(team.getName(), reputation);
 	}
@@ -141,5 +159,15 @@ public class VillageCapability implements IVillageCapability{
 	@Override
 	public void setMeanPlayerReputation(UUID playerId, double reputation) {
 		this.playerRepuationMeans.put(playerId, reputation);
+	}
+
+	@Override
+	public void setLastTeamDealing(int time) {
+		this.lastTeamTime = time;
+	}
+
+	@Override
+	public int lastTeamDealing() {
+		return this.lastTeamTime;
 	}
 }

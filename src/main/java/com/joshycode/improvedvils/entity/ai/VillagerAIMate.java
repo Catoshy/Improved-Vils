@@ -1,7 +1,7 @@
 package com.joshycode.improvedvils.entity.ai;
 
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.handler.ConfigHandlerVil;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.Entity;
@@ -28,7 +28,8 @@ public class VillagerAIMate extends EntityAIBase
         this.setMutexBits(3);
     }
 
-    public boolean shouldExecute()
+    @Override
+	public boolean shouldExecute()
     {
         if (this.villager.getGrowingAge() != 0)
         {
@@ -37,8 +38,8 @@ public class VillagerAIMate extends EntityAIBase
         else if (this.villager.getRNG().nextInt(500) != 0)
         {
             return false;
-        } 
-        else if (InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0) 
+        }
+        else if (InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0)
         {
         	return false;
         }
@@ -71,25 +72,29 @@ public class VillagerAIMate extends EntityAIBase
         }
     }
 
-    public void startExecuting()
+    @Override
+	public void startExecuting()
     {
         this.matingTimeout = 300;
         this.villager.setMating(true);
     }
 
-    public void resetTask()
+    @Override
+	public void resetTask()
     {
         this.village = null;
         this.mate = null;
         this.villager.setMating(false);
     }
 
-    public boolean shouldContinueExecuting()
+    @Override
+	public boolean shouldContinueExecuting()
     {
         return this.matingTimeout >= 0 && this.checkSufficientDoorsPresentForNewVillager() && this.villager.getGrowingAge() == 0 && this.villager.getIsWillingToMate(false);
     }
 
-    public void updateTask()
+    @Override
+	public void updateTask()
     {
         --this.matingTimeout;
         this.villager.getLookHelper().setLookPositionWithEntity(this.mate, 10.0F, 30.0F);
@@ -108,33 +113,33 @@ public class VillagerAIMate extends EntityAIBase
             this.world.setEntityState(this.villager, (byte)12);
         }
     }
-    
+
     private boolean hasEnoughSaturationToBreed()
     {
     	return InventoryUtil.getFoodSaturation(this.villager.getVillagerInventory()) > 4.8f;
     }
-    
+
     private boolean consumeBreedingMaterials()
     {
     	float runningTotal = 4.8f;
-    	
-    	for(int i = 0; i < this.villager.getVillagerInventory().getSizeInventory(); i++) 
+
+    	for(int i = 0; i < this.villager.getVillagerInventory().getSizeInventory(); i++)
     	{
     		ItemStack stack = this.villager.getVillagerInventory().getStackInSlot(i);
-    		
+
     		if(!(stack.getItem() instanceof ItemFood))
     			continue;
-    		
-    		if(runningTotal > 0) 
+
+    		if(runningTotal > 0)
     		{
     			float saturation = ((ItemFood)stack.getItem()).getSaturationModifier(stack);
-    			if(stack.getCount() > Math.ceil(runningTotal / saturation)) 
+    			if(stack.getCount() > Math.ceil(runningTotal / saturation))
     			{
     				int neededCount = (int) Math.ceil(runningTotal / saturation);
     				this.villager.getVillagerInventory().decrStackSize(i, neededCount);
     				runningTotal -= neededCount * saturation;
     			}
-    			else 
+    			else
     			{
     				runningTotal -= stack.getCount() * saturation;
     				this.villager.getVillagerInventory().decrStackSize(i, stack.getCount());
@@ -152,7 +157,7 @@ public class VillagerAIMate extends EntityAIBase
         }
         else
         {
-            int i = (int)((double)((float)this.village.getNumVillageDoors()) * ConfigHandlerVil.villagersPerDoor);
+            int i = (int)((double)((float)this.village.getNumVillageDoors()) * ConfigHandler.villagersPerDoor);
             return this.village.getNumVillagers() < i;
         }
     }

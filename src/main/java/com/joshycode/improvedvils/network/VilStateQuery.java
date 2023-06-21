@@ -1,6 +1,6 @@
 package com.joshycode.improvedvils.network;
 
-import com.joshycode.improvedvils.ServerProxy;
+import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -13,14 +13,14 @@ public class VilStateQuery implements IMessage {
 
 	private boolean isClosed;
 	private int villagerId;
-	
+
 	public VilStateQuery() { villagerId = 0; }
-	
+
 	public VilStateQuery(int villagerId)
 	{
 		this.villagerId = villagerId;
 	}
-	
+
 	public VilStateQuery(int vilId, boolean b) {
 		this(vilId);
 		this.isClosed = b;
@@ -44,7 +44,7 @@ public class VilStateQuery implements IMessage {
 		public IMessage onMessage(VilStateQuery message, MessageContext ctx) {
 			EntityPlayerMP player = ctx.getServerHandler().player;
 			WorldServer world = ctx.getServerHandler().player.getServerWorld();
-			return ServerProxy.getUpdateGuiForClient(world.getEntityByID(message.villagerId), player, message.isClosed);	
+			return VillagerPlayerDealMethods.getUpdateGuiForClient(world.getEntityByID(message.villagerId), player, message.isClosed);
 		}
 	}
 }

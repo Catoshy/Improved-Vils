@@ -1,11 +1,9 @@
 package com.joshycode.improvedvils.network;
 
-import java.util.UUID;
-
-import com.joshycode.improvedvils.ServerProxy;
+import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.entity.ai.VillagerAIGuard;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
+import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
@@ -21,18 +19,18 @@ public class VilGuardPacket extends BlockPosPacket implements IMessage {
 
 	int id;
 	boolean guardState;
-	
+
 	public VilGuardPacket() {}
-	
-	public VilGuardPacket(BlockPos pos, int entityId, boolean success) 
+
+	public VilGuardPacket(BlockPos pos, int entityId, boolean success)
 	{
 		super(pos);
 		this.id = entityId;
 		this.guardState = success;
 	}
-	
+
 	@Override
-	public void toBytes(ByteBuf buf) 
+	public void toBytes(ByteBuf buf)
 	{
 		super.toBytes(buf);
 		buf.writeBoolean(this.guardState);
@@ -40,38 +38,42 @@ public class VilGuardPacket extends BlockPosPacket implements IMessage {
 	}
 
 	@Override
-	public void fromBytes(ByteBuf buf) 
+	public void fromBytes(ByteBuf buf)
 	{
 		super.fromBytes(buf);
 		this.guardState = buf.readBoolean();
 		this.id = buf.readInt();
 	}
 
-	public static class ServerHandler implements IMessageHandler<VilGuardPacket, IMessage> 
+	public static class ServerHandler implements IMessageHandler<VilGuardPacket, IMessage>
 	{
 
 		@Override
-		public IMessage onMessage(VilGuardPacket message, MessageContext ctx) 
+		public IMessage onMessage(VilGuardPacket message, MessageContext ctx)
 		{
-			EntityPlayerMP player = ctx.getServerHandler().player;
-			WorldServer world = ctx.getServerHandler().player.getServerWorld();
-			Entity e = world.getEntityByID(message.id);
-			
-			if(e instanceof EntityVillager) 
+			ImprovedVils.proxy.getListener(ctx).addScheduledTask(() ->
 			{
-				if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e))) 
+				EntityPlayerMP player = ctx.getServerHandler().player;
+				WorldServer world = ctx.getServerHandler().player.getServerWorld();
+				Entity e = world.getEntityByID(message.id);
+	
+				if(e instanceof EntityVillager)
 				{
-					VilMethods.setFollowState((EntityVillager) e, false);
-					VilMethods.setGuardBlock((EntityVillager) e, e.getPosition());
-					
-					((EntityVillager) e).tasks.taskEntries.forEach(t -> {
-						if(t.action instanceof VillagerAIGuard) {
-							((VillagerAIGuard) t.action).returnState();
-						}
-					});
+					if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
+					{
+						VilMethods.setFollowState((EntityVillager) e, false);
+						VilMethods.setGuardBlock((EntityVillager) e, e.getPosition());
+	
+						((EntityVillager) e).tasks.taskEntries.forEach(t -> {
+							if(t.action instanceof VillagerAIGuard) {
+								((VillagerAIGuard) t.action).returnState();
+							}
+						});
+					}
 				}
-			}
-			return ServerProxy.getUpdateGuiForClient(e, player, false);
+				NetWrapper.NETWORK.sendTo(VillagerPlayerDealMethods.getUpdateGuiForClient(e, player, false), player);
+			});
+			return null;
 		}
 	}
 }

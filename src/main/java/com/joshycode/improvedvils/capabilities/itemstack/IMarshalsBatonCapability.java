@@ -2,7 +2,6 @@ package com.joshycode.improvedvils.capabilities.itemstack;
 
 import java.util.Set;
 import java.util.UUID;
-import java.util.Vector;
 
 import javax.annotation.Nullable;
 
@@ -21,7 +20,6 @@ public interface IMarshalsBatonCapability extends INBTSerializable<NBTTagCompoun
 	@Nullable
 	public BlockPos getPlatoonFoodStore(int company, int platoon2);
 	public int selectedUnit();
-	public void setCompany(int company);
 	public void setPlatoon(int company, int platoon);
 	public void setPlatoonFoodStore(BlockPos pos);
 }

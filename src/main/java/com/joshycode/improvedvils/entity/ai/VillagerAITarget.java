@@ -15,35 +15,30 @@ import net.minecraft.util.math.BlockPos;
 
 public abstract class VillagerAITarget<T extends EntityLivingBase> extends EntityAITarget {
 
-	public VillagerAITarget(EntityCreature creature, boolean checkSight, boolean onlyNearby) 
+	public VillagerAITarget(EntityCreature creature, boolean checkSight, boolean onlyNearby)
 	{
 		super(creature, checkSight, onlyNearby);
 	}
-	
-	public boolean shouldExecute() 
+
+	@Override
+	public boolean shouldExecute()
 	{
-		if(VilMethods.getCommBlockPos((EntityVillager) this.taskOwner) != null)
-			return false;
-		if(VilMethods.isOutsideHomeDist((EntityVillager) this.taskOwner))
-			return false;
-		if(VilMethods.isReturning((EntityVillager) this.taskOwner))
-			return false;
-		if(VilMethods.getMovingIndoors((EntityVillager) this.taskOwner))
+		if((VilMethods.getCommBlockPos((EntityVillager) this.taskOwner) != null) || VilMethods.isOutsideHomeDist((EntityVillager) this.taskOwner) || VilMethods.isReturning((EntityVillager) this.taskOwner) || VilMethods.getMovingIndoors((EntityVillager) this.taskOwner))
 			return false;
 		if(((EntityVillager) this.taskOwner).isMating())
     		return false;
-		if(VilMethods.getFollowing((EntityVillager) this.taskOwner) 
+		if(VilMethods.getFollowing((EntityVillager) this.taskOwner)
 				&& isDistanceTooGreat())
 			return false;
 		BlockPos pos = VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner);
-    	if(pos != null) 
+    	if(pos != null)
     	{
     		double hostDist = this.taskOwner.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
-    		if(VilMethods.isReturning((EntityVillager) this.taskOwner)) 
+    		if(VilMethods.isReturning((EntityVillager) this.taskOwner))
     		{
     			return false;
     		}
-    		if(hostDist > CommonProxy.MAX_GUARD_DIST - 1) 
+    		if(hostDist > CommonProxy.MAX_GUARD_DIST - 1)
     		{
     			this.taskOwner.setAttackTarget(null);
     			return false;
@@ -53,18 +48,18 @@ public abstract class VillagerAITarget<T extends EntityLivingBase> extends Entit
 	}
 
 	@Override
-	public boolean shouldContinueExecuting() 
+	public boolean shouldContinueExecuting()
 	{
 		if(VilMethods.getCommBlockPos((EntityVillager) this.taskOwner) != null || VilMethods.isOutsideHomeDist((EntityVillager) this.taskOwner))
 			return false;
-		if(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null) 
+		if(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null)
 		{
-    		if(VilMethods.isReturning((EntityVillager) this.taskOwner)) 
+    		if(VilMethods.isReturning((EntityVillager) this.taskOwner))
     		{
     			return false;
     		}
     		double hostDist = this.taskOwner.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
-    		if(hostDist > CommonProxy.MAX_GUARD_DIST - 1) 
+    		if(hostDist > CommonProxy.MAX_GUARD_DIST - 1)
     		{
     			this.taskOwner.setAttackTarget(null);
     			return false;
@@ -72,15 +67,15 @@ public abstract class VillagerAITarget<T extends EntityLivingBase> extends Entit
     	}
 		return super.shouldContinueExecuting();
 	}
-	
-	private boolean isDistanceTooGreat() 
+
+	private boolean isDistanceTooGreat()
 	{
-		try 
-		{	
+		try
+		{
 			UUID playerId = VilMethods.getPlayerId((EntityVillager) this.taskOwner);
 			EntityPlayer player = this.taskOwner.getEntityWorld().getPlayerEntityByUUID(playerId);
 			double followRange = this.taskOwner.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
-			if(player.getDistanceSq(this.taskOwner) > (followRange - 2) * (followRange - 2)) 
+			if(player.getDistanceSq(this.taskOwner) > (followRange - 2) * (followRange - 2))
 			{
 				return true;
 			}

@@ -11,12 +11,13 @@ public class VillagerAIAvoidEntity<T extends Entity> extends EntityAIAvoidEntity
 	{
 		super(entityIn, classToAvoidIn, avoidDistanceIn, farSpeedIn, nearSpeedIn);
 	}
-	
-	public boolean shouldExecute() 
+
+	@Override
+	public boolean shouldExecute()
 	{
 		if(!this.entity.getHeldItemMainhand().isEmpty())
 			return false;
-		
+
 		return super.shouldExecute();
 	}
 }

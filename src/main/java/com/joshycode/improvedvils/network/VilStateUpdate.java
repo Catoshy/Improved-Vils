@@ -1,21 +1,9 @@
 package com.joshycode.improvedvils.network;
 
-import java.util.UUID;
-
 import com.joshycode.improvedvils.ClientProxy;
-import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.ServerProxy;
-import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.entity.VillagerInvListener;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
-import com.joshycode.improvedvils.util.InventoryUtil;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -24,10 +12,10 @@ public class VilStateUpdate implements IMessage{
 
 	int guardStateVal, followStateVal, enlistC, enlistP;
 	Vec3i vec;
-	
+
 	public VilStateUpdate() { guardStateVal = 0; followStateVal = 0; enlistC = 0; enlistP = 0; vec = Vec3i.NULL_VECTOR; }
-	
-	public VilStateUpdate(int int1, int int2, int enlistC, int enlistP, Vec3i vec) 
+
+	public VilStateUpdate(int int1, int int2, int enlistC, int enlistP, Vec3i vec)
 	{
 		this.guardStateVal = int1;
 		this.followStateVal = int2;
@@ -35,14 +23,14 @@ public class VilStateUpdate implements IMessage{
 		this.enlistP = enlistP;
 		this.vec = vec;
 	}
-	
-	public VilStateUpdate(int int1, int int2, int enlistC, int enlistP) 
+
+	public VilStateUpdate(int int1, int int2, int enlistC, int enlistP)
 	{
 		this(int1, int2, enlistC, enlistP, Vec3i.NULL_VECTOR);
 	}
 
 	@Override
-	public void toBytes(ByteBuf buf) 
+	public void toBytes(ByteBuf buf)
 	{
 		buf.writeInt(this.guardStateVal);
 		buf.writeInt(this.followStateVal);
@@ -69,7 +57,7 @@ public class VilStateUpdate implements IMessage{
 	public static class ClientHandler implements IMessageHandler<VilStateUpdate, IMessage> {
 
 		@Override
-		public IMessage onMessage(VilStateUpdate message, MessageContext ctx) 
+		public IMessage onMessage(VilStateUpdate message, MessageContext ctx)
 		{
 			 ClientProxy.updateVillagerGuardGUIInfo(message.vec, message.guardStateVal, message.followStateVal, message.enlistC, message.enlistP);
 			 return null;

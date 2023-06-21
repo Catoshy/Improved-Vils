@@ -9,7 +9,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.IInventoryChangedListener;
-import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.text.ITextComponent;
@@ -33,18 +32,18 @@ public class InventoryHands implements IInventory {
         this.slotsCount = 6;
         this.hasOwnName = customName;
 	}
-	
-	public EntityLiving getEntity() 
+
+	public EntityLiving getEntity()
 	{
 		return entity;
 	}
-	
+
     @SideOnly(Side.CLIENT)
     public InventoryHands(EntityLiving e, String string)
     {
         this(e, string, true);
     }
-	
+
     /**
      * Add a listener that will be notified when any item in this inventory is modified.
      */
@@ -57,7 +56,7 @@ public class InventoryHands implements IInventory {
 
         this.changeListeners.add(listener);
     }
-    
+
     /**
      * removes the specified IInvBasic from receiving further change notices
      */
@@ -70,29 +69,29 @@ public class InventoryHands implements IInventory {
      * For tile entities, ensures the chunk containing the tile entity is saved to disk later - the game won't think it
      * hasn't changed and skip it.
      */
-    public void markDirty()
+    @Override
+	public void markDirty()
     {
         if (this.changeListeners != null)
         {
-            for (int i = 0; i < this.changeListeners.size(); ++i)
-            {
-                ((IInventoryChangedListener)this.changeListeners.get(i)).onInventoryChanged(this);
+            for (IInventoryChangedListener element : this.changeListeners) {
+                element.onInventoryChanged(this);
             }
         }
     }
-    
+
 	@Override
-	public String getName() 
+	public String getName()
 	{
 		return this.inventoryTitle;
 	}
 
 	@Override
-	public boolean hasCustomName() 
+	public boolean hasCustomName()
 	{
 		return this.hasOwnName;
 	}
-	
+
     public void setCustomName(String inventoryTitleIn)
     {
         this.hasOwnName = true;
@@ -100,21 +99,21 @@ public class InventoryHands implements IInventory {
     }
 
 	@Override
-	public ITextComponent getDisplayName() 
+	public ITextComponent getDisplayName()
 	{
-		return (ITextComponent)(this.hasCustomName() ? new TextComponentString(this.getName()) : new TextComponentTranslation(this.getName(), new Object[0]));
+		return this.hasCustomName() ? new TextComponentString(this.getName()) : new TextComponentTranslation(this.getName(), new Object[0]);
 	}
 
 	@Override
-	public int getSizeInventory() 
+	public int getSizeInventory()
 	{
 		return this.slotsCount;
 	}
 
 	@Override
-	public boolean isEmpty() 
+	public boolean isEmpty()
 	{
-		/** 
+		/**
 		 * NOT for all tests so that for each slot a result of 0 means slot is empty
 		 * flag is 0
 		 * if any slot is not empty flag will OR to 1
@@ -131,7 +130,7 @@ public class InventoryHands implements IInventory {
 	}
 
 	@Override
-	public ItemStack getStackInSlot(int index) 
+	public ItemStack getStackInSlot(int index)
 	{
 		switch(index)
 		{
@@ -152,13 +151,13 @@ public class InventoryHands implements IInventory {
 	}
 
 	@Override
-	public ItemStack decrStackSize(int index, int count) 
+	public ItemStack decrStackSize(int index, int count)
 	{
 		return index >= 0 && index < 6 && !getStackInSlot(index).isEmpty() && count > 0 ? getStackInSlot(index).splitStack(count) : ItemStack.EMPTY;
 	}
 
 	@Override
-	public ItemStack removeStackFromSlot(int index) 
+	public ItemStack removeStackFromSlot(int index)
 	{
 		ItemStack i = getStackInSlot(index);
 		if(i.isEmpty())
@@ -190,7 +189,7 @@ public class InventoryHands implements IInventory {
 	}
 
 	@Override
-	public void setInventorySlotContents(int index, ItemStack stack) 
+	public void setInventorySlotContents(int index, ItemStack stack)
 	{
 		switch(index)
 		{
@@ -216,13 +215,13 @@ public class InventoryHands implements IInventory {
 	}
 
 	@Override
-	public int getInventoryStackLimit() 
+	public int getInventoryStackLimit()
 	{
 		return 1;
 	}
 
 	@Override
-	public boolean isUsableByPlayer(EntityPlayer player) 
+	public boolean isUsableByPlayer(EntityPlayer player)
 	{
 		return true;
 	}
@@ -234,36 +233,36 @@ public class InventoryHands implements IInventory {
 	public void closeInventory(EntityPlayer player) {}
 
 	@Override
-	public boolean isItemValidForSlot(int index, ItemStack stack) 
+	public boolean isItemValidForSlot(int index, ItemStack stack)
 	{
 		return true;
 	}
 
 	@Override
-	public int getField(int id) 
+	public int getField(int id)
 	{
 		return 0;
 	}
 
 	@Override
-	public void setField(int id, int value) 
+	public void setField(int id, int value)
 	{
 	}
 
 	@Override
-	public int getFieldCount() 
+	public int getFieldCount()
 	{
 		return 0;
 	}
 
 	@Override
-	public void clear() 
+	public void clear()
 	{
 		for(int i = 0; i < 6; i++)
 			setInventorySlotContents(i, ItemStack.EMPTY);
 	}
 
-	public void setEquipmentSlot(EntityEquipmentSlot slot, ItemStack itemstack1) 
+	public void setEquipmentSlot(EntityEquipmentSlot slot, ItemStack itemstack1)
 	{
 		this.entity.setItemStackToSlot(slot, itemstack1);
 	}

@@ -1,10 +1,9 @@
 package com.joshycode.improvedvils.network;
 
-import java.util.UUID;
-
-import com.joshycode.improvedvils.ServerProxy;
+import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
+import com.joshycode.improvedvils.handler.VilPlayerDealData;
+import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
@@ -19,24 +18,24 @@ public class VilFollowPacket implements IMessage {
 
 	int id;
 	boolean followState;
-	
+
 	public VilFollowPacket() { this.id = 0; this.followState = false; }
-	
-	public VilFollowPacket(int id, boolean follow) 
+
+	public VilFollowPacket(int id, boolean follow)
 	{
-		this.id = id; 
+		this.id = id;
 		this.followState = follow;
 	}
-	
+
 	@Override
-	public void toBytes(ByteBuf buf) 
+	public void toBytes(ByteBuf buf)
 	{
 		buf.writeInt(id);
 		buf.writeBoolean(followState);
 	}
 
 	@Override
-	public void fromBytes(ByteBuf buf) 
+	public void fromBytes(ByteBuf buf)
 	{
 		this.id = buf.readInt();
 		this.followState = buf.readBoolean();
@@ -45,28 +44,32 @@ public class VilFollowPacket implements IMessage {
 	public static class Handler implements IMessageHandler<VilFollowPacket, IMessage> {
 
 		@Override
-		public IMessage onMessage(VilFollowPacket message, MessageContext ctx) 
+		public IMessage onMessage(VilFollowPacket message, MessageContext ctx)
 		{
-			EntityPlayerMP player = ctx.getServerHandler().player;
-			WorldServer world = ctx.getServerHandler().player.getServerWorld();
-			Entity e = world.getEntityByID(message.id);
-			
-			if(e instanceof EntityVillager) 
+			ImprovedVils.proxy.getListener(ctx).addScheduledTask(() ->
 			{
-				if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e))) 
+				EntityPlayerMP player = ctx.getServerHandler().player;
+				WorldServer world = ctx.getServerHandler().player.getServerWorld();
+				Entity e = world.getEntityByID(message.id);
+	
+				if(e instanceof EntityVillager)
 				{
-					VilMethods.setGuardBlock((EntityVillager) e, null);
-					if(message.followState) 
+					if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 					{
-						VilMethods.setFollowState((EntityVillager) e, true);
-					} 
-					else
-					{
-						VilMethods.setFollowState((EntityVillager) e, false);
+						VilMethods.setGuardBlock((EntityVillager) e, null);
+						if(message.followState)
+						{
+							VilMethods.setFollowState((EntityVillager) e, true);
+						}
+						else
+						{
+							VilMethods.setFollowState((EntityVillager) e, false);
+						}
 					}
 				}
-			}
-			return ServerProxy.getUpdateGuiForClient(e, player, false);
+				NetWrapper.NETWORK.sendTo(VillagerPlayerDealMethods.getUpdateGuiForClient(e, player, false), player);
+			});
+			return null;
 		}
 	}
 }

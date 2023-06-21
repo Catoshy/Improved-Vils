@@ -1,9 +1,10 @@
-package com.joshycode.improvedvils.entity;
+package com.joshycode.improvedvils.util;
 
 import java.util.UUID;
 
-import com.joshycode.improvedvils.ServerProxy;
-import com.joshycode.improvedvils.network.NetWrapper;
+import org.jline.utils.Log;
+
+import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.inventory.IInventory;
@@ -16,21 +17,24 @@ public class VillagerInvListener implements IInventoryChangedListener {
 	World world;
 	EntityVillager entity;
 	int checkTick;
-	
-	public VillagerInvListener(UUID playerId, EntityVillager entity, World world2) 
+
+	public VillagerInvListener(UUID playerId, EntityVillager entity, World world2)
 	{
 		this.playerId = playerId;
 		this.entity = entity;
 		this.world = world2;
 	}
-	
+
 	@Override
-	public void onInventoryChanged(IInventory invBasic) 
+	public void onInventoryChanged(IInventory invBasic)
 	{
 		if(this.checkTick == this.entity.ticksExisted) return;
 		
+		if(ConfigHandler.debug)
+			Log.info("inventory changed for villager", entity);
+
 		this.checkTick = this.entity.ticksExisted;
-		ServerProxy.updateGuiForClient(entity, this.world.getPlayerEntityByUUID(this.playerId), false);
-		ServerProxy.checkArmourWeaponsAndFood(entity, this.world.getPlayerEntityByUUID(this.playerId));
+		VillagerPlayerDealMethods.updateGuiForClient(entity, this.world.getPlayerEntityByUUID(this.playerId), false);
+		VillagerPlayerDealMethods.checkArmourWeaponsAndFood(entity, this.world.getPlayerEntityByUUID(this.playerId));
 	}
 }

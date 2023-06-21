@@ -9,16 +9,16 @@ public class PathUtil {
 
 	@Nullable
 	public
-	static Vec3d findBlockInDirection(BlockPos start, BlockPos dest) 
+	static Vec3d findBlockInDirection(BlockPos start, BlockPos dest)
 	{
 		int entX = start.getX();
 		int entY = start.getY();
 		int entZ = start.getZ();
-	
+
 		int dX = dest.getX() - entX;
 		int dZ = dest.getZ() - entZ;
-	
-		if(Math.abs(dX) > Math.abs(dZ)) 
+
+		if(Math.abs(dX) > Math.abs(dZ))
 		{
 			double slope = dZ / Math.abs(dX);
 			double runZ = entZ;
@@ -26,8 +26,8 @@ public class PathUtil {
 			int step = 1;
 			if(dX < 0)
 				step = -1;
-			
-			for(int i = 0; i < 32; i++) 
+
+			for(int i = 0; i < 32; i++)
 			{
 				runZ += slope;
 				runX += step;
@@ -38,7 +38,7 @@ public class PathUtil {
 				}
 			}
 		}
-		else 
+		else
 		{
 			double slope = dX / Math.abs(dZ);
 			double runX = entX;
@@ -46,8 +46,8 @@ public class PathUtil {
 			int step = 1;
 			if(dZ < 0)
 				step = -1;
-			
-			for(int i = 0; i < 200; i++) 
+
+			for(int i = 0; i < 200; i++)
 			{
 				runX += slope;
 				runZ += step;

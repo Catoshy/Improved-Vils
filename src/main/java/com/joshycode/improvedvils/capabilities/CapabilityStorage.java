@@ -13,9 +13,9 @@ public class CapabilityStorage<T extends NBTTagCompound, S extends INBTSerializa
 
 	@Override
 	@Nullable
-	public NBTBase writeNBT(Capability<S> capability, S instance, EnumFacing side) 
+	public NBTBase writeNBT(Capability<S> capability, S instance, EnumFacing side)
 	{
-		if(instance instanceof INBTSerializable<?>) 
+		if(instance instanceof INBTSerializable<?>)
 		{
 			return ((INBTSerializable<NBTTagCompound>)instance).serializeNBT(); //renamed and cast from vilcap to more generic type
 		}
@@ -23,15 +23,15 @@ public class CapabilityStorage<T extends NBTTagCompound, S extends INBTSerializa
 	}
 
 	@Override
-	public void readNBT(Capability<S> capability, S instance, EnumFacing side, NBTBase nbt) 
+	public void readNBT(Capability<S> capability, S instance, EnumFacing side, NBTBase nbt)
 	{
-		if(instance instanceof INBTSerializable<?>) 
+		if(instance instanceof INBTSerializable<?>)
 		{
-			if(nbt instanceof NBTTagCompound) 
+			if(nbt instanceof NBTTagCompound)
 			{
 				((INBTSerializable<NBTTagCompound>)instance).deserializeNBT((NBTTagCompound) nbt);
-			} 
-			else 
+			}
+			else
 			{
 				throw new IllegalArgumentException("Cannot deserialize Villager-player relashionship capability from non-NBTTagCompound");
 			}

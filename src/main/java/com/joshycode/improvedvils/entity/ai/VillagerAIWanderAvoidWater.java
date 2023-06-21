@@ -8,33 +8,31 @@ import net.minecraft.util.math.BlockPos;
 
 public class VillagerAIWanderAvoidWater extends EntityAIWanderAvoidWater {
 
-	public VillagerAIWanderAvoidWater(EntityCreature p_i47302_1_, double p_i47302_2_) 
+	public VillagerAIWanderAvoidWater(EntityCreature p_i47302_1_, double p_i47302_2_)
 	{
 		super(p_i47302_1_, p_i47302_2_);
 	}
 
 	@Override
-	public boolean shouldExecute() 
+	public boolean shouldExecute()
 	{
-		if(isReturning())
-			return false;
-		if(getCommBlock() != null)
+		if(isReturning() || (getCommBlock() != null))
 			return false;
 		return super.shouldExecute();
 	}
 
-	private BlockPos getCommBlock() 
+	private BlockPos getCommBlock()
 	{
-		try 
+		try
 		{
 			return this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getCommBlockPos();
 		} catch (NullPointerException e) {}
 		return null;
 	}
 
-	private boolean isReturning() 
+	private boolean isReturning()
 	{
-		try 
+		try
 		{
 			return this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isReturning();
 		} catch (NullPointerException e) {}

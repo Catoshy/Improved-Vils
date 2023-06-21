@@ -2,8 +2,6 @@ package com.joshycode.improvedvils;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.UUID;
-import java.util.Vector;
 import java.util.concurrent.Callable;
 
 import com.joshycode.improvedvils.capabilities.CapabilityStorage;
@@ -11,10 +9,15 @@ import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.entity.ImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
+import com.joshycode.improvedvils.capabilities.village.VillageCapability;
+import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.gui.VilGuiHandler;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
-import com.joshycode.improvedvils.handler.ConfigHandlerVil;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.item.ItemMarshalsBaton;
+import com.joshycode.improvedvils.network.BatonSelectData;
+import com.joshycode.improvedvils.network.GunFiredPacket;
+import com.joshycode.improvedvils.network.MarshalKeyEvent;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilCommandPacket;
 import com.joshycode.improvedvils.network.VilEnlistPacket;
@@ -24,66 +27,69 @@ import com.joshycode.improvedvils.network.VilGuardPacket;
 import com.joshycode.improvedvils.network.VilGuiQuery;
 import com.joshycode.improvedvils.network.VilStateQuery;
 import com.joshycode.improvedvils.network.VilStateUpdate;
-import com.joshycode.improvedvils.util.InventoryUtil;
-import com.joshycode.improvedvils.util.Pair;
 
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.util.IThreadListener;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraftforge.fml.common.registry.GameRegistry.ObjectHolder;
 import net.minecraftforge.fml.relauncher.Side;
-/*import techguns.TGSounds;
-import techguns.entities.projectiles.GenericProjectile;
-import techguns.items.guns.GenericGun;
-import techguns.items.guns.IProjectileFactory;
-import techguns.items.guns.ProjectileSelector;
-import techguns.items.guns.ammo.AmmoTypes;*/
 
 @Mod.EventBusSubscriber
 public abstract class CommonProxy {
-	
+
 	@ObjectHolder(ImprovedVils.MODID)
 	public static class ItemHolder {
-		
+
 		@ObjectHolder("draft_writ")
 		public static final Item DRAFT_WRIT = null;
-		
+
 		@ObjectHolder("marshals_baton")
 		public static final ItemMarshalsBaton BATON = null;
-		
+
 	}
-	
+
 	public static final double GUARD_MAX_PATH = 576;
 	public static final int MAX_GUARD_DIST = 256;
 	public static final int GUARD_IGNORE_LIMIT = 4096;
-	
+
 	@SuppressWarnings("rawtypes")
-	public static final HashSet<Class> TARGETS = new HashSet<Class>();
-		
-	public void preInit() throws IOException 
+	public static final HashSet<Class> TARGETS = new HashSet<>();
+	@SuppressWarnings("rawtypes")
+	public static final HashSet<Class> RANGE_BLACKLIST = new HashSet<>();
+
+	public void preInit() throws IOException
 	{
 		NetworkRegistry.INSTANCE.registerGuiHandler(ImprovedVils.instance, new VilGuiHandler());
+		registerEntities();
 		registerCapabilities();
 		registerPackets();
-		ConfigHandlerVil.load(LoadState.PREINIT);
+		ConfigHandler.load(LoadState.PREINIT);
 	}
 	
-	public void postInit() throws IOException 
+	public void registerEntities() 
 	{
-		ConfigHandlerVil.load(LoadState.POSTINIT);
+		EntityRegistry.registerModEntity(ImprovedVils.location("bullet"), EntityBullet.class, "bullet", 1, ImprovedVils.instance, 124, 1, true);
 	}
-	
+
+	public void init() {}
+
+	public void postInit() throws IOException
+	{
+		ConfigHandler.load(LoadState.POSTINIT);
+	}
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
-	public void registerCapabilities() 
+	public void registerCapabilities()
     {
         CapabilityManager.INSTANCE.register(
         		IImprovedVilCapability.class,
@@ -95,7 +101,7 @@ public abstract class CommonProxy {
         			}
         		}
         );
-        
+
         CapabilityManager.INSTANCE.register(
         		IMarshalsBatonCapability.class,
         		new CapabilityStorage(),
@@ -106,9 +112,20 @@ public abstract class CommonProxy {
         			}
         		}
         );
+
+        CapabilityManager.INSTANCE.register(
+        		IVillageCapability.class,
+        		new CapabilityStorage(),
+        		new Callable<IVillageCapability>() {
+        			@Override
+        			public VillageCapability call() throws Exception {
+        				return new VillageCapability();
+        			}
+        		}
+        );
     }
-    
-    public void registerPackets() 
+
+    public void registerPackets()
     {
     	NetWrapper.NETWORK.registerMessage(VilEnlistPacket.ServerHandler.class, VilEnlistPacket.class, 0, Side.SERVER);
     	NetWrapper.NETWORK.registerMessage(VilEnlistPacket.ClientHandler.class, VilEnlistPacket.class, 1, Side.CLIENT);
@@ -119,21 +136,43 @@ public abstract class CommonProxy {
     	NetWrapper.NETWORK.registerMessage(VilFollowPacket.Handler.class, VilFollowPacket.class, 7, Side.SERVER);
     	NetWrapper.NETWORK.registerMessage(VilFoodStorePacket.Handler.class, VilFoodStorePacket.class, 8, Side.SERVER);
     	NetWrapper.NETWORK.registerMessage(VilGuiQuery.Handler.class, VilGuiQuery.class, 9, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(MarshalKeyEvent.Handler.class, MarshalKeyEvent.class, 10, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(BatonSelectData.Handler.class, BatonSelectData.class, 11, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(GunFiredPacket.Handler.class, GunFiredPacket.class, 12, Side.CLIENT);
     }
 
 	@SubscribeEvent
-	public void registerItems(RegistryEvent.Register<Item> e) 
+	public void registerItems(RegistryEvent.Register<Item> e)
 	{
 		e.getRegistry().registerAll(new  Item().setRegistryName("draft_writ")
 				.setUnlocalizedName(ImprovedVils.MODID + ".draft_writ")
 				.setCreativeTab(CreativeTabs.COMBAT),
-				
+
 									new ItemMarshalsBaton().setRegistryName("marshals_baton")
 				.setUnlocalizedName(ImprovedVils.MODID + ".marshals_baton")
 				.setCreativeTab(CreativeTabs.COMBAT));
 	}
-	
+
 	public enum LoadState {
 		PREINIT,  SYNC, POSTINIT
 	}
+
+	public IThreadListener getListener(MessageContext ctx)
+	{
+		return (WorldServer) ctx.getServerHandler().player.world;
+	}
+
+	public EntityPlayer getPlayerEntity(MessageContext ctx) {
+		return ctx.getServerHandler().player;
+	}
+
+	public World getWorld(MessageContext ctx) {
+		return ctx.getServerHandler().player.world;
+	}
+
+	public abstract void setHUDinfo(int platoon);
+
+	public abstract int timeAgoSinceHudInfo();
+
+	public abstract int getSelectedUnit();
 }

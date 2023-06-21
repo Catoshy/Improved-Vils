@@ -13,14 +13,14 @@ public abstract class BlockPosPacket implements IMessage {
 	{
 		this(BlockPos.ORIGIN);
 	}
-	
+
 	public BlockPosPacket(Vec3i pos)
 	{
 		this.pos = new BlockPos(pos);
 	}
-	
+
 	@Override
-	public void fromBytes(ByteBuf buf) 
+	public void fromBytes(ByteBuf buf)
 	{
 		int x, y, z;
 		x = buf.readInt();
@@ -30,7 +30,7 @@ public abstract class BlockPosPacket implements IMessage {
 	}
 
 	@Override
-	public void toBytes(ByteBuf buf) 
+	public void toBytes(ByteBuf buf)
 	{
 		buf.writeInt(this.pos.getX());
 		buf.writeInt(this.pos.getY());

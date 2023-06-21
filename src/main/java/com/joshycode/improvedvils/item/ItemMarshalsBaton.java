@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.joshycode.improvedvils.handler.ConfigHandlerVil;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilCommandPacket;
 import com.joshycode.improvedvils.network.VilFoodStorePacket;
@@ -28,18 +28,18 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class ItemMarshalsBaton extends Item {
 
 	public ItemMarshalsBaton() {}
-	
+
 	@SideOnly(Side.CLIENT)
 	@Override
-	public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand) 
+	public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand)
 	{
 		ItemStack stack = player.getHeldItemMainhand();
-		if(stack.getItem() instanceof ItemMarshalsBaton) 
+		if(stack.getItem() instanceof ItemMarshalsBaton)
 		{
 			Entity entity = Minecraft.getMinecraft().getRenderViewEntity();
-			if(entity != null && Minecraft.getMinecraft() != null) 
+			if(entity != null && Minecraft.getMinecraft() != null)
 			{
-				if(player.isSneaking()) 
+				if(player.isSneaking())
 				{
 					tryFoodStoreTileEntity(entity);
 				}
@@ -47,44 +47,44 @@ public class ItemMarshalsBaton extends Item {
 				{
 					tryCommandVillagerMovement(entity);
 				}
-				return new ActionResult<ItemStack>(EnumActionResult.SUCCESS, stack);
+				return new ActionResult<>(EnumActionResult.SUCCESS, stack);
 			}
 		}
-		return new ActionResult<ItemStack>(EnumActionResult.PASS, stack);
+		return new ActionResult<>(EnumActionResult.PASS, stack);
 	}
-	
-	private void tryCommandVillagerMovement(Entity entity) 
+
+	private void tryCommandVillagerMovement(Entity entity)
 	{
-		double d0 = ConfigHandlerVil.commandDist;
+		double d0 = ConfigHandler.commandDist;
 		RayTraceResult lookingAt = entity.rayTrace(d0, 1.0F);
-		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK) 
+		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK)
 		{
 			BlockPos pos = lookingAt.getBlockPos();
 			NetWrapper.NETWORK.sendToServer(new VilCommandPacket(pos));
 		}
 	}
 
-	private void tryFoodStoreTileEntity(Entity entity) 
+	private void tryFoodStoreTileEntity(Entity entity)
 	{
 		RayTraceResult lookingAt = entity.rayTrace(6.0, 1.0F);
-		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK) 
+		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK)
 		{
 			BlockPos pos = lookingAt.getBlockPos();
 			NetWrapper.NETWORK.sendToServer(new VilFoodStorePacket(pos));
 		}
 	}
 
-	public static synchronized Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world) 
+	public static synchronized Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world)
 	{
 		Set<Entity> applicable = new HashSet();
-		if(world.getLoadedEntityList() != null && world.getLoadedEntityList().size() != 0)	
+		if(world.getLoadedEntityList() != null && world.getLoadedEntityList().size() != 0)
 		{
-			List<Entity> list = new CopyOnWriteArrayList <Entity> (world.getLoadedEntityList());
-			for (Entity e : list) 
+			List<Entity> list = new CopyOnWriteArrayList <> (world.getLoadedEntityList());
+			for (Entity e : list)
 			{
-				if(world.getChunkFromBlockCoords(e.getPosition()).isLoaded()) 
+				if(world.getChunkFromBlockCoords(e.getPosition()).isLoaded())
 				{
-					 if(ids.contains(e.getUniqueID())) 
+					 if(ids.contains(e.getUniqueID()))
 					 {
 						 applicable.add(e);
 					 }

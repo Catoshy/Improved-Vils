@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -12,18 +13,22 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.tuple.MutablePair;
 
-import com.joshycode.improvedvils.entity.VillagerInvListener;
+import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.handler.ConfigHandler;
+import com.joshycode.improvedvils.util.VillagerInvListener;
 
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.scoreboard.Team;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
 public final class ImprovedVilCapability implements IImprovedVilCapability{
-	
+
 	public static final String VILPLAYER_NBT_KEY = "improved-vils:player";
-	
-	public ImprovedVilCapability() {}
+
+	public ImprovedVilCapability()
+	{
+		this.playerReputations = new HashMap<>();
+	}
 
 	private UUID player, homeVillageId;
 	private HashMap<UUID, MutablePair<Float, Integer>> playerReputations;
@@ -42,12 +47,13 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	private float attackValue;
 	private boolean hasShield;
 	private float foodSaturationValue;
+	private boolean isMutinous;
 
 	@Override
-	public NBTTagCompound serializeNBT() 
+	public NBTTagCompound serializeNBT()
 	{
 		final NBTTagCompound nbt = new NBTTagCompound();
-		
+
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "b", isHungry); /*b for boolean!*/
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "br", isReturning);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "brf", isRefilling);
@@ -58,45 +64,46 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		nbt.setInteger(VILPLAYER_NBT_KEY + "iav", armourValue);
 		nbt.setFloat(VILPLAYER_NBT_KEY + "fav", attackValue);
 		nbt.setFloat(VILPLAYER_NBT_KEY + "ffs", foodSaturationValue);
-		
+
 		if(this.guardObj == null)
 			nbt.setLong(VILPLAYER_NBT_KEY + "bp", Long.MAX_VALUE);
 		else
 			nbt.setLong(VILPLAYER_NBT_KEY + "bp", this.guardObj.toLong());
-		
+
 		if(this.commObj == null)
 			nbt.setLong(VILPLAYER_NBT_KEY + "bc", Long.MAX_VALUE);
 		else
 			nbt.setLong(VILPLAYER_NBT_KEY + "bc", this.commObj.toLong());
-		
+
 		if(this.foodStorePos == null)
 			nbt.setLong(VILPLAYER_NBT_KEY + "bs", Long.MAX_VALUE);
 		else
 			nbt.setLong(VILPLAYER_NBT_KEY + "bs", this.foodStorePos.toLong());
-			
-        if(this.player != null)	
+
+        if(this.player != null)
 			nbt.setString(VILPLAYER_NBT_KEY, this.player.toString());
-        
+
         if(this.homeVillageId != null)
-        	nbt.setString(VILPLAYER_NBT_KEY + "shv", this.player.toString());
-        
+        	nbt.setString(VILPLAYER_NBT_KEY + "shv", this.homeVillageId.toString());
+
         if(this.teamName != null)
         	nbt.setString(VILPLAYER_NBT_KEY + "stn", this.teamName);
-        
+
         ByteArrayOutputStream playerReputations = new ByteArrayOutputStream();
-		try 
+		try
 		{
 			ObjectOutputStream oos = new ObjectOutputStream(playerReputations);
 			oos.writeObject(this.playerReputations);
 			oos.close();
 			nbt.setByteArray(VILPLAYER_NBT_KEY + "PR", playerReputations.toByteArray());
 		} catch (IOException e) {e.printStackTrace();}
-		
+
         return nbt;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public void deserializeNBT(NBTTagCompound nbt) 
+	public void deserializeNBT(NBTTagCompound nbt)
 	{
 		this.isHungry = nbt.getBoolean(VILPLAYER_NBT_KEY + "b");
 		this.isReturning = nbt.getBoolean(VILPLAYER_NBT_KEY + "br");
@@ -108,49 +115,54 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		this.armourValue = nbt.getInteger(VILPLAYER_NBT_KEY + "iav");
 		this.attackValue = nbt.getFloat(VILPLAYER_NBT_KEY + "fav");
 		this.foodSaturationValue = nbt.getFloat(VILPLAYER_NBT_KEY + "ffs");
-		
+
 		long l = nbt.getLong(VILPLAYER_NBT_KEY + "bp");
-		
+
 		if(l == Long.MAX_VALUE)
 			this.guardObj = null;
 		else
 			this.guardObj = BlockPos.fromLong(l);
-		
+
 		long lc = nbt.getLong(VILPLAYER_NBT_KEY + "bc");
 		if(lc == Long.MAX_VALUE)
 			this.commObj = null;
 		else
 			this.commObj = BlockPos.fromLong(lc);
-		
+
 		long lf = nbt.getLong(VILPLAYER_NBT_KEY + "bs");
 		if(lf == Long.MAX_VALUE)
 			this.foodStorePos = null;
 		else
 			this.foodStorePos = BlockPos.fromLong(lf);
-		
+
 		String s = nbt.getString(VILPLAYER_NBT_KEY);
-		if(!s.isEmpty()) 
+		if(!s.isEmpty())
 			this.player = UUID.fromString(s);
-		
+
 		String hvId = nbt.getString(VILPLAYER_NBT_KEY + "shv");
 		if(!hvId.isEmpty())
 			this.homeVillageId = UUID.fromString(hvId);
-		
+
 		String tn = nbt.getString(VILPLAYER_NBT_KEY + "stn");
 		if(!tn.isEmpty())
 			this.teamName = tn;
-		
+
 		ObjectInputStream ois;
-		try 
+		try
 		{
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(VILPLAYER_NBT_KEY + "PR")));
 			this.playerReputations = (HashMap<UUID, MutablePair<Float, Integer>>) ois.readObject();
 			ois.close();
 		} catch (IOException | ClassNotFoundException e) {e.printStackTrace();}
+
+		if(this.playerReputations == null)
+		{
+			this.playerReputations = new HashMap<>();
+		}
 	}
-	
+
 	@Override
-	public void setPlayerId(UUID id) 
+	public void setPlayerId(UUID id)
 	{
 		//TODO
 		this.player = id;
@@ -158,7 +170,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 
 	@Override
 	public UUID getPlayerId() { return this.player; }
-	
+
 	@Override
 	public void setInvListener(VillagerInvListener listenerIn) { this.invListener = listenerIn;}
 
@@ -223,10 +235,10 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	public String getTeam() { return this.teamName; }
 
 	@Override
-	public void setTeam(@Nullable Team team) { this.teamName = team.getName(); }
+	public void setTeam(@Nullable String team) { this.teamName = team; }
 
 	@Override
-	public float getPlayerReputation(UUID uniqueID) 
+	public float getPlayerReputation(UUID uniqueID)
 	{
 		if(this.playerReputations.get(uniqueID) != null)
 		{
@@ -236,46 +248,47 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	}
 
 	@Override
-	public void setPlayerReputation(UUID uniqueID, float f) 
+	public void setPlayerReputation(UUID uniqueID, float f, int i)
+	{
+		if(this.playerReputations.get(uniqueID) != null)
+		{
+			this.playerReputations.get(uniqueID).setLeft(MathHelper.clamp(f, -30, 40.5f));
+			this.playerReputations.get(uniqueID).setRight(MathHelper.clamp(i, -30, 10));
+		}
+		else
+		{
+			MutablePair<Float, Integer> pair = new MutablePair<>();
+			pair.setLeft(MathHelper.clamp(f, -30, 40.5f));
+			pair.setRight(MathHelper.clamp(i, -30, 10));
+			this.playerReputations.put(uniqueID, pair);
+		}
+	}
+	
+	@Override
+	public void setPlayerReputationIfEstablished(UUID uniqueID, float f) 
 	{
 		if(this.playerReputations.get(uniqueID) != null)
 		{
 			this.playerReputations.get(uniqueID).setLeft(MathHelper.clamp(f, -30, 40.5f));
 		}
-		else
-		{
-			MutablePair<Float, Integer> pair = new MutablePair<Float, Integer>();
-			pair.setLeft(MathHelper.clamp(f, -30, 40.5f));
-			this.playerReputations.put(uniqueID, pair);
-		}
 	}
 
 	@Override
-	public UUID getHomeVillageID() { return this.homeVillageId; }
+	public UUID getHomeVillageID() 
+	{
+		if(ConfigHandler.debug)
+			Log.info("homve village id for villager %s", this.homeVillageId);
+		return this.homeVillageId; 
+	}
 
 	@Override
-	public int getHomeVillagePlayerReputationReference(UUID uniqueID) 
+	public int getHomeVillagePlayerReputationReference(UUID uniqueID)
 	{
-		if(this.playerReputations.get(uniqueID) != null)
+		if(this.playerReputations.get(uniqueID) != null && this.playerReputations.get(uniqueID).getRight() != null)
 		{
 			return this.playerReputations.get(uniqueID).getRight();
 		}
 		return 0;
-	}
-	
-	@Override
-	public void setHomeVillagePlayerReputationReference(UUID uniqueID, int i) 
-	{
-		if(this.playerReputations.get(uniqueID) != null)
-		{
-			this.playerReputations.get(uniqueID).setRight(MathHelper.clamp(i, -30, 10));
-		}
-		else
-		{
-			MutablePair<Float, Integer> pair = new MutablePair<Float, Integer>();
-			pair.setRight(MathHelper.clamp(i, -30, 10));
-			this.playerReputations.put(uniqueID, pair);
-		}
 	}
 
 	@Override
@@ -304,4 +317,13 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 
 	@Override
 	public void setSaturation(float foodSaturation) { this.foodSaturationValue = foodSaturation; }
+
+	@Override
+	public Collection<UUID> getKnownPlayers() { return this.playerReputations.keySet(); }
+
+	@Override
+	public boolean isMutinous() { return this.isMutinous; }
+
+	@Override
+	public void setMutinous(boolean setMutiny) { this.isMutinous = setMutiny; }
 }

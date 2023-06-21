@@ -23,7 +23,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 
 public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends VillagerAITarget<T> {
-	
+
 	protected final Class<T> targetClass;
     protected final EntityAINearestAttackableTarget.Sorter sorter;
     protected final Predicate <? super T > targetEntitySelector;
@@ -47,7 +47,8 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
         this.setMutexBits(1);
         this.targetEntitySelector = new Predicate<T>()
         {
-            public boolean apply(@Nullable T p_apply_1_)
+            @Override
+			public boolean apply(@Nullable T p_apply_1_)
             {
                 if (p_apply_1_ == null)
                 {
@@ -66,19 +67,19 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
     }
 
 	@Override
-	public boolean shouldExecute() 
+	public boolean shouldExecute()
 	{
 		if(!super.shouldExecute())
 			return false;
-		
+
 		List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
         T targetEntity;
-        
+
         if (list.isEmpty())
         {
             return false;
-        } 
-        else 
+        }
+        else
         {
             Collections.sort(list, this.sorter);
             targetEntity = list.get(0);
@@ -88,37 +89,38 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 			return false;
 		}
 		boolean flag2 = InventoryUtil.doesInventoryHaveItem(((EntityVillager) this.taskOwner).getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) > 0;
-		
+
 		//TODO player teams attack targeting
-		
-		if(!flag2 && ((!this.taskOwner.world.isDaytime() || this.taskOwner.world.isRaining() && !this.taskOwner.world.getBiome(new BlockPos(this.taskOwner)).canRain()) 
+
+		if(!flag2 && ((!this.taskOwner.world.isDaytime() || this.taskOwner.world.isRaining() && !this.taskOwner.world.getBiome(new BlockPos(this.taskOwner)).canRain())
 				&& this.taskOwner.world.provider.hasSkyLight()) && this.taskOwner.getNavigator().noPath())
 		{
 			PathNavigateGround pathNav = ((PathNavigateGround) this.taskOwner.getNavigator());
 			pathNav.setBreakDoors(false);
-			
+
 			if(pathNav.getPathToEntityLiving(targetEntity) != null)
 			{
 				pathNav.setBreakDoors(true);
 				this.targetEntity = targetEntity;
 				return true;
-			}	
+			}
 		}
-		else 
+		else
 		{
 			this.targetEntity = targetEntity;
 			return true;
 		}
 		return false;
 	}
-	
-    public void startExecuting()
+
+    @Override
+	public void startExecuting()
     {
         this.taskOwner.setAttackTarget(this.targetEntity);
         super.startExecuting();
     }
-	
-	private AxisAlignedBB getTargetableArea(double targetDistance) 
+
+	private AxisAlignedBB getTargetableArea(double targetDistance)
 	{
 		return this.taskOwner.getEntityBoundingBox().grow(targetDistance, 4.0D, targetDistance);
 	}
@@ -128,25 +130,25 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 	{
 		if(!super.shouldExecute())
 			return false;
-		
+
 		return super.shouldContinueExecuting();
 	}
-	
+
 	@Override
-	public void updateTask() 
+	public void updateTask()
 	{
 		EntityLivingBase target = this.taskOwner.getAttackTarget();
-		
-		if(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null && target != null) 
+
+		if(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null && target != null)
 		{
 			double dist = target.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
-			if(dist > CommonProxy.MAX_GUARD_DIST - 31) 
+			if(dist > CommonProxy.MAX_GUARD_DIST - 31)
 			{
     			List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
     			Collections.sort(list, new VillagerAIAttackNearestTarget.Sorter(taskOwner, VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner)));
     			T targetEntity = list.size() > 0 ? list.get(0) : null;
-    			
-    			if(targetEntity != null && !targetEntity.equals(this.target)) 
+
+    			if(targetEntity != null && !targetEntity.equals(this.target))
     			{
     				this.target = targetEntity;
     				this.taskOwner.setAttackTarget(this.target);
@@ -165,11 +167,12 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
             this.pos = gPos;
         }
 
-        public int compare(Entity p_compare_1_, Entity p_compare_2_)
+        @Override
+		public int compare(Entity p_compare_1_, Entity p_compare_2_)
         {
         	boolean flag1 = p_compare_1_.getDistanceSq(this.pos) > CommonProxy.MAX_GUARD_DIST - 31;
         	boolean flag2 = p_compare_2_.getDistanceSq(this.pos) > CommonProxy.MAX_GUARD_DIST - 31;
-        	
+
         	if(flag1 != flag2) {
         		if(flag1) {
         			return 1;
@@ -177,7 +180,7 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
         			return -1;
         		}
         	}
-        	
+
             double d0 = this.entity.getDistanceSq(p_compare_1_);
             double d1 = this.entity.getDistanceSq(p_compare_2_);
 

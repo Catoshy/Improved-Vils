@@ -7,12 +7,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import javax.annotation.Nullable;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -22,7 +19,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 
 public class MarshalsBatonCapability implements IMarshalsBatonCapability {
-	
+
 	public static final String BATON_NBT_KEY_C = "improved-vils:marshalsbatoncompany";
 	public static final String BATON_NBT_KEY_P = "improved-vils:marshalsbatonplatoon";
 	private static final String BATON_NBT_KEY_B = "improved-vils:marshalsbatonfoodstores";
@@ -31,36 +28,36 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	private Multimap<Integer, UUID> platoons;
 	private Map<Integer, Long> foodStorePos;
 	private int selectedUnit;
-	
-	public MarshalsBatonCapability() 
+
+	public MarshalsBatonCapability()
 	{
 		companys = ArrayListMultimap.create();
 		platoons = ArrayListMultimap.create();
-		foodStorePos = new HashMap();
+		foodStorePos = new HashMap<>();
 	}
 
 	@Override
 	public NBTTagCompound serializeNBT()
 	{
 		final NBTTagCompound nbt = new NBTTagCompound();
-				
+
 		 ByteArrayOutputStream bacompany = new ByteArrayOutputStream();
 		 ByteArrayOutputStream baplatoon = new ByteArrayOutputStream();
 		 ByteArrayOutputStream bafoodstores = new ByteArrayOutputStream();
 		 ObjectOutputStream oos;
-		 
-	     try 
+
+	     try
 	     {
 			oos = new ObjectOutputStream(bacompany);
 			oos.writeObject(this.companys);
 			oos.close();
 		    nbt.setByteArray(BATON_NBT_KEY_C, bacompany.toByteArray());
-		    
+
 		    oos = new ObjectOutputStream(baplatoon);
 		    oos.writeObject(this.platoons);
 			oos.close();
-		    nbt.setByteArray(BATON_NBT_KEY_P, baplatoon.toByteArray());    
-		    
+		    nbt.setByteArray(BATON_NBT_KEY_P, baplatoon.toByteArray());
+
 		    oos = new ObjectOutputStream(bafoodstores);
 		    oos.writeObject(this.foodStorePos);
 		    oos.close();
@@ -88,7 +85,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	}
 
 	@Override
-	public boolean addVillager(UUID entityid, int company, int platoon) {	
+	public boolean addVillager(UUID entityid, int company, int platoon) {
 		int uniqueplatoonid = platoon + 10 * company;
 		if(platoon < 10 && company < 5 && this.platoons.get(platoon).size() <= 30) {
 			this.platoons.put(uniqueplatoonid, entityid);
@@ -123,23 +120,22 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 				Pair<Integer, Integer> p2 = findPlatoon(p.a);
 				if(p2 != null)
 					this.companys.remove(p2.a, p2.b);
-			}	
+			}
 		}
 		return false;
 	}
-	
+
 	private Pair<Integer, UUID> findUUID(UUID entityid) {
 		for(int i : this.platoons.keySet()) {
-			for(Iterator<UUID> iterator = this.platoons.get(i).iterator(); iterator.hasNext(); ) {
-				UUID id = iterator.next();
+			for (UUID id : this.platoons.get(i)) {
 				if(id.equals(entityid)) {
-					return new Pair<Integer, UUID>(i, id);
+					return new Pair<>(i, id);
 				}
 			}
 		}
 		return null;
 	}
-	
+
 	private Pair<Integer, Integer> findPlatoon(int platoonIn) {
 		for(int i : this.companys.keySet())
 			if(this.companys.get(i).contains(platoonIn))
@@ -154,18 +150,13 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 				for(UUID id : this.platoons.get(p))
 					if(id.equals(uniqueID))
 						return new Pair(c, p);
-			
+
 		return null;
 	}
 
 	@Override
 	public int selectedUnit() {
 		return this.selectedUnit;
-	}
-
-	@Override
-	public void setCompany(int company) {
-		this.selectedUnit = -company - 1;
 	}
 
 	@Override
@@ -177,12 +168,12 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	public Set<UUID> getVillagersSelected() {
 		if(this.selectedUnit < 0)
 			return this.getVillagersCompany(Math.abs(selectedUnit) - 1);
-		else 
+		else
 			return this.getVillagersPlatoon(selectedUnit);
 	}
 
 	@Override
-	public BlockPos getPlatoonFoodStore(int platoon, int company) 
+	public BlockPos getPlatoonFoodStore(int platoon, int company)
 	{
 		Long serialized = this.foodStorePos.get(platoon + 10 * company);
 		if(serialized != null)
@@ -192,7 +183,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	}
 
 	@Override
-	public void setPlatoonFoodStore(BlockPos pos) 
+	public void setPlatoonFoodStore(BlockPos pos)
 	{
 		this.foodStorePos.put(this.selectedUnit, pos.toLong());
 	}
