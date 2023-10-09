@@ -1,5 +1,8 @@
 package com.joshycode.improvedvils.gui;
 
+import org.jline.utils.Log;
+
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.entity.EntityVillagerContainer;
 import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
@@ -16,7 +19,7 @@ public class VilGuiHandler implements IGuiHandler {
 	public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int intA, int intB)
 	{
 		Object gui = null;
-		if(ID == 100 && world.getEntityByID(x) instanceof EntityVillager)
+		if(ID == CommonProxy.VIL_GUI_ID && world.getEntityByID(x) instanceof EntityVillager)
 		{
 			EntityVillager e = (EntityVillager) world.getEntityByID(x);
 			if(intA == -2)
@@ -32,6 +35,11 @@ public class VilGuiHandler implements IGuiHandler {
 				gui = new GuiVillagerArm(player.inventory, e.getVillagerInventory(), new InventoryHands(e, "Hands"), e.getEntityId(), intA, intB);
 			}
 		}
+		else if(ID == CommonProxy.BATON_GUI_ID)
+		{
+			Log.info("received baton request client");
+			gui = new GuiBatonStelling(x);
+		}
 		return gui;
 	}
 
@@ -39,12 +47,12 @@ public class VilGuiHandler implements IGuiHandler {
 	public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z)
 	{
 		Object gui = null;
-		if(ID == 100 && world.getEntityByID(x) instanceof EntityVillager)
-		{//TODO change id from 100 to something that makes more sense like a static final var
+		if(ID == CommonProxy.VIL_GUI_ID && world.getEntityByID(x) instanceof EntityVillager)
+		{
 			EntityVillager e = (EntityVillager) world.getEntityByID(x);
 			InventoryHands equipInv = new InventoryHands(e, "Hands", false);
 			VillagerInvListener listener = new VillagerInvListener(player.getUniqueID(), e, world);
-			setInvListener(e, listener);
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setInvListener(true);
 			e.getVillagerInventory().addInventoryChangeListener(listener);
 			equipInv.addInventoryChangeListener(listener);
 
@@ -52,13 +60,4 @@ public class VilGuiHandler implements IGuiHandler {
 		}
 		return gui;
 	}
-
-	private void setInvListener(EntityVillager e, VillagerInvListener inv)
-	{
-		try
-		{
-			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setInvListener(inv);
-		} catch (NullPointerException ex) {}
-	}
-
 }

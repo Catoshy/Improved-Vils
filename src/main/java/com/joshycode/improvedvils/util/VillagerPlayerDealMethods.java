@@ -19,6 +19,7 @@ import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilEnlistPacket;
 import com.joshycode.improvedvils.network.VilStateUpdate;
+import com.mojang.authlib.GameProfile;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -29,6 +30,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
+import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -63,32 +65,30 @@ public class VillagerPlayerDealMethods {
 			}
 		}
 	}
-
-	public static void updateVillagerPlayerReputation(EntityVillager entityIn, EntityPlayer player, float reputationChange)
-	{
-		updateVillagerPlayerReputation(entityIn, player.getUniqueID(), reputationChange);
-	}
-
-	private static void updateVillagerPlayerReputation(EntityVillager entityIn, UUID player, float reputationChange)
+	/**
+	 * Does not check for villager in home village!
+	 * @param entityIn villager in question
+	 * @param village in question
+	 * @param player who's reputation will be modified
+	 */
+	private static void updateVillagerPlayerReputation(EntityVillager entityIn, Village village, UUID player)
 	{
 		IImprovedVilCapability vilCap = entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		Village village = entityIn.getEntityWorld().getVillageCollection().getNearestVillage(entityIn.getPosition(), 0);
-		if(village != null)
+		
+		int newVillageReputation = village.getPlayerReputation(player);
+		int villagerReferenceVillageReputation = vilCap.getHomeVillagePlayerReputationReference(player);
+		int villageReputationChange = newVillageReputation - villagerReferenceVillageReputation;
+		float playerReputation = vilCap.getPlayerReputation(player);
+		//If villager's perception of the player is higher than the mean it does not make sense to further raise his opinion
+		//given that his opinion is one of the sources of the better reputation. Lower reputations always come from outside
+		//the villager's personal experience
+		if(newVillageReputation > playerReputation || villageReputationChange < 0)
 		{
-			IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
-			if(isVillagerInHomeVillage(villageCap.getUUID(), vilCap.getHomeVillageID()))
-			{
-				int newVillageReputation = village.getPlayerReputation(player);
-				int villagerReferenceVillageReputation = vilCap.getHomeVillagePlayerReputationReference(player);
-				int villageReputationChange = newVillageReputation - villagerReferenceVillageReputation;
-				float playerReputation = vilCap.getPlayerReputation(player);
-				vilCap.setPlayerReputation(player, playerReputation + reputationChange + villageReputationChange, newVillageReputation);
-			}
-			else
-			{
-				float playerReputation = vilCap.getPlayerReputation(player);
-				vilCap.setPlayerReputationIfEstablished(player, playerReputation + reputationChange);
-			}
+			vilCap.setPlayerReputation(player, playerReputation + villageReputationChange, newVillageReputation);
+		}
+		else
+		{
+			vilCap.setPlayerReputation(player, playerReputation, newVillageReputation);
 		}
 	}
 
@@ -105,9 +105,8 @@ public class VillagerPlayerDealMethods {
 		for(UUID playerId : vilCap.getKnownPlayers())
 		{
 			int playerReputation = village.getPlayerReputation(playerId);
-			if(playerReputation > 5 || playerReputation < 0)
+			if(playerReputation > 5 || playerReputation < 0 || vilCap.getPlayerReputation(playerId) > 15F)
 			{
-				updateVillagerPlayerReputation(villager, playerId, 0);
 				updateVillageReputationFromMean(villager.getEntityWorld(), village, playerId);
 			}
 		}
@@ -115,15 +114,21 @@ public class VillagerPlayerDealMethods {
 
 	public static void updateVillageReputationFromMean(World world, Village village, UUID player)
 	{
+		//Get villagers at home here
 		List<EntityVillager> population = getVillagePopulation(village, world);
 		double sumReputation = 0;
 		int nowtimeReputation = village.getPlayerReputation(player);
-
+		
 		for(EntityVillager entity : population)
 		{
+			//Update villager's opinion grounded on village reputation
+			updateVillagerPlayerReputation(entity, village, player);
+			
+			//Get total reputation of player in question by all villagers here
 			IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 			sumReputation +=  vilCap.getPlayerReputation(player);
 		}
+		//Change the village reputation to reflect the average villager's opinion
 		int difference = (int) (sumReputation/population.size()) - nowtimeReputation;
 		village.modifyPlayerReputation(player, difference);
 	}
@@ -246,35 +251,28 @@ public class VillagerPlayerDealMethods {
 		return villageID.equals(vilsHomeVillageID);
 	}
 
-	public static VilStateUpdate getUpdateGuiForClient(Entity e, EntityPlayer player, boolean isClosed)
+	public static VilStateUpdate getUpdateGuiForClient(EntityVillager e, EntityPlayer player)
 	{
 		Vec3i vec = null; int guardStateVal = 0, followStateVal = 0, enlistedCompany = 0, enlistedPlatoon = 0;
 
-		if(e instanceof EntityVillager)
+		if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 		{
-			if(isClosed)
+			guardStateVal += InventoryUtil.doesInventoryHaveItem
+					(((EntityVillager) e).getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0 ? DRAFTED : NULL;
+			guardStateVal = VilMethods.getHungry((EntityVillager) e) ? NULL : guardStateVal;
+
+			if(guardStateVal == 0)
 			{
-				resetInvListeners((EntityVillager) e);
+				VilMethods.setFollowing((EntityVillager) e, false);
+				VilMethods.setGuardBlock((EntityVillager) e, null);
 			}
-			else if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
-			{
-				guardStateVal += InventoryUtil.doesInventoryHaveItem
-						(((EntityVillager) e).getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0 ? DRAFTED : NULL;
-				guardStateVal = VilMethods.getHungry((EntityVillager) e) ? NULL : guardStateVal;
 
-				if(guardStateVal == 0)
-				{
-					VilMethods.setFollowing((EntityVillager) e, false);
-					VilMethods.setGuardBlock((EntityVillager) e, null);
-				}
+			followStateVal = guardStateVal;
+			guardStateVal += VilMethods.getGuardBlockPos((EntityVillager) e) != null ? GUARDING : NULL;
+			followStateVal += VilMethods.getFollowing((EntityVillager) e) ? FOLLOWING : NULL;
 
-				followStateVal = guardStateVal;
-				guardStateVal += VilMethods.getGuardBlockPos((EntityVillager) e) != null ? GUARDING : NULL;
-				followStateVal += VilMethods.getFollowing((EntityVillager) e) ? FOLLOWING : NULL;
-
-				if(guardStateVal == 2)
-					vec = VilMethods.getGuardBlockPos((EntityVillager) e);
-			}
+			if(guardStateVal == 2)
+				vec = VilMethods.getGuardBlockPos((EntityVillager) e);
 		}
 
 		if(vec != null)
@@ -284,17 +282,17 @@ public class VillagerPlayerDealMethods {
 		return new VilStateUpdate(guardStateVal, followStateVal, enlistedCompany, enlistedPlatoon);
 	}
 
-	private static void resetInvListeners(EntityVillager entity)
+	public static void resetInvListeners(EntityVillager entity)
 	{
-		VillagerInvListener list = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getListener();
-		entity.getVillagerInventory().removeInventoryChangeListener(list);
-		entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setInvListener(null);
+		if(ConfigHandler.debug)
+			Log.info("closing out inv changed listener %s", entity);
+		entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setInvListener(false);
 	}
 
 	//TODO I assume that the cast is safe, double check if crash!
-	public static void updateGuiForClient(EntityVillager entity, EntityPlayer playerEntityByUUID, boolean isClosed)
+	public static void updateGuiForClient(EntityVillager entity, EntityPlayer playerEntityByUUID)
 	{
-		NetWrapper.NETWORK.sendTo(getUpdateGuiForClient(entity, playerEntityByUUID, isClosed), (EntityPlayerMP) playerEntityByUUID);
+		NetWrapper.NETWORK.sendTo(getUpdateGuiForClient(entity, playerEntityByUUID), (EntityPlayerMP) playerEntityByUUID);
 	}
 	
 	public static void villageBadReputationChange(World entityWorld, Village village, EntityPlayer attackingPlayer)
@@ -309,7 +307,9 @@ public class VillagerPlayerDealMethods {
 	public static void villageGoodReputationChange(World entityWorld, Village village, EntityPlayer player)
 	{
 		int villageReputation = village.getPlayerReputation(player.getUniqueID());
-		if(player.getTeam() != null && player.getTeam().getName().equals(village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam()))
+		if(ConfigHandler.debug)
+			Log.info("Player is is null? %s", player.getTeam() == null);
+		if(player.getTeam() == null || player.getTeam().getName().equals(village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam()))
 		{
 			villageReputationChange(entityWorld, village, player, villageReputation);
 		}
@@ -321,14 +321,10 @@ public class VillagerPlayerDealMethods {
 		
 		if(villageReputation < 0 || villageReputation > 5)
 		{
-			for(EntityVillager entity : population)
-			{
-					updateVillagerPlayerReputation(entity, player, 0);
-			}
 			updateVillageReputationFromMean(entityWorld, village, player.getUniqueID());
 		}
 		int villageTeamReputation = updateVillageTeamReputation(village, player);
-		if(player.getTeam().getName().equals(village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam()))
+		if(player.getTeam() != null && player.getTeam().getName().equals(village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam()))
 		{	
 			if(villageTeamReputation < HATED_THRESHOLD)
 			{
@@ -354,15 +350,20 @@ public class VillagerPlayerDealMethods {
 
 	public static void childGrown(EntityVillager entity)
 	{
+		if(entity.getEntityWorld().isRemote) return;
+		
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		IVillageCapability villageCap =  entity.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
-		if(vilCap.getHomeVillageID() != null) return;
-
+		Village village = entity.getEntityWorld().getVillageCollection().getNearestVillage(new BlockPos(entity), 0);
+		if(vilCap.getHomeVillageID() != null || village == null) return;
+		
+		IVillageCapability villageCap =  village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
 		vilCap.setHomeVillageID(villageCap.getUUID());
-		vilCap.setTeam(entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()).getName());
+		//TODO
+		if(vilCap.getTeam() != null && entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()) != null)
+			vilCap.setTeam(entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()).getName());
 	}
 
-	public static void updateArmourWeaponsAndFood(EntityVillager entity, EntityPlayer playerEntityByUUID)
+	public static void updateArmourWeaponsAndFood(EntityVillager entity)
 	{
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		vilCap.setArmourValue(entity.getTotalArmorValue());
@@ -381,7 +382,7 @@ public class VillagerPlayerDealMethods {
 		vilCap.setSaturation(InventoryUtil.getFoodSaturation(entity.getVillagerInventory()));
 	}
 
-	public static void checkArmourWeaponsAndFood(EntityVillager entity, EntityPlayer playerEntityByUUID)
+	public static void checkArmourWeaponsAndFood(EntityVillager entity, UUID playerEntityByUUID)
 	{
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		int armour = entity.getTotalArmorValue();
@@ -414,18 +415,42 @@ public class VillagerPlayerDealMethods {
 				wholeReputationChange -= 5;
 			else
 				wholeReputationChange += 5;
-
-		vilCap.setPlayerReputationIfEstablished(playerEntityByUUID.getUniqueID(), wholeReputationChange);
+		
+		changePlayerReputation(entity, playerEntityByUUID, wholeReputationChange);
 		vilCap.setArmourValue(armour);
 		vilCap.setAttackValue(attackVal);
 		vilCap.setShield(hasShield);
 		vilCap.setSaturation(foodSaturation);
 	}
+	
+	public static void changePlayerReputation(EntityVillager entity, UUID playerEntityUUID, float wholeReputationChange) 
+	{
+		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+		if(vilCap.getTeam() != null)
+		{
+			for(UUID playerId : vilCap.getKnownPlayers())
+			{
+				GameProfile playerProfile = entity.world.getMinecraftServer().getPlayerProfileCache().getProfileByUUID(playerId);
+				ScorePlayerTeam playersTeam = entity.world.getScoreboard().getPlayersTeam(playerProfile.getName());
+				if(playersTeam.getName().equals(vilCap.getTeam()))
+				{
+					int referenceReputation = vilCap.getHomeVillagePlayerReputationReference(playerEntityUUID);
+					float nowReputation = vilCap.getPlayerReputation(playerEntityUUID);
+					vilCap.setPlayerReputation(playerEntityUUID, nowReputation + (wholeReputationChange / playersTeam.getMembershipCollection().size()), referenceReputation);
+				}
+			}
+		}
+		else
+		{
+			int referenceReputation = vilCap.getHomeVillagePlayerReputationReference(playerEntityUUID);
+			float nowReputation = vilCap.getPlayerReputation(playerEntityUUID);
+			vilCap.setPlayerReputation(playerEntityUUID, nowReputation + wholeReputationChange, referenceReputation);
+		}
+	}
 
 	public static void scheduleMutiny(Village village, EntityPlayer player, World world) 
 	{
-		// TODO Auto-generated method stub
-		
+		// TODO Auto-generated method stub	
 	}
 
 	public static VilEnlistPacket updateEnlistInfoForStack(ItemStack stack, boolean isEnlisted, int company, int platoon, Entity entity, IImprovedVilCapability vilCap)

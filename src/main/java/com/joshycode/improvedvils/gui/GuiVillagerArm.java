@@ -30,6 +30,7 @@ public class GuiVillagerArm extends GuiContainer {
 	private int company;
 	private int platoon;
 	private int vilId;
+
 	private List<GuiButton> enlistedButtons;
 	private List<GuiButton> notEnlistedButtons;
 	private List<GuiButton> guardButtons;
@@ -74,7 +75,7 @@ public class GuiVillagerArm extends GuiContainer {
 		this.followButtons.add(new GuiButton(109, guiLeft + 71, guiTop + 44, 24, 12, "Stop"));
 		this.enlistedButtons.add(new GuiButton(105, guiLeft + 143, guiTop + 44, 24, 12, "De-Enlist"));
 
-		this.notEnlistedButtons.addAll( new ArrayList<GuiButton>()
+		this.notEnlistedButtons.addAll(new ArrayList<GuiButton>()
 		{
 			{
 				add(new GuiButton(100, guiLeft + 143, guiTop + 8, 6, 12, "<"));
@@ -253,11 +254,9 @@ public class GuiVillagerArm extends GuiContainer {
 			this.buttonList.removeAll(followButtons);
 		}
 	}
-
-	@Override
-	public void onGuiClosed()
+	
+	public int getVilId()
 	{
-		super.onGuiClosed();
-		ClientProxy.close(this.vilId);
+		return vilId;
 	}
 }

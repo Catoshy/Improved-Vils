@@ -90,8 +90,6 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 		}
 		boolean flag2 = InventoryUtil.doesInventoryHaveItem(((EntityVillager) this.taskOwner).getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) > 0;
 
-		//TODO player teams attack targeting
-
 		if(!flag2 && ((!this.taskOwner.world.isDaytime() || this.taskOwner.world.isRaining() && !this.taskOwner.world.getBiome(new BlockPos(this.taskOwner)).canRain())
 				&& this.taskOwner.world.provider.hasSkyLight()) && this.taskOwner.getNavigator().noPath())
 		{

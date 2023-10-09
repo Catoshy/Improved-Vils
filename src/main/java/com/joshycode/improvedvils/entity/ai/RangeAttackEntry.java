@@ -1,10 +1,18 @@
 package com.joshycode.improvedvils.entity.ai;
 
+import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
+
+import org.jline.utils.Log;
+
+import net.minecraft.item.Item;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 public class RangeAttackEntry {
 
-	public static final class BallisticData {
+	public static final class BallisticData implements Serializable{
 		
 		public final double mass;
 		public final double low_coefficient;
@@ -59,6 +67,7 @@ public class RangeAttackEntry {
 	public final BallisticData ballisticData;
 	public final RangeAttackType type;
 	private Map<String, Integer> consumables;
+	private transient Map<Item, Integer> deserializedConsumables = null;
 
 	/**
 	 * @param mass of the projectile, in grams
@@ -69,24 +78,42 @@ public class RangeAttackEntry {
 	 * @param burstCoolDown Ticks between shots in a bursts
 	 * @param burstCount How many shots in a burst (if app.)
 	 * @param type Bow, Shingleshot, Full-auto, etc.
-	 * @param consumables Map of items to be consumed each shot and how many. String shall be unlocalized name
+	 * @param bowConsumables Map of items to be consumed each shot and how many. String shall be unlocalized name
 	 * of the item. Int shall be number of items to be consumed.
 	 */
-	public RangeAttackEntry(RangeAttackType type, Map<String, Integer> consumables, BallisticData data2)
+	public RangeAttackEntry(RangeAttackType type, Map<String, Integer> bowConsumables, BallisticData data2)
 	{
 		this.type = type;
-		this.consumables = consumables;
+		this.consumables = bowConsumables;
 		this.ballisticData = data2;
 	}
 
-	public Map<String, Integer> getConsumables()
+	/**
+	 * Called during MC startup after Json has read from files
+	 */
+	public void init()
 	{
-		return consumables;
+		if(this.deserializedConsumables == null)
+			this.deserializedConsumables = deserializeItemsFromString();
+		Log.info("init RangeAttackEntry %s", this.deserializedConsumables);
+	}
+	
+	private Map<Item, Integer> deserializeItemsFromString() 
+	{
+		Map<Item, Integer> items = new HashMap<>();
+		this.consumables.entrySet().forEach(entry -> {
+			Log.info("init RangeAttackEntry deserializeItemsFromString ", entry);
+			ForgeRegistries.ITEMS.getValuesCollection().forEach(item -> {
+				if(item.getUnlocalizedName().equals(entry.getKey()))
+					items.put(item, entry.getValue());
+			});
+		});
+		return items;
 	}
 
-	public void setConsumables(Map<String, Integer> consumables)
+	public Map<Item, Integer> getConsumables()
 	{
-		this.consumables = consumables;
+		return this.deserializedConsumables;
 	}
 
 	public enum RangeAttackType

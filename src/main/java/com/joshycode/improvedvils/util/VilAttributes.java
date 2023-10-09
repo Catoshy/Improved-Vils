@@ -15,7 +15,6 @@ public class VilAttributes {
 	{
 		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(45.0D);
 		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(.55d);
-        e.getAttributeMap().registerAttribute(SharedMonsterAttributes.ATTACK_SPEED);
 		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(ConfigHandler.villagerHealth);
 		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.ARMOR).setBaseValue(ConfigHandler.villagerBaseArmour);
 	}
@@ -23,5 +22,6 @@ public class VilAttributes {
 	public static void applyConstr(EntityVillager e)
 	{
 		e.getAttributeMap().registerAttribute(VIL_DAMAGE);
+        e.getAttributeMap().registerAttribute(SharedMonsterAttributes.ATTACK_SPEED);
 	}
 }

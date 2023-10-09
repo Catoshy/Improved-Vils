@@ -62,7 +62,11 @@ public class VilGuardPacket extends BlockPosPacket implements IMessage {
 					if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 					{
 						VilMethods.setFollowState((EntityVillager) e, false);
-						VilMethods.setGuardBlock((EntityVillager) e, e.getPosition());
+						
+						if(message.guardState)
+							VilMethods.setGuardBlock((EntityVillager) e, e.getPosition());
+						else
+							VilMethods.setGuardBlock((EntityVillager) e, null);
 	
 						((EntityVillager) e).tasks.taskEntries.forEach(t -> {
 							if(t.action instanceof VillagerAIGuard) {
@@ -70,8 +74,8 @@ public class VilGuardPacket extends BlockPosPacket implements IMessage {
 							}
 						});
 					}
+					VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) e, player);
 				}
-				NetWrapper.NETWORK.sendTo(VillagerPlayerDealMethods.getUpdateGuiForClient(e, player, false), player);
 			});
 			return null;
 		}

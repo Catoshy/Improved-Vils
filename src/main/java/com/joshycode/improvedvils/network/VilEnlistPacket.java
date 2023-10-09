@@ -13,6 +13,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -67,7 +68,7 @@ public class VilEnlistPacket implements IMessage {
 		ImprovedVils.proxy.getListener(ctx).addScheduledTask(() ->
 		{
 			EntityPlayerMP serverPlayer = ctx.getServerHandler().player;
-			WorldServer server = ctx.getServerHandler().player.getServerWorld();
+			World server = ImprovedVils.proxy.getWorld(ctx);
 			ItemStack stack = InventoryUtil.get1StackByItem(serverPlayer.inventory, CommonProxy.ItemHolder.BATON);
 			Entity entity = server.getEntityByID(message.entityID);
 			IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);

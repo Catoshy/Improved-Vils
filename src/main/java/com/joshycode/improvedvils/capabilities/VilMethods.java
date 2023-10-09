@@ -40,23 +40,16 @@ public class VilMethods {
 	@Nullable
 	public static BlockPos getCommBlockPos(EntityVillager e)
 	{
-		try
-		{
-	    	return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getCommBlockPos();
-		} catch (NullPointerException ex) {}
-	    	return null;
+		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getCommBlockPos();
 	}
 
 	@Nullable
 	public static Vec3d commPosAsVec(EntityVillager e)
 	{
-		try
-		{
-			BlockPos pos = getCommBlockPos(e);
-			return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
-
-	    } catch (NullPointerException ex) {}
-		return null;
+		BlockPos pos = getCommBlockPos(e);
+		if(pos == null) return null;
+		
+		return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
 	}
 
 	public static boolean isReturning(EntityVillager e)
@@ -184,18 +177,23 @@ public class VilMethods {
 		} catch (NullPointerException ex) {return false; }
 	}
 
-	public static BlockPos getFoodStorePos(EntityVillager e) {
-		try
-		{
-			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getFoodStorePos();
-		} catch (NullPointerException ex) {return null; }
+	public static BlockPos getFoodStorePos(EntityVillager e) 
+	{
+		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getFoodStorePos();
 	}
 
 	public static void setFoodStore(EntityVillager e, @Nullable BlockPos pos) {
-		try
-		{
-			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(pos);
-		} catch (NullPointerException ex) {}
+		e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(pos);
+	}
+	
+	public static BlockPos getKitStorePos(EntityVillager e) 
+	{
+		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getKitStorePos();
+	}
+	
+	public static void setKitStore(EntityVillager e, @Nullable BlockPos pos)
+	{
+		e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setKitStore(pos);
 	}
 
 	public static boolean isRefillingFood(EntityVillager e) {
@@ -237,5 +235,15 @@ public class VilMethods {
 	public static String getTeam(EntityVillager villager)
 	{
 		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getTeam();
+	}
+
+	public static boolean outOfAmmo(EntityVillager villager) 
+	{
+		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getOutOfAmmo();
+	}
+	
+	public static void setOutOfAmmo(EntityVillager villager, boolean noAmmo)
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setIsOutAmmo(noAmmo);
 	}
 }

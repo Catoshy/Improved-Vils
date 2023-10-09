@@ -6,8 +6,11 @@ import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;
+import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
+import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
+import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockChest;
@@ -32,6 +35,7 @@ public class VillagerAIRefillFood extends EntityAIBase {
 
 	private EntityVillager villager;
 	private int idleTicks;
+	private int waitTicks;
 	private boolean refilled;
 	BlockPos foodStore;
 	BlockPos prevPos;
@@ -40,12 +44,13 @@ public class VillagerAIRefillFood extends EntityAIBase {
 	{
 		super();
 		this.villager = villager;
+		this.setMutexBits(3);
 	}
 
 	@Override
 	public boolean shouldExecute()
 	{
-		if((VilMethods.getFoodStorePos(villager) == null) || this.isDoingSomethingMoreImportant() || (this.villager.getRNG().nextInt(5) != 0))
+		if((VilMethods.getFoodStorePos(villager) == null) || this.isDoingSomethingMoreImportant() || (this.villager.getRNG().nextInt(5) != 0) || this.waitTicks-- > 0)
 			return false;
 		if(VilMethods.getGuardBlockPos(villager) != null)
 		{
@@ -58,6 +63,10 @@ public class VillagerAIRefillFood extends EntityAIBase {
 				if(distSq > CommonProxy.GUARD_IGNORE_LIMIT)
 					return false;
 			}
+			else
+			{
+				return false;
+			}
 		}
 
 		float totalFoodSaturation = 0;
@@ -67,7 +76,6 @@ public class VillagerAIRefillFood extends EntityAIBase {
 		}
 		if(totalFoodSaturation < (ConfigHandler.collectFoodThreshold * .6f))
 		{
-
 			return true;
 		}
 
@@ -165,11 +173,25 @@ public class VillagerAIRefillFood extends EntityAIBase {
 					saturation -= itemSaturation * refillCount;
 				}
 			}
+			float collectedSaturation = ConfigHandler.collectFoodThreshold * .6f - saturation;
+			
+			if(collectedSaturation == 0)
+				this.waitTicks = 500;
+			
+			this.changePlayerReputation(collectedSaturation);
+				
 		}
 		else
 		{
 			VilMethods.setFoodStore(this.villager, null);
 		}
+	}
+
+	private void changePlayerReputation(float collectedSaturation) 
+	{
+		IImprovedVilCapability vilCap = this.villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+		if(vilCap.getPlayerId() != null)
+			VillagerPlayerDealMethods.changePlayerReputation(this.villager, vilCap.getPlayerId(), collectedSaturation);
 	}
 
 	@Nullable

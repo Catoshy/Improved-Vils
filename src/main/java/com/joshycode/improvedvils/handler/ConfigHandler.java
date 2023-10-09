@@ -13,14 +13,13 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import org.jline.utils.Log;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.CommonProxy.LoadState;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.BallisticData;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.RangeAttackType;
@@ -30,6 +29,7 @@ import net.minecraft.entity.monster.EntityEnderman;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
@@ -60,8 +60,7 @@ public class ConfigHandler {
 	public static float collectFoodThreshold;
 	public static boolean openBlocksLoaded = false;
 	public static boolean debug = false;
-	public static boolean useReliquary;
-	public static boolean useReforged;
+	public static boolean renderItemsAndArmour;
 
 	public static void load(com.joshycode.improvedvils.CommonProxy.LoadState postinit) throws IOException {
 		if(config == null)
@@ -89,10 +88,17 @@ public class ConfigHandler {
 		dailyBread = config.getFloat("Daily Bread", "general", 3f, 1f, 20f, "how much food saturation a villager will consume as measured in \"bread per day\" while drafted");
 		collectFoodThreshold = config.getFloat("Food Refill Threshold", "general", 32f, 1f, 256f, "how far the food saturation of a villager will decrease before villager goes to refill inventory at food store");
 		debug = config.getBoolean("Debug", "general", false, "more Log info");
+		renderItemsAndArmour = config.getBoolean("Render items and armour", "general", true, "Do you want your client to render items and armour on villagers? May conflict with other mods.");
+		readEntryJson();
 		
 		if(postinit == LoadState.SYNC || postinit == LoadState.POSTINIT)
 		{
-			readEntryJson();
+			configuredGuns.values().forEach(rangeEntries -> {
+				rangeEntries.forEach(rangeEntry ->{
+					rangeEntry.init();
+				});
+			});
+			
 			if(!whiteListMobs)
 			{
 				CommonProxy.TARGETS.add(EntityMob.class);

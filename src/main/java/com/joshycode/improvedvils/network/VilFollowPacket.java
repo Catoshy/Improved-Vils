@@ -66,8 +66,8 @@ public class VilFollowPacket implements IMessage {
 							VilMethods.setFollowState((EntityVillager) e, false);
 						}
 					}
+					VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) e, player);
 				}
-				NetWrapper.NETWORK.sendTo(VillagerPlayerDealMethods.getUpdateGuiForClient(e, player, false), player);
 			});
 			return null;
 		}

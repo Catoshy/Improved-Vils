@@ -87,7 +87,8 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 		{
 			for(Class c : CommonProxy.TARGETS)
 			{
-				if(c.isInstance(target)) {
+				if(c.isInstance(target)) 
+				{
 					return true;
 				}
 			}

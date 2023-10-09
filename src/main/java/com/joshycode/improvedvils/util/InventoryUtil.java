@@ -118,19 +118,19 @@ public class InventoryUtil {
 		return null;
 	}
 
-	public static void consumeItems(IInventory invIn, Map<String, Integer> consumables, Map<String, Integer> howMuchOfEach)
+	public static void consumeItems(IInventory invIn, Map<Item, Integer> consumables, Map<Item, Integer> howMuchOfEach)
 	{
-		for(String itemToCons : consumables.keySet())
+		for(Item itemToCons : consumables.keySet())
 		{
 			ItemStack stack = invIn.getStackInSlot(consumables.get(itemToCons));
-			String name = stack.getUnlocalizedName();
-			int amt = howMuchOfEach.get(name);
+			Item item = stack.getItem();
+			int amt = howMuchOfEach.get(item);
 
 			if(amt > stack.getCount())
 			{
 				amt -= stack.getCount();
 				invIn.setInventorySlotContents(consumables.get(itemToCons), ItemStack.EMPTY);
-				howMuchOfEach.put(name, amt);
+				howMuchOfEach.put(item, amt);
 			}
 			else
 			{
@@ -140,30 +140,29 @@ public class InventoryUtil {
 	}
 
 	@Nullable
-	public static Map<String, Integer> getItemStacksInInventory(IInventory invIn, Map<String, Integer> items)
+	public static Map<Item, Integer> getItemStacksInInventory(IInventory invIn, Map<Item, Integer> items)
 	{
-		Map<String, Integer> consInVilInv = new HashMap();
-		Map<String, Integer> toBeConsumed = new HashMap();
+		Map<Item, Integer> consInVilInv = new HashMap();
+		Map<Item, Integer> toBeConsumed = new HashMap();
 		for(int i = 0; i < invIn.getSizeInventory(); i++)
 		{
 			ItemStack stack = invIn.getStackInSlot(i);
-			String name = stack.getItem().getUnlocalizedName();
-			if(items.keySet().contains(name))
+			if(items.keySet().contains(stack.getItem()))
 			{
 				int val = 0;
 
-				if(consInVilInv.get(name) != null)
-					val = consInVilInv.get(name);
+				if(consInVilInv.get(stack.getItem()) != null)
+					val = consInVilInv.get(stack.getItem());
 
-				consInVilInv.put(name, val + stack.getCount());
-				toBeConsumed.put(invIn.getStackInSlot(i).getUnlocalizedName(), i);
+				consInVilInv.put(stack.getItem(), val + stack.getCount());
+				toBeConsumed.put(stack.getItem(), i);
 			}
 		}
-		for(String s : items.keySet())
+		for(Item i : items.keySet())
 		{
-			if(consInVilInv.get(s) != null)
+			if(consInVilInv.get(i) != null)
 			{
-				if(consInVilInv.get(s) < items.get(s))
+				if(consInVilInv.get(i) < items.get(i))
 					return null;
 
 			}

@@ -1,8 +1,10 @@
 package com.joshycode.improvedvils.network;
 
+import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -19,6 +21,7 @@ public class VilStateQuery implements IMessage {
 	public VilStateQuery(int villagerId)
 	{
 		this.villagerId = villagerId;
+		this.isClosed = false;
 	}
 
 	public VilStateQuery(int vilId, boolean b) {
@@ -42,9 +45,24 @@ public class VilStateQuery implements IMessage {
 
 		@Override
 		public IMessage onMessage(VilStateQuery message, MessageContext ctx) {
-			EntityPlayerMP player = ctx.getServerHandler().player;
-			WorldServer world = ctx.getServerHandler().player.getServerWorld();
-			return VillagerPlayerDealMethods.getUpdateGuiForClient(world.getEntityByID(message.villagerId), player, message.isClosed);
+			if(!message.isClosed)
+			{
+				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() ->
+				{
+					EntityPlayerMP player = ctx.getServerHandler().player;
+					WorldServer world = ctx.getServerHandler().player.getServerWorld();
+					VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) world.getEntityByID(message.villagerId), player);
+				});
+			}
+			else
+			{
+				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() ->
+				{
+					WorldServer world = ctx.getServerHandler().player.getServerWorld();
+					VillagerPlayerDealMethods.resetInvListeners((EntityVillager) world.getEntityByID(message.villagerId));
+				});
+			}
+			return null;
 		}
 	}
 }

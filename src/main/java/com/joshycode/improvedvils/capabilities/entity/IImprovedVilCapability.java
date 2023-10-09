@@ -22,12 +22,11 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public void setCommBlock(BlockPos posIn);
 	@Nullable
 	public BlockPos getCommBlockPos();
-	public void setInvListener(VillagerInvListener i);
 	@Nullable
 	public BlockPos getFoodStorePos();
 	public void setFoodStore(BlockPos pos);
-	@Nullable
-	public VillagerInvListener getListener();
+	public BlockPos getKitStorePos();
+	public void setKitStore(BlockPos pos);
 	public Collection<UUID> getKnownPlayers();
 	public boolean getHungry();
 	public void setHungry(boolean isHungry);
@@ -41,6 +40,8 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public void setDrinking(boolean b);
 	public boolean getRefillingFood();
 	public void setRefilling(boolean b);
+	public boolean getListener();
+	public void setInvListener(boolean b);
 	@Nullable
 	public String getTeam();
 	public void setTeam(String string);
@@ -61,4 +62,6 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public void setPlayerReputationIfEstablished(UUID player, float f);
 	public boolean isMutinous();
 	public void setMutinous(boolean setMutiny);
+	public boolean getOutOfAmmo();
+	public void setIsOutAmmo(boolean noAmmo);
 }

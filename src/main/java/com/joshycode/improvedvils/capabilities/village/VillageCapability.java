@@ -152,22 +152,26 @@ public class VillageCapability implements IVillageCapability{
 	}
 
 	@Override
-	public double getPlayerMeanReputation(UUID playerId) {
+	public double getPlayerMeanReputation(UUID playerId) 
+	{
 		return this.playerRepuationMeans.get(playerId);
 	}
 
 	@Override
-	public void setMeanPlayerReputation(UUID playerId, double reputation) {
+	public void setMeanPlayerReputation(UUID playerId, double reputation) 
+	{
 		this.playerRepuationMeans.put(playerId, reputation);
 	}
 
 	@Override
-	public void setLastTeamDealing(int time) {
+	public void setLastTeamDealing(int time) 
+	{
 		this.lastTeamTime = time;
 	}
 
 	@Override
-	public int lastTeamDealing() {
+	public int lastTeamDealing() 
+	{
 		return this.lastTeamTime;
 	}
 }

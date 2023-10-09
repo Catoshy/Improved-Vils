@@ -6,10 +6,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.joshycode.improvedvils.ImprovedVils;
+import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability.Provisions;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilCommandPacket;
 import com.joshycode.improvedvils.network.VilFoodStorePacket;
+import com.joshycode.improvedvils.network.VilKitStorePacket;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -39,9 +42,10 @@ public class ItemMarshalsBaton extends Item {
 			Entity entity = Minecraft.getMinecraft().getRenderViewEntity();
 			if(entity != null && Minecraft.getMinecraft() != null)
 			{
-				if(player.isSneaking())
+				int provisioningUnit = ImprovedVils.proxy.getProvisioningUnit();
+				if(provisioningUnit != -1)
 				{
-					tryFoodStoreTileEntity(entity);
+					setTileEntityStore(entity, provisioningUnit);
 				}
 				else
 				{
@@ -51,6 +55,18 @@ public class ItemMarshalsBaton extends Item {
 			}
 		}
 		return new ActionResult<>(EnumActionResult.PASS, stack);
+	}
+
+	private void setTileEntityStore(Entity entity, int provisioningUnit) 
+	{
+		if(ImprovedVils.proxy.getKit() == Provisions.PROVISIONS)
+		{
+			tryFoodStoreTileEntity(entity, provisioningUnit);
+		}
+		else
+		{
+			tryKitStoreTileEntity(entity, provisioningUnit);
+		}
 	}
 
 	private void tryCommandVillagerMovement(Entity entity)
@@ -64,13 +80,23 @@ public class ItemMarshalsBaton extends Item {
 		}
 	}
 
-	private void tryFoodStoreTileEntity(Entity entity)
+	private void tryFoodStoreTileEntity(Entity entity, int provisioningUnit)
 	{
 		RayTraceResult lookingAt = entity.rayTrace(6.0, 1.0F);
 		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK)
 		{
 			BlockPos pos = lookingAt.getBlockPos();
-			NetWrapper.NETWORK.sendToServer(new VilFoodStorePacket(pos));
+			NetWrapper.NETWORK.sendToServer(new VilFoodStorePacket(pos, provisioningUnit));
+		}
+	}
+	
+	private void tryKitStoreTileEntity(Entity entity, int provisioningUnit)
+	{
+		RayTraceResult lookingAt = entity.rayTrace(6.0, 1.0F);
+		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK)
+		{
+			BlockPos pos = lookingAt.getBlockPos();
+			NetWrapper.NETWORK.sendToServer(new VilKitStorePacket(pos, provisioningUnit));
 		}
 	}
 

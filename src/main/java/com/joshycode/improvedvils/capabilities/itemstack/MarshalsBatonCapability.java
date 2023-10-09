@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
+import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.Pair;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -23,17 +23,29 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	public static final String BATON_NBT_KEY_C = "improved-vils:marshalsbatoncompany";
 	public static final String BATON_NBT_KEY_P = "improved-vils:marshalsbatonplatoon";
 	private static final String BATON_NBT_KEY_B = "improved-vils:marshalsbatonfoodstores";
+	private static final String BATON_NBT_KEY_K = "improved-vils:marshalsbatonkitstores";
+	private static final Set<UUID> emptySet = new HashSet<UUID>();
 
-	private Multimap<Integer, Integer> companys;
-	private Multimap<Integer, UUID> platoons;
+	private Map<Integer, Set<UUID>> platoons;
 	private Map<Integer, Long> foodStorePos;
+	private Map<Integer, Long> kitStorePos;
 	private int selectedUnit;
 
 	public MarshalsBatonCapability()
 	{
-		companys = ArrayListMultimap.create();
-		platoons = ArrayListMultimap.create();
+		platoons = this.generateEmptyPlatoonMap();
 		foodStorePos = new HashMap<>();
+		kitStorePos = new HashMap<>();
+	}
+
+	private Map<Integer, Set<UUID>> generateEmptyPlatoonMap() 
+	{
+		Map<Integer, Set<UUID>> map = new HashMap<Integer, Set<UUID>>();
+		for(int i = 0; i < 50; i++)
+		{
+			map.put(i, emptySet);
+		}
+		return map;
 	}
 
 	@Override
@@ -41,17 +53,17 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	{
 		final NBTTagCompound nbt = new NBTTagCompound();
 
-		 ByteArrayOutputStream bacompany = new ByteArrayOutputStream();
+		 //ByteArrayOutputStream bacompany = new ByteArrayOutputStream();
 		 ByteArrayOutputStream baplatoon = new ByteArrayOutputStream();
 		 ByteArrayOutputStream bafoodstores = new ByteArrayOutputStream();
 		 ObjectOutputStream oos;
 
 	     try
 	     {
-			oos = new ObjectOutputStream(bacompany);
+			/*oos = new ObjectOutputStream(bacompany);
 			oos.writeObject(this.companys);
 			oos.close();
-		    nbt.setByteArray(BATON_NBT_KEY_C, bacompany.toByteArray());
+		    nbt.setByteArray(BATON_NBT_KEY_C, bacompany.toByteArray());*/
 
 		    oos = new ObjectOutputStream(baplatoon);
 		    oos.writeObject(this.platoons);
@@ -62,105 +74,112 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 		    oos.writeObject(this.foodStorePos);
 		    oos.close();
 		    nbt.setByteArray(BATON_NBT_KEY_B, bafoodstores.toByteArray());
+		    
+		    oos = new ObjectOutputStream(bafoodstores);
+		    oos.writeObject(this.kitStorePos);
+		    oos.close();
+		    nbt.setByteArray(BATON_NBT_KEY_K, bafoodstores.toByteArray());
 		} catch (IOException e) { e.printStackTrace(); }
 		return nbt;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public void deserializeNBT(NBTTagCompound nbt) {
+	public void deserializeNBT(NBTTagCompound nbt) 
+	{
 		ObjectInputStream ois;
-		try {
+		try 
+		{
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_P)));
-			this.platoons = (Multimap<Integer, UUID>) ois.readObject();
+			this.platoons = (Map<Integer, Set<UUID>>) ois.readObject();
 			ois.close();
-			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_C)));
+			
+			/*ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_C)));
 			this.companys = (Multimap<Integer, Integer>) ois.readObject();
-			ois.close();
+			ois.close();*/
+			
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_B)));
 			this.foodStorePos = (Map<Integer, Long>) ois.readObject();
 			ois.close();
-		} catch (Exception e) { //TODO catches ALL exceptions?!
+			
+			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_K)));
+			this.kitStorePos = (Map<Integer, Long>) ois.readObject();
+			ois.close();
+		} catch (IOException | ClassNotFoundException | ClassCastException e) {
 			e.printStackTrace();
 		}
 	}
 
 	@Override
-	public boolean addVillager(UUID entityid, int company, int platoon) {
+	public boolean addVillager(UUID entityid, int company, int platoon) 
+	{
+		if(platoon > 10 || company > 5 ) return false;
+		
 		int uniqueplatoonid = platoon + 10 * company;
-		if(platoon < 10 && company < 5 && this.platoons.get(platoon).size() <= 30) {
-			this.platoons.put(uniqueplatoonid, entityid);
-			if(!this.companys.values().contains(platoon) && this.companys.get(company).size() <= 5) {
-				this.companys.put(company, uniqueplatoonid);
-				return true;
-			}
+		Set<UUID> platoonSet = this.platoons.get(uniqueplatoonid);
+		
+		if(platoonSet.isEmpty())
+		{
+			platoonSet = new HashSet<UUID>();
 		}
-		return false;
+		
+		if(platoonSet.size() >= 30) return false;
+		
+		boolean flag = platoonSet.add(entityid);
+		
+		this.platoons.put(uniqueplatoonid, platoonSet);
+		
+		return flag;
 	}
 
-	private Set<UUID> getVillagersPlatoon(int platoon) {
-		Set<UUID> platoonSet = new HashSet();
-		platoonSet.addAll(this.platoons.get(platoon));
-		return platoonSet;
+	private Set<UUID> getVillagersPlatoon(int platoon) 
+	{
+		return this.platoons.get(platoon);
 	}
 
-	private Set<UUID> getVillagersCompany(int company) {
-		Set<UUID> uuids = new HashSet();
-		for(int i : this.companys.get(company)) {
-			uuids.addAll(this.platoons.get(i));
+	private Set<UUID> getVillagersCompany(int company) 
+	{
+		Set<UUID> uuids = new HashSet<UUID>();
+		for(int i = 0; i < 10; i++ ) 
+		{
+			uuids.addAll(this.platoons.get((company *  10) + i));
 		}
 		return uuids;
 	}
 
 	@Override
 	public boolean removeVillager(UUID entityid) {
-		Pair<Integer, UUID> p = findUUID(entityid);
-		if(p != null) {
-			this.platoons.remove(p.a, p.b);
-			if(this.platoons.values().isEmpty()) {
-				Pair<Integer, Integer> p2 = findPlatoon(p.a);
-				if(p2 != null)
-					this.companys.remove(p2.a, p2.b);
-			}
+		boolean flag = false;
+		for(Set<UUID> platoon : this.platoons.values())
+		{
+			flag |= platoon.remove(entityid);
 		}
-		return false;
+		return flag;
 	}
 
-	private Pair<Integer, UUID> findUUID(UUID entityid) {
-		for(int i : this.platoons.keySet()) {
-			for (UUID id : this.platoons.get(i)) {
-				if(id.equals(entityid)) {
-					return new Pair<>(i, id);
+	@Override
+	public Pair<Integer, Integer> getVillagerPlace(UUID uniqueID) 
+	{
+		for(int p = 0; p < this.platoons.size(); p++)
+			for(UUID id : this.platoons.get(p))
+				if(id.equals(uniqueID))
+				{
+					if(ConfigHandler.debug)
+						Log.info("an Id found in baton: %s", uniqueID);
+					return new Pair<Integer, Integer>(p / 10, p);
 				}
-			}
-		}
-		return null;
-	}
-
-	private Pair<Integer, Integer> findPlatoon(int platoonIn) {
-		for(int i : this.companys.keySet())
-			if(this.companys.get(i).contains(platoonIn))
-				return new Pair  (i, platoonIn);
 		return null;
 	}
 
 	@Override
-	public Pair<Integer, Integer> getVillagerPlace(UUID uniqueID) {
-		for(int c : this.companys.keySet())
-			for(int p : this.companys.get(c))
-				for(UUID id : this.platoons.get(p))
-					if(id.equals(uniqueID))
-						return new Pair(c, p);
-
-		return null;
-	}
-
-	@Override
-	public int selectedUnit() {
+	public int selectedUnit() 
+	{
 		return this.selectedUnit;
 	}
 
 	@Override
-	public void setPlatoon(int company, int platoon) {
+	public void setPlatoon(int company, int platoon) 
+	{
 		this.selectedUnit = (10 * company) + platoon;
 	}
 
@@ -187,5 +206,15 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	{
 		this.foodStorePos.put(this.selectedUnit, pos.toLong());
 	}
-
+	
+	@Override
+	public void setPlatoonKitStore(BlockPos pos) 
+	{
+		this.kitStorePos.put(this.selectedUnit, pos.toLong());
+	}
+	
+	public enum Provisions
+	{
+		KIT, PROVISIONS;
+	}
 }

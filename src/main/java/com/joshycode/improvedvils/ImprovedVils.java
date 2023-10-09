@@ -25,7 +25,7 @@ public class ImprovedVils {
 
 	public static final String MODID = "improvedvils";
 	public static final String MODNAME = "Improved Villagers";
-	public static final String VERSION = "1.0.3";
+	public static final String VERSION = "1.0.4";
 	public static final Logger logger = LogManager.getLogger(ImprovedVils.MODID);
 
 	@Instance

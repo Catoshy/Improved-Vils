@@ -8,6 +8,7 @@ import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.util.PathUtil;
 
 import net.minecraft.entity.ai.EntityAIBase;
+import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.util.math.BlockPos;
@@ -65,7 +66,7 @@ public class VillagerAIGuard extends EntityAIBase{
 		{
 			if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) > this.maxDistanceSq)
 			{
-				if(this.generatePath())
+				if(this.generatePath(false))
 				{
 					return true;
 				}
@@ -76,7 +77,7 @@ public class VillagerAIGuard extends EntityAIBase{
 			if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) > this.minDistanceSq &&
 					(this.entityHost.ticksExisted - this.entityHost.getLastAttackedEntityTime()) > 40)
 			{
-				if(this.generatePath())
+				if(this.generatePath(false))
 				{
 					return true;
 				}
@@ -111,14 +112,17 @@ public class VillagerAIGuard extends EntityAIBase{
 		this.ppos = this.entityHost.getPosition();
 	}
 
-	private boolean generatePath()
+	private boolean generatePath(boolean awayFrom)
 	{
 		Vec3d pos;
-		if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH)
+		if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH_SQ)
 		{
 			//pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 16, 8,
 			//		VilCapabilityMethods.guardBlockAsVec(this.entityHost));
-			pos = PathUtil.findBlockInDirection(this.entityHost.getPosition(), VilMethods.getGuardBlockPos(this.entityHost));
+			if(!awayFrom)
+				pos = PathUtil.findBlockInDirection(this.entityHost.getPosition(), VilMethods.getGuardBlockPos(this.entityHost));
+			else
+				pos = RandomPositionGenerator.findRandomTargetBlockAwayFrom(entityHost, 7, 4, VilMethods.guardBlockAsVec(entityHost));
 		}
 		else
 		{
@@ -143,7 +147,7 @@ public class VillagerAIGuard extends EntityAIBase{
 		if(this.path == null)
 		{
 			this.pathFails++;
-			if(generatePath())
+			if(generatePath(false))
 			{
 				this.entityHost.getNavigator().setPath(this.path, .7d);
 			}
@@ -153,7 +157,7 @@ public class VillagerAIGuard extends EntityAIBase{
 		{
 			this.tickCounter = 0;
 			this.pathFails++;
-			if(generatePath())
+			if(generatePath(true))
 			{
 				this.entityHost.getNavigator().setPath(this.path, .7d);
 			}
@@ -170,7 +174,7 @@ public class VillagerAIGuard extends EntityAIBase{
 			{
 				this.pathFails++;
 			}
-			if(this.generatePath())
+			if(this.generatePath(false))
 			{
 				this.entityHost.getNavigator().setPath(this.path, .7d);
 			}

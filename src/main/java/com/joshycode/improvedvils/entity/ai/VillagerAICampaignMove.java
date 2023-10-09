@@ -145,7 +145,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 	private boolean generatePath()
 	{
 		Vec3d pos;
-		if(this.entityHost.getDistanceSq(VilMethods.getCommBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH)
+		if(this.entityHost.getDistanceSq(VilMethods.getCommBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH_SQ)
 		{
 			Vec3d pos1 = PathUtil.findBlockInDirection(this.entityHost.getPosition(), VilMethods.getCommBlockPos(this.entityHost));
 			if(pos1 != null)
@@ -154,7 +154,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 			}
 			else
 			{
-				pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 16, 7, VilMethods.commPosAsVec(this.entityHost));
+				pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 10, 7, VilMethods.commPosAsVec(this.entityHost));
 			}
 		}
 		else

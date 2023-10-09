@@ -92,7 +92,7 @@ public class VilPlayerDealData implements Runnable{
 
 		if(this.village != null && ConfigHandler.debug)
 		{
-			Log.info("found village near villager %s", this.village);
+			Log.info("found village near villager %s", this.village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getUUID());
 		}
 
 		this.isVillagerInHomeVillage = isVillagerInHomeVillage();
@@ -118,6 +118,7 @@ public class VilPlayerDealData implements Runnable{
 			Log.info("villagerPlayerRep %s", this.villagerPlayerRep);
 			Log.info("wholeVillagePlayerRep %s", this.wholeVillagePlayerRep);
 			Log.info("villageCurrentTeamRep %s", this.villageCurrentTeamRep);
+			Log.info("villager's Home Village %s", VilMethods.getHomeVillageId(villager));
 			Log.info("isVillagerInHomeVillage %s", this.isVillagerInHomeVillage);
 			Log.info("noCurrentPlayer %s", this.noCurrentPlayer);
 			Log.info("isCurrentPlayer %s", this.isCurrentPlayer);
@@ -133,7 +134,7 @@ public class VilPlayerDealData implements Runnable{
 
 		if(isTooFar(dist) || !isPlayerOfGoodStanding() || this.villager.isChild()) return;
 
-		VillagerPlayerDealMethods.updateArmourWeaponsAndFood(this.villager, this.player);
+		VillagerPlayerDealMethods.updateArmourWeaponsAndFood(this.villager);
 		VilMethods.setPlayerId(this.player, this.villager);
 
 		if(vilTeam == null || this.player.getTeam().isSameTeam(vilTeam))
@@ -161,7 +162,7 @@ public class VilPlayerDealData implements Runnable{
 			}
 		}
 		/* platoonAndEnlistedStanding = -2; Does not have baton, cannot be Enlisted*/
-		this.player.openGui(ImprovedVils.instance, 100, this.world, this.villager.getEntityId(), platoonAndEnlistedStanding, company);
+		this.player.openGui(ImprovedVils.instance, CommonProxy.VIL_GUI_ID, this.world, this.villager.getEntityId(), platoonAndEnlistedStanding, company);
 	}
 
 	@Nullable
@@ -241,7 +242,8 @@ public class VilPlayerDealData implements Runnable{
 		}
 		else
 		{
-			VilMethods.setPlayerReputation(this.villager, this.player.getUniqueID(), .25F, 0);
+			if(this.villagerPlayerRep == 0)
+				VilMethods.setPlayerReputation(this.villager, this.player.getUniqueID(), .25F, 0);
 		}
 	}
 

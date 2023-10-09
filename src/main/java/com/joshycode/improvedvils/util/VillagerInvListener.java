@@ -2,8 +2,8 @@ package com.joshycode.improvedvils.util;
 
 import java.util.UUID;
 
-import org.jline.utils.Log;
-
+import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.entity.passive.EntityVillager;
@@ -30,11 +30,17 @@ public class VillagerInvListener implements IInventoryChangedListener {
 	{
 		if(this.checkTick == this.entity.ticksExisted) return;
 		
+		if(this.entity.getDistanceSq(this.world.getPlayerEntityByUUID(playerId)) > 12 || !this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getListener()) 
+		{
+			this.entity.getVillagerInventory().removeInventoryChangeListener(this);
+			return;
+		}
 		if(ConfigHandler.debug)
 			Log.info("inventory changed for villager", entity);
 
 		this.checkTick = this.entity.ticksExisted;
-		VillagerPlayerDealMethods.updateGuiForClient(entity, this.world.getPlayerEntityByUUID(this.playerId), false);
-		VillagerPlayerDealMethods.checkArmourWeaponsAndFood(entity, this.world.getPlayerEntityByUUID(this.playerId));
+		VillagerPlayerDealMethods.updateGuiForClient(entity, this.world.getPlayerEntityByUUID(this.playerId));
+		if(this.world.getPlayerEntityByUUID(this.playerId) != null)
+			VillagerPlayerDealMethods.checkArmourWeaponsAndFood(entity, this.playerId);
 	}
 }

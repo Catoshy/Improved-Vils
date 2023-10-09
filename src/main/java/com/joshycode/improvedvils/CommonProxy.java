@@ -9,6 +9,7 @@ import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.entity.ImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability.Provisions;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.capabilities.village.VillageCapability;
 import com.joshycode.improvedvils.entity.EntityBullet;
@@ -19,12 +20,14 @@ import com.joshycode.improvedvils.network.BatonSelectData;
 import com.joshycode.improvedvils.network.GunFiredPacket;
 import com.joshycode.improvedvils.network.MarshalKeyEvent;
 import com.joshycode.improvedvils.network.NetWrapper;
+import com.joshycode.improvedvils.network.OpenClientGui;
 import com.joshycode.improvedvils.network.VilCommandPacket;
 import com.joshycode.improvedvils.network.VilEnlistPacket;
 import com.joshycode.improvedvils.network.VilFollowPacket;
 import com.joshycode.improvedvils.network.VilFoodStorePacket;
 import com.joshycode.improvedvils.network.VilGuardPacket;
 import com.joshycode.improvedvils.network.VilGuiQuery;
+import com.joshycode.improvedvils.network.VilKitStorePacket;
 import com.joshycode.improvedvils.network.VilStateQuery;
 import com.joshycode.improvedvils.network.VilStateUpdate;
 
@@ -45,7 +48,7 @@ import net.minecraftforge.fml.common.registry.GameRegistry.ObjectHolder;
 import net.minecraftforge.fml.relauncher.Side;
 
 @Mod.EventBusSubscriber
-public abstract class CommonProxy {
+public class CommonProxy {
 
 	@ObjectHolder(ImprovedVils.MODID)
 	public static class ItemHolder {
@@ -58,9 +61,17 @@ public abstract class CommonProxy {
 
 	}
 
-	public static final double GUARD_MAX_PATH = 576;
+	public static final double GUARD_MAX_PATH = 16;
+	public static final double GUARD_MAX_PATH_SQ = GUARD_MAX_PATH * GUARD_MAX_PATH;
 	public static final int MAX_GUARD_DIST = 256;
 	public static final int GUARD_IGNORE_LIMIT = 4096;
+	public static final int BATON_GUI_ID = 101;
+	public static final int VIL_GUI_ID = 100;
+	public static final int PLATOON_UP = 0;
+	public static final int PLATOON_DOWN = 1;
+	public static final int COMPANY_UP = 2;
+	public static final int COMPANY_DOWN = 3;
+	public static final int BATON_GUI = 4;
 
 	@SuppressWarnings("rawtypes")
 	public static final HashSet<Class> TARGETS = new HashSet<>();
@@ -135,10 +146,12 @@ public abstract class CommonProxy {
     	NetWrapper.NETWORK.registerMessage(VilStateUpdate.ClientHandler.class, VilStateUpdate.class, 6, Side.CLIENT);
     	NetWrapper.NETWORK.registerMessage(VilFollowPacket.Handler.class, VilFollowPacket.class, 7, Side.SERVER);
     	NetWrapper.NETWORK.registerMessage(VilFoodStorePacket.Handler.class, VilFoodStorePacket.class, 8, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilGuiQuery.Handler.class, VilGuiQuery.class, 9, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(MarshalKeyEvent.Handler.class, MarshalKeyEvent.class, 10, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(BatonSelectData.Handler.class, BatonSelectData.class, 11, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(GunFiredPacket.Handler.class, GunFiredPacket.class, 12, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(VilKitStorePacket.Handler.class, VilKitStorePacket.class, 9, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilGuiQuery.Handler.class, VilGuiQuery.class, 10, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(MarshalKeyEvent.Handler.class, MarshalKeyEvent.class, 11, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(BatonSelectData.Handler.class, BatonSelectData.class, 12, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(GunFiredPacket.Handler.class, GunFiredPacket.class, 13, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(OpenClientGui.Handler.class, OpenClientGui.class, 14, Side.CLIENT);
     }
 
 	@SubscribeEvent
@@ -170,9 +183,15 @@ public abstract class CommonProxy {
 		return ctx.getServerHandler().player.world;
 	}
 
-	public abstract void setHUDinfo(int platoon);
+	public void setHUDinfo(int platoon) {}
 
-	public abstract int timeAgoSinceHudInfo();
+	public int timeAgoSinceHudInfo() {return 24000; }
 
-	public abstract int getSelectedUnit();
+	public int getSelectedUnit() {return 0; }
+	
+	public void setProvisioningPlatoon(int platoon, Provisions kit) {}
+	
+	public int getProvisioningUnit() {return -1; }
+	
+	public Provisions getKit() {return null; }
 }

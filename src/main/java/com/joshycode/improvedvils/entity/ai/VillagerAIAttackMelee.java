@@ -40,7 +40,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	Random rand;
 	Path path;
 	private Item prevHeldItem;
-	private EntityCreature attacker;
+	private EntityVillager attacker;
 	
 	@Nullable
 	double speedToTarget;
@@ -55,12 +55,12 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	private boolean runAway;
 	private boolean brookingRangedWeapon;
 
-	public VillagerAIAttackMelee(EntityCreature creature, double speedIn, boolean useLongMemory)
+	public VillagerAIAttackMelee(EntityVillager villager, double speedIn, boolean useLongMemory)
 	{
-		this.attacker = creature;
+		this.attacker = villager;
         this.longMemory = useLongMemory;
         this.setMutexBits(3);
-		this.attacker = creature;
+		this.attacker = villager;
 		this.rand = new Random();
 		this.speedToTarget = speedIn;
 	}
@@ -126,13 +126,11 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 			{
 				if(!CommonProxy.RANGE_BLACKLIST.contains(this.attacker.getAttackTarget().getClass()))
 				{
-					if(!(ConfigHandler.weaponFromItemName(s).meleeInRange && this.attacker.getDistanceSq(this.attacker.getAttackTarget()) < 8))
+					if(!(ConfigHandler.weaponFromItemName(s).meleeInRange && ((this.attacker.getDistanceSq(this.attacker.getAttackTarget())) < 8 ) || VilMethods.outOfAmmo(this.attacker)))
 					{
 						return true;
 					}
 				}
-				if(ConfigHandler.debug)
-					Log.info("brooking Ranged weapon for melee", null);
 				this.brookingRangedWeapon = true;
 			}
 		}
@@ -282,7 +280,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
         {
             return false;
         }
-    	if(this.brookingRangedWeapon && !(this.attacker.getDistanceSq(this.attacker.getAttackTarget()) < 8))
+    	if(this.brookingRangedWeapon && (!(this.attacker.getDistanceSq(this.attacker.getAttackTarget()) < 8 || VilMethods.outOfAmmo(this.attacker))))
     	{
 			return false;
     	}
@@ -319,7 +317,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 
         ItemStack itemstack = this.attacker.getHeldItemMainhand();
 
-        List<AttributeModifier> l = new ArrayList(itemstack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()));
+        List<AttributeModifier> l = new ArrayList<AttributeModifier>(itemstack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()));
         
         if(!l.isEmpty())
         {

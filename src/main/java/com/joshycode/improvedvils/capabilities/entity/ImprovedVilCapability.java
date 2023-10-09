@@ -38,9 +38,10 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	private boolean isReturning;
 	private BlockPos commObj;
 	private BlockPos foodStorePos;
+	private BlockPos kitStorePos;
 	private boolean movingIndoors;
 	private boolean following;
-	private VillagerInvListener invListener;
+	private boolean invListener;
 	private boolean isDrinking;
 	private boolean isRefilling;
 	private int armourValue;
@@ -48,6 +49,8 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	private boolean hasShield;
 	private float foodSaturationValue;
 	private boolean isMutinous;
+	private boolean noAmmo;
+
 
 	@Override
 	public NBTTagCompound serializeNBT()
@@ -61,6 +64,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bf", following);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bd", isDrinking);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bSh", hasShield);
+		nbt.setBoolean(VILPLAYER_NBT_KEY + "ba", noAmmo);
 		nbt.setInteger(VILPLAYER_NBT_KEY + "iav", armourValue);
 		nbt.setFloat(VILPLAYER_NBT_KEY + "fav", attackValue);
 		nbt.setFloat(VILPLAYER_NBT_KEY + "ffs", foodSaturationValue);
@@ -79,6 +83,11 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 			nbt.setLong(VILPLAYER_NBT_KEY + "bs", Long.MAX_VALUE);
 		else
 			nbt.setLong(VILPLAYER_NBT_KEY + "bs", this.foodStorePos.toLong());
+		
+		if(this.kitStorePos == null)
+			nbt.setLong(VILPLAYER_NBT_KEY + "bk", Long.MAX_VALUE);
+		else
+			nbt.setLong(VILPLAYER_NBT_KEY + "bk", this.kitStorePos.toLong());
 
         if(this.player != null)
 			nbt.setString(VILPLAYER_NBT_KEY, this.player.toString());
@@ -112,6 +121,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		this.following = nbt.getBoolean(VILPLAYER_NBT_KEY + "bf");
 		this.isDrinking = nbt.getBoolean(VILPLAYER_NBT_KEY + "bd");
 		this.hasShield = nbt.getBoolean(VILPLAYER_NBT_KEY + "bSh");
+		this.noAmmo = nbt.getBoolean(VILPLAYER_NBT_KEY + "ba");
 		this.armourValue = nbt.getInteger(VILPLAYER_NBT_KEY + "iav");
 		this.attackValue = nbt.getFloat(VILPLAYER_NBT_KEY + "fav");
 		this.foodSaturationValue = nbt.getFloat(VILPLAYER_NBT_KEY + "ffs");
@@ -134,6 +144,12 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 			this.foodStorePos = null;
 		else
 			this.foodStorePos = BlockPos.fromLong(lf);
+		
+		long lk = nbt.getLong(VILPLAYER_NBT_KEY + "bk");
+		if(lk == Long.MAX_VALUE)
+			this.kitStorePos = null;
+		else
+			this.kitStorePos = BlockPos.fromLong(lk);
 
 		String s = nbt.getString(VILPLAYER_NBT_KEY);
 		if(!s.isEmpty())
@@ -162,20 +178,16 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	}
 
 	@Override
-	public void setPlayerId(UUID id)
-	{
-		//TODO
-		this.player = id;
-	}
+	public void setPlayerId(UUID id) { this.player = id; }
 
 	@Override
 	public UUID getPlayerId() { return this.player; }
 
 	@Override
-	public void setInvListener(VillagerInvListener listenerIn) { this.invListener = listenerIn;}
+	public void setInvListener(boolean isListening) { this.invListener = isListening;}
 
 	@Override
-	public VillagerInvListener getListener() { return this.invListener; }
+	public boolean getListener() { return this.invListener; }
 
 	@Override
 	public void setHungry(boolean isHungry) { this.isHungry = isHungry; }
@@ -224,6 +236,12 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 
 	@Override
 	public void setFoodStore(BlockPos pos) { this.foodStorePos = pos; }
+	
+	@Override
+	public BlockPos getKitStorePos() { return this.kitStorePos; }
+
+	@Override
+	public void setKitStore(BlockPos pos) { this.kitStorePos = pos; }
 
 	@Override
 	public boolean getRefillingFood() { return this.isRefilling; }
@@ -274,12 +292,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	}
 
 	@Override
-	public UUID getHomeVillageID() 
-	{
-		if(ConfigHandler.debug)
-			Log.info("homve village id for villager %s", this.homeVillageId);
-		return this.homeVillageId; 
-	}
+	public UUID getHomeVillageID() { return this.homeVillageId; }
 
 	@Override
 	public int getHomeVillagePlayerReputationReference(UUID uniqueID)
@@ -326,4 +339,11 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 
 	@Override
 	public void setMutinous(boolean setMutiny) { this.isMutinous = setMutiny; }
+
+	@Override
+	public boolean getOutOfAmmo() {	return this.noAmmo; }
+
+	@Override
+	public void setIsOutAmmo(boolean noAmmo) { this.noAmmo = noAmmo; }
+
 }
