@@ -182,7 +182,8 @@ public class VilMethods {
 		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getFoodStorePos();
 	}
 
-	public static void setFoodStore(EntityVillager e, @Nullable BlockPos pos) {
+	public static void setFoodStore(EntityVillager e, @Nullable BlockPos pos) 
+	{
 		e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(pos);
 	}
 	

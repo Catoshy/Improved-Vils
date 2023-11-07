@@ -465,11 +465,18 @@ public class VillagerPlayerDealMethods {
 		 			BlockPos foodStore = cap.getPlatoonFoodStore(company, platoon);
 		 			if(vilCap != null && foodStore != null)
 		 				vilCap.setFoodStore(foodStore);
+		 			
+		 			BlockPos kitStore = cap.getPlatoonKitStore(company, platoon);
+		 			if(vilCap != null && kitStore != null)
+		 				vilCap.setKitStore(kitStore);
+		 			
 		 			cap.addVillager(entity.getUniqueID(), company, platoon);
 		 			return new VilEnlistPacket(0, company, platoon, true);
 		 		}
 		 		else
 		 		{
+		 			vilCap.setFoodStore(null);
+		 			vilCap.setKitStore(null);
 		 			cap.removeVillager(entity.getUniqueID());
 		 			return new VilEnlistPacket(0, 0, 0, false);
 		 		}

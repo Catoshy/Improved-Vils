@@ -19,6 +19,7 @@ public interface IMarshalsBatonCapability extends INBTSerializable<NBTTagCompoun
 	public Set<UUID>getVillagersSelected();
 	@Nullable
 	public BlockPos getPlatoonFoodStore(int company, int platoon2);
+	public BlockPos getPlatoonKitStore(int company, int platoon);
 	public int selectedUnit();
 	public void setPlatoon(int company, int platoon);
 	public void setPlatoonFoodStore(BlockPos pos);

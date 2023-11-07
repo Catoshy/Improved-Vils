@@ -55,7 +55,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 
 		 //ByteArrayOutputStream bacompany = new ByteArrayOutputStream();
 		 ByteArrayOutputStream baplatoon = new ByteArrayOutputStream();
-		 ByteArrayOutputStream bafoodstores = new ByteArrayOutputStream();
+		 ByteArrayOutputStream bastores = new ByteArrayOutputStream();
 		 ObjectOutputStream oos;
 
 	     try
@@ -70,15 +70,17 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 			oos.close();
 		    nbt.setByteArray(BATON_NBT_KEY_P, baplatoon.toByteArray());
 
-		    oos = new ObjectOutputStream(bafoodstores);
+		    oos = new ObjectOutputStream(bastores);
 		    oos.writeObject(this.foodStorePos);
 		    oos.close();
-		    nbt.setByteArray(BATON_NBT_KEY_B, bafoodstores.toByteArray());
+		    nbt.setByteArray(BATON_NBT_KEY_B, bastores.toByteArray());
 		    
-		    oos = new ObjectOutputStream(bafoodstores);
+		    bastores.reset();
+		    
+		    oos = new ObjectOutputStream(bastores);
 		    oos.writeObject(this.kitStorePos);
 		    oos.close();
-		    nbt.setByteArray(BATON_NBT_KEY_K, bafoodstores.toByteArray());
+		    nbt.setByteArray(BATON_NBT_KEY_K, bastores.toByteArray());
 		} catch (IOException e) { e.printStackTrace(); }
 		return nbt;
 	}
@@ -101,7 +103,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_B)));
 			this.foodStorePos = (Map<Integer, Long>) ois.readObject();
 			ois.close();
-			
+						
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_K)));
 			this.kitStorePos = (Map<Integer, Long>) ois.readObject();
 			ois.close();
@@ -205,6 +207,16 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	public void setPlatoonFoodStore(BlockPos pos)
 	{
 		this.foodStorePos.put(this.selectedUnit, pos.toLong());
+	}
+	
+	@Override
+	public BlockPos getPlatoonKitStore(int company, int platoon) 
+	{
+		Long serialized = this.kitStorePos.get(platoon + 10 * company);
+		if(serialized != null)
+			return BlockPos.fromLong(this.kitStorePos.get(platoon + 10 * company));
+		else
+			return null;
 	}
 	
 	@Override
