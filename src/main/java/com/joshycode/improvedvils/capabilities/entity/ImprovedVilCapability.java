@@ -50,6 +50,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	private float foodSaturationValue;
 	private boolean isMutinous;
 	private boolean noAmmo;
+	private boolean duty;
 
 
 	@Override
@@ -65,6 +66,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bd", isDrinking);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "bSh", hasShield);
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "ba", noAmmo);
+		nbt.setBoolean(VILPLAYER_NBT_KEY + "bdu", duty);
 		nbt.setInteger(VILPLAYER_NBT_KEY + "iav", armourValue);
 		nbt.setFloat(VILPLAYER_NBT_KEY + "fav", attackValue);
 		nbt.setFloat(VILPLAYER_NBT_KEY + "ffs", foodSaturationValue);
@@ -122,6 +124,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		this.isDrinking = nbt.getBoolean(VILPLAYER_NBT_KEY + "bd");
 		this.hasShield = nbt.getBoolean(VILPLAYER_NBT_KEY + "bSh");
 		this.noAmmo = nbt.getBoolean(VILPLAYER_NBT_KEY + "ba");
+		this.duty = nbt.getBoolean(VILPLAYER_NBT_KEY + "bdu");
 		this.armourValue = nbt.getInteger(VILPLAYER_NBT_KEY + "iav");
 		this.attackValue = nbt.getFloat(VILPLAYER_NBT_KEY + "fav");
 		this.foodSaturationValue = nbt.getFloat(VILPLAYER_NBT_KEY + "ffs");
@@ -178,25 +181,25 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	}
 
 	@Override
-	public void setPlayerId(UUID id) { this.player = id; }
+	public IImprovedVilCapability setPlayerId(UUID id) { this.player = id; return this;}
 
 	@Override
 	public UUID getPlayerId() { return this.player; }
 
 	@Override
-	public void setInvListener(boolean isListening) { this.invListener = isListening;}
+	public IImprovedVilCapability setInvListener(boolean isListening) { this.invListener = isListening; return this;}
 
 	@Override
 	public boolean getListener() { return this.invListener; }
 
 	@Override
-	public void setHungry(boolean isHungry) { this.isHungry = isHungry; }
+	public IImprovedVilCapability setHungry(boolean isHungry) { this.isHungry = isHungry; return this;}
 
 	@Override
 	public boolean getHungry() { return this.isHungry; }
 
 	@Override
-	public void setGuardBlockPos(BlockPos pos) { this.guardObj = pos; }
+	public IImprovedVilCapability setGuardBlockPos(BlockPos pos) { this.guardObj = pos; return this;}
 
 	@Override
 	public BlockPos getGuardBlockPos() { return this.guardObj; }
@@ -205,10 +208,10 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	public boolean isReturning() { return this.isReturning; }
 
 	@Override
-	public void setReturning(boolean isReturning) { this.isReturning = isReturning; }
+	public IImprovedVilCapability setReturning(boolean isReturning) { this.isReturning = isReturning; return this;}
 
 	@Override
-	public void setCommBlock(BlockPos posIn) { this.commObj = posIn; }
+	public IImprovedVilCapability setCommBlock(BlockPos posIn) { this.commObj = posIn; return this;}
 
 	@Override
 	public BlockPos getCommBlockPos() { return this.commObj; }
@@ -217,43 +220,48 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	public boolean isMovingIndoors() { return this.movingIndoors; }
 
 	@Override
-	public void setMovingIndoors(boolean b) { this.movingIndoors = b; }
+	public IImprovedVilCapability setMovingIndoors(boolean b) { this.movingIndoors = b; return this;}
 
 	@Override
 	public boolean isFollowing() { return this.following; }
 
 	@Override
-	public void setFollowing(boolean follow) { this.following = follow; }
+	public IImprovedVilCapability setFollowing(boolean follow) { this.following = follow; return this;}
 
 	@Override
 	public boolean isDrinking() { return this.isDrinking; }
 
 	@Override
-	public void setDrinking(boolean b) { this.isDrinking = b; }
+	public IImprovedVilCapability setDrinking(boolean b) { this.isDrinking = b; return this;}
 
 	@Override
 	public BlockPos getFoodStorePos() { return this.foodStorePos; }
 
 	@Override
-	public void setFoodStore(BlockPos pos) { this.foodStorePos = pos; }
+	public IImprovedVilCapability setFoodStore(BlockPos pos) { this.foodStorePos = pos; return this;}
 	
 	@Override
 	public BlockPos getKitStorePos() { return this.kitStorePos; }
 
 	@Override
-	public void setKitStore(BlockPos pos) { this.kitStorePos = pos; }
+	public IImprovedVilCapability setKitStore(BlockPos pos) 
+	{ 
+		Log.info("setting Kits store pos in cap, %s", pos);
+		this.kitStorePos = pos; 
+		return this;
+	}
 
 	@Override
 	public boolean getRefillingFood() { return this.isRefilling; }
 
 	@Override
-	public void setRefilling(boolean b) { this.isRefilling = b; }
+	public IImprovedVilCapability setRefilling(boolean b) { this.isRefilling = b; return this;}
 
 	@Override
 	public String getTeam() { return this.teamName; }
 
 	@Override
-	public void setTeam(@Nullable String team) { this.teamName = team; }
+	public IImprovedVilCapability setTeam(@Nullable String team) { this.teamName = team; return this;}
 
 	@Override
 	public float getPlayerReputation(UUID uniqueID)
@@ -266,7 +274,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	}
 
 	@Override
-	public void setPlayerReputation(UUID uniqueID, float f, int i)
+	public IImprovedVilCapability setPlayerReputation(UUID uniqueID, float f, int i)
 	{
 		if(this.playerReputations.get(uniqueID) != null)
 		{
@@ -280,15 +288,17 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 			pair.setRight(MathHelper.clamp(i, -30, 10));
 			this.playerReputations.put(uniqueID, pair);
 		}
+		return this;
 	}
 	
 	@Override
-	public void setPlayerReputationIfEstablished(UUID uniqueID, float f) 
+	public IImprovedVilCapability setPlayerReputationIfEstablished(UUID uniqueID, float f) 
 	{
 		if(this.playerReputations.get(uniqueID) != null)
 		{
 			this.playerReputations.get(uniqueID).setLeft(MathHelper.clamp(f, -30, 40.5f));
 		}
+		return this;
 	}
 
 	@Override
@@ -305,7 +315,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	}
 
 	@Override
-	public void setHomeVillageID(UUID uuid) { this.homeVillageId = uuid; }
+	public IImprovedVilCapability setHomeVillageID(UUID uuid) { this.homeVillageId = uuid; return this;}
 
 	@Override
 	public int getArmourValue() { return this.armourValue; }
@@ -320,16 +330,16 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	public float getFoodSaturation() { return this.foodSaturationValue; }
 
 	@Override
-	public void setArmourValue(int armour) { this.armourValue = armour; }
+	public IImprovedVilCapability setArmourValue(int armour) { this.armourValue = armour; return this;}
 
 	@Override
-	public void setAttackValue(float attackVal) { this.attackValue = attackVal; }
+	public IImprovedVilCapability setAttackValue(float attackVal) { this.attackValue = attackVal; return this;}
 
 	@Override
-	public void setShield(boolean hasShield) { this.hasShield = hasShield; }
+	public IImprovedVilCapability setShield(boolean hasShield) { this.hasShield = hasShield; return this;}
 
 	@Override
-	public void setSaturation(float foodSaturation) { this.foodSaturationValue = foodSaturation; }
+	public IImprovedVilCapability setSaturation(float foodSaturation) { this.foodSaturationValue = foodSaturation; return this;}
 
 	@Override
 	public Collection<UUID> getKnownPlayers() { return this.playerReputations.keySet(); }
@@ -338,12 +348,18 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	public boolean isMutinous() { return this.isMutinous; }
 
 	@Override
-	public void setMutinous(boolean setMutiny) { this.isMutinous = setMutiny; }
+	public IImprovedVilCapability setMutinous(boolean setMutiny) { this.isMutinous = setMutiny; return this;}
 
 	@Override
 	public boolean getOutOfAmmo() {	return this.noAmmo; }
 
 	@Override
-	public void setIsOutAmmo(boolean noAmmo) { this.noAmmo = noAmmo; }
+	public IImprovedVilCapability setIsOutAmmo(boolean noAmmo) { this.noAmmo = noAmmo; return this;}
+
+	@Override
+	public boolean getActiveDuty() { return this.duty; }
+
+	@Override
+	public IImprovedVilCapability setActiveDuty(boolean activeDuty) { this.duty = activeDuty; return this; }
 
 }

@@ -13,55 +13,57 @@ import net.minecraftforge.common.util.INBTSerializable;
 
 public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound> {
 
-	public void setPlayerId(UUID id);
+	public IImprovedVilCapability setPlayerId(UUID id);
 	@Nullable
 	public UUID getPlayerId();
-	public void setGuardBlockPos(BlockPos posIn);
+	public IImprovedVilCapability setGuardBlockPos(BlockPos posIn);
 	@Nullable
 	public BlockPos getGuardBlockPos();
-	public void setCommBlock(BlockPos posIn);
+	public IImprovedVilCapability setCommBlock(BlockPos posIn);
 	@Nullable
 	public BlockPos getCommBlockPos();
 	@Nullable
 	public BlockPos getFoodStorePos();
-	public void setFoodStore(BlockPos pos);
+	public IImprovedVilCapability setFoodStore(BlockPos pos);
 	public BlockPos getKitStorePos();
-	public void setKitStore(BlockPos pos);
+	public IImprovedVilCapability setKitStore(BlockPos pos);
 	public Collection<UUID> getKnownPlayers();
 	public boolean getHungry();
-	public void setHungry(boolean isHungry);
+	public IImprovedVilCapability setHungry(boolean isHungry);
 	public boolean isReturning();
-	public void setReturning(boolean isReturning);
+	public IImprovedVilCapability setReturning(boolean isReturning);
 	public boolean isMovingIndoors();
-	public void setMovingIndoors(boolean b);
+	public IImprovedVilCapability setMovingIndoors(boolean b);
 	public boolean isFollowing();
-	public void setFollowing(boolean follow);
+	public IImprovedVilCapability setFollowing(boolean follow);
 	public boolean isDrinking();
-	public void setDrinking(boolean b);
+	public IImprovedVilCapability setDrinking(boolean b);
 	public boolean getRefillingFood();
-	public void setRefilling(boolean b);
+	public IImprovedVilCapability setRefilling(boolean b);
 	public boolean getListener();
-	public void setInvListener(boolean b);
+	public IImprovedVilCapability setInvListener(boolean b);
 	@Nullable
 	public String getTeam();
-	public void setTeam(String string);
+	public IImprovedVilCapability setTeam(String string);
 	public float getPlayerReputation(UUID uniqueID);
-	public void setPlayerReputation(UUID uniqueID, float f, int i);
+	public IImprovedVilCapability setPlayerReputation(UUID uniqueID, float f, int i);
 	@Nullable
 	public UUID getHomeVillageID();
 	public int getHomeVillagePlayerReputationReference(UUID uniqueId);
-	public void setHomeVillageID(UUID uuid);
+	public IImprovedVilCapability setHomeVillageID(UUID uuid);
 	public int getArmourValue();
 	public float getAttackValue();
 	public boolean getShieldValue();
 	public float getFoodSaturation();
-	public void setArmourValue(int armour);
-	public void setAttackValue(float attackVal);
-	public void setShield(boolean hasShield);
-	public void setSaturation(float foodSaturation);
-	public void setPlayerReputationIfEstablished(UUID player, float f);
+	public IImprovedVilCapability setArmourValue(int armour);
+	public IImprovedVilCapability setAttackValue(float attackVal);
+	public IImprovedVilCapability setShield(boolean hasShield);
+	public IImprovedVilCapability setSaturation(float foodSaturation);
+	public IImprovedVilCapability setPlayerReputationIfEstablished(UUID player, float f);
 	public boolean isMutinous();
-	public void setMutinous(boolean setMutiny);
+	public IImprovedVilCapability setMutinous(boolean setMutiny);
 	public boolean getOutOfAmmo();
-	public void setIsOutAmmo(boolean noAmmo);
+	public IImprovedVilCapability setIsOutAmmo(boolean noAmmo);
+	public boolean getActiveDuty();
+	public IImprovedVilCapability setActiveDuty(boolean activeDuty);
 }

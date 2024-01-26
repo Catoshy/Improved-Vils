@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.jline.utils.Log;
 
+import com.joshycode.improvedvils.handler.ConfigHandler;
+
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
@@ -95,6 +97,7 @@ public class RangeAttackEntry {
 	{
 		if(this.deserializedConsumables == null)
 			this.deserializedConsumables = deserializeItemsFromString();
+		if(ConfigHandler.debug)
 		Log.info("init RangeAttackEntry %s", this.deserializedConsumables);
 	}
 	
@@ -102,7 +105,8 @@ public class RangeAttackEntry {
 	{
 		Map<Item, Integer> items = new HashMap<>();
 		this.consumables.entrySet().forEach(entry -> {
-			Log.info("init RangeAttackEntry deserializeItemsFromString ", entry);
+			if(ConfigHandler.debug)
+				Log.info("init RangeAttackEntry deserializeItemsFromString ", entry);
 			ForgeRegistries.ITEMS.getValuesCollection().forEach(item -> {
 				if(item.getUnlocalizedName().equals(entry.getKey()))
 					items.put(item, entry.getValue());

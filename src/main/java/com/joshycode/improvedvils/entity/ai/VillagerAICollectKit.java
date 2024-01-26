@@ -1,6 +1,5 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -8,17 +7,15 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import org.jline.utils.Log;
-
+import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.WeaponBrooksData;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
-import com.joshycode.improvedvils.util.Pair;
+import com.joshycode.improvedvils.util.PathUtil;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.block.Block;
@@ -31,12 +28,14 @@ import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
+import net.minecraft.pathfinding.Path;
+import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.potion.PotionHealth;
 import net.minecraft.potion.PotionUtils;
@@ -55,15 +54,20 @@ public class VillagerAICollectKit extends EntityAIBase {
 	private Map<Item, EntityEquipmentSlot> kitToCollect;
 	private Map<Item, Integer> ammoToCollect;
 	private int idleTicks;
-	private int waitTicks;
+	private int pathfindingFails;
+	private final int mostPathfindingFails;
+	private float distanceToObj;
 	private boolean refilled;
 	BlockPos kitStore;
 	BlockPos prevPos;
+	private Path path;
 
-	public VillagerAICollectKit(EntityVillager villager)
+	public VillagerAICollectKit(EntityVillager villager, int mostFails)
 	{
 		super();
 		this.villager = villager;
+		this.mostPathfindingFails = mostFails;
+		this.pathfindingFails = 0;
 		this.villagerKit = new InventoryHands(villager, "Hands", false);
 		this.ammoToCollect = new HashMap<>();
 		this.kitToCollect = new HashMap<>();
@@ -73,16 +77,16 @@ public class VillagerAICollectKit extends EntityAIBase {
 	@Override
 	public boolean shouldExecute()
 	{
-		if((VilMethods.getKitStorePos(villager) == null) || this.isDoingSomethingMoreImportant() /*|| (this.villager.getRNG().nextInt(5) != 0) || this.waitTicks-- > 0*/)
+		if((VilMethods.getKitStorePos(this.villager) == null) || this.isDoingSomethingMoreImportant() || (this.villager.getRNG().nextInt(5) != 0))
 			return false;
 		
-		this.kitStore = VilMethods.getKitStorePos(villager);	
+		this.kitStore = VilMethods.getKitStorePos(this.villager);	
 		IInventory inv = getTileInventory();
 		if(this.kitStore != null && inv != null)
 		{
-			if(VilMethods.getGuardBlockPos(villager) != null)
+			if(VilMethods.getGuardBlockPos(this.villager) != null)
 			{
-				double dist = VilMethods.getGuardBlockPos(villager).getDistance(this.kitStore.getX(), this.kitStore.getY(), this.kitStore.getZ());
+				double dist = VilMethods.getGuardBlockPos(this.villager).getDistance(this.kitStore.getX(), this.kitStore.getY(), this.kitStore.getZ());
 				double distSq = dist * dist;
 
 				if(distSq > CommonProxy.GUARD_IGNORE_LIMIT)
@@ -96,6 +100,9 @@ public class VillagerAICollectKit extends EntityAIBase {
 		boolean collectKit = this.canCollectKit(inv);
 		boolean collectAmmo = this.canCollectAmmo(inv);
 		boolean collectPotions = this.canCollectPotions(inv);
+		
+		if(collectKit || collectAmmo || collectPotions)
+			Log.info("So true! %s", this.villager.getUniqueID());
 		return collectKit || collectAmmo || collectPotions;
 	}
 
@@ -167,7 +174,8 @@ public class VillagerAICollectKit extends EntityAIBase {
 		return false;
 	}
 
-	private Map<Item, Integer> multiplyConsumables(RangeAttackEntry ammunitionHeld) {
+	private Map<Item, Integer> multiplyConsumables(RangeAttackEntry ammunitionHeld) 
+	{
 		Map<Item, Integer> consumables = new HashMap<Item, Integer>(ammunitionHeld.getConsumables());
 		for(Item item : consumables.keySet())
 		{
@@ -282,7 +290,17 @@ public class VillagerAICollectKit extends EntityAIBase {
 		this.refilled = false;
 		this.idleTicks = 0;
 		VilMethods.setRefilling(this.villager, true);
-		this.villager.getNavigator().tryMoveToXYZ(kitStore.getX(), kitStore.getY(), kitStore.getZ(), this.villager.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
+		this.kitStore = VilMethods.getKitStorePos(this.villager);
+		if(generatePath())
+		{
+			PathPoint pp = this.path.getFinalPathPoint();
+			if(pp != null)
+			{
+				this.distanceToObj = pp.distanceTo(new PathPoint(this.kitStore.getX(), this.kitStore.getY(), this.kitStore.getZ()));
+			}
+			this.villager.getNavigator().setPath(this.path, this.villager.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
+		}
+		this.prevPos = this.villager.getPosition();
 	}
 
 	private boolean isDoingSomethingMoreImportant()
@@ -300,16 +318,31 @@ public class VillagerAICollectKit extends EntityAIBase {
 
 	@Override
 	public void updateTask()
-	{
-		if(this.villager.getDistanceSq(this.kitStore) < 2.0D && !this.refilled)
+	{	
+		if(this.idleTicks > 20)
 		{
-			this.refilled = true;
+			this.idleTicks = 0;
+			this.tryToGetCloser();
+			this.pathfindingFails++;
+		}
+		if(this.villager.getDistanceSq(this.kitStore) < 4.0D && !this.refilled)
+		{
 			refillInventory();
 
-			Vec3d vec = getPosition();
-			if(vec != null)
-				this.villager.getNavigator().tryMoveToXYZ(vec.x, vec.y, vec.z, this.villager.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
+			Vec3d vec1 = getRandomPosition();
+			if(vec1 != null)
+				this.villager.getNavigator().tryMoveToXYZ(vec1.x, vec1.y, vec1.z, this.villager.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
 		}
+		if(this.villager.getNavigator().getPath() != null && this.villager.getNavigator().getPath().isFinished())
+		{
+			this.tryToGetCloser();
+		}
+		else if(this.villager.getNavigator().getPath() == null)
+		{
+			this.pathfindingFails++;
+			this.tryToGetCloser();
+		}
+		
 		if(this.villager.getPosition().equals(this.prevPos))
 		{
 			this.idleTicks++;
@@ -325,7 +358,7 @@ public class VillagerAICollectKit extends EntityAIBase {
 	public boolean shouldContinueExecuting()
 	{
 		int revengeTime = this.villager.ticksExisted - this.villager.getRevengeTimer();
-		if((revengeTime < 20 && revengeTime >= 0) || this.idleTicks > 40)
+		if((revengeTime < 20 && revengeTime >= 0) || this.pathfindingFails > this.mostPathfindingFails)
 			return false;
 		if((VilMethods.getGuardBlockPos(villager) != null && this.refilled) || (this.villager.getNavigator().noPath() && this.refilled))
 			return false;
@@ -338,6 +371,7 @@ public class VillagerAICollectKit extends EntityAIBase {
 		super.resetTask();
 		this.ammoToCollect.clear();
 		this.kitToCollect.clear();
+		this.pathfindingFails = 0;
 		VilMethods.setRefilling(this.villager, false);
 	}
 
@@ -372,11 +406,13 @@ public class VillagerAICollectKit extends EntityAIBase {
 					continue;
 				}
 			}		
-			VillagerPlayerDealMethods.checkArmourWeaponsAndFood(this.villager, VilMethods.getPlayerId(this.villager));	
+			VillagerPlayerDealMethods.checkArmourWeaponsAndFood(this.villager, VilMethods.getPlayerId(this.villager));
+			this.refilled = true;
 		}
 		else
 		{
-			VilMethods.setKitStore(this.villager, null);
+			if(this.villager.world.isAreaLoaded(this.kitStore, 1))
+				VilMethods.setKitStore(this.villager, null);
 		}
 	}
 
@@ -419,9 +455,58 @@ public class VillagerAICollectKit extends EntityAIBase {
 	}
 
 	@Nullable
-	protected Vec3d getPosition()
+	protected Vec3d getRandomPosition()
     {
         return RandomPositionGenerator.findRandomTarget(this.villager, 8, 6);
     }
-
+	
+	private void tryToGetCloser() 
+	{
+		if(generatePath())
+		{
+			PathPoint pp = this.path.getFinalPathPoint();
+			if(pp != null)
+			{
+				float newDistanceToObj = pp.distanceTo(new PathPoint(this.kitStore.getX(), this.kitStore.getY(), this.kitStore.getZ()));
+				if(newDistanceToObj >= this.distanceToObj)
+				{
+					this.pathfindingFails++;
+				}
+				this.distanceToObj = newDistanceToObj;
+			}
+			this.villager.getNavigator().setPath(this.path, this.villager.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
+		}	
+	}
+	
+	private boolean generatePath()
+	{
+		Vec3d pos;
+		if(this.villager.getDistanceSq(this.kitStore) > CommonProxy.GUARD_MAX_PATH_SQ)
+		{
+			Vec3d pos1 = PathUtil.findNavigableBlockInDirection(this.villager.getPosition(), this.kitStore, this.villager);
+			if(pos1 != null)
+			{
+				pos = pos1;
+			}
+			else
+			{
+				pos = RandomPositionGenerator.findRandomTargetBlockTowards(this.villager, 10, 7, new Vec3d(this.kitStore));
+			}
+		}
+		else
+		{
+			pos = new Vec3d(this.kitStore);
+		}
+		if(pos == null)
+		{
+			this.pathfindingFails++;
+			return false;
+		}
+		this.path = this.villager.getNavigator().getPathToXYZ(pos.x, pos.y, pos.z);
+		if(this.path != null)
+		{
+			return true;
+		}
+		return false;
+	}
 }

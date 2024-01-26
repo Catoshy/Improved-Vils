@@ -4,8 +4,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 
-import javax.annotation.Nullable;
-import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
@@ -35,6 +33,9 @@ import com.joshycode.improvedvils.entity.ai.VillagerAIVillagerInteract;
 import com.joshycode.improvedvils.entity.ai.VillagerAIWanderAvoidWater;
 import com.joshycode.improvedvils.event.ChildGrowEvent;
 import com.joshycode.improvedvils.gui.GuiVillagerArm;
+import com.joshycode.improvedvils.handler.VillagerPredicate.EnemyPlayerAttackPredicate;
+import com.joshycode.improvedvils.handler.VillagerPredicate.EnemyVillagerAttackPredicate;
+import com.joshycode.improvedvils.handler.VillagerPredicate.FriendlyFireVillagerPredicate;
 import com.joshycode.improvedvils.util.VilAttributes;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
@@ -43,7 +44,6 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLivingBase;
@@ -70,13 +70,10 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.village.Village;
-import net.minecraftforge.client.event.GuiContainerEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
-import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.EntityEvent.EntityConstructing;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
@@ -95,6 +92,7 @@ public class EventHandlerVil {
 
 	private Random rand;
 	private static final String modify_villager = ImprovedVils.MODID + ":initAttr";
+	
 
 	public EventHandlerVil()
 	{
@@ -287,6 +285,7 @@ public class EventHandlerVil {
 	@SubscribeEvent(priority=EventPriority.HIGH, receiveCanceled=true)
 	public void onKeyPressed(KeyInputEvent event)
 	{
+		//TODO off hand should also work
 		ItemStack heldItem = Minecraft.getMinecraft().getRenderViewEntity().getHeldEquipment().iterator().next();
 		if(!heldItem.getItem().equals(CommonProxy.ItemHolder.BATON)) return;
 		
@@ -362,28 +361,21 @@ public class EventHandlerVil {
 				toRem.add(ai);
 		}
 		entity.tasks.taskEntries.removeAll(toRem);
+		
+		VillagerAICampaignEat aiCEat = new VillagerAICampaignEat(entity, ConfigHandler.dailyBread);
+		entity.getVillagerInventory().addInventoryChangeListener(aiCEat);
 		entity.tasks.addTask(9, new VillagerAIWanderAvoidWater(entity, .6D));
 		entity.tasks.addTask(9, new VillagerAIVillagerInteract(entity));
-		entity.tasks.addTask(6, new VillagerAIRefillFood(entity));
-		entity.tasks.addTask(3, new VillagerAICollectKit(entity));
+		entity.tasks.addTask(6, new VillagerAIRefillFood(entity, 4));
+		entity.tasks.addTask(3, new VillagerAICollectKit(entity, 4));
 		entity.tasks.addTask(4, new VillagerAIMate(entity));
 		entity.tasks.addTask(6, new VillagerAIMoveTowardsRestriction(entity, 0.6D));
-		entity.tasks.addTask(6, new VillagerAIFollow(entity, .67D, 6.0F));
+		entity.tasks.addTask(6, new VillagerAIFollow(entity, .67D, 6.0F, ConfigHandler.followRange - 2.0F));
 		entity.tasks.addTask(4, new VillagerAIMoveIndoors(entity));
 		entity.tasks.addTask(4, new VillagerAIDrinkPotion(entity));
 		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, .55D, false));
-		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new VillagerPredicate<Entity>(entity) {
-			 @Override
-			public boolean apply(@Nullable Entity potentialEnemyVil)
-	            {
-				 if(!(potentialEnemyVil instanceof EntityVillager) || potentialEnemyVil.isEntityEqual(this.taskOwner)) return false;
-				 
-				 IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-				 IImprovedVilCapability predCapability = potentialEnemyVil.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-				 	return predCapability.getTeam() == null || taskOwnerCapability.getTeam() == null || taskOwnerCapability.getTeam().equals(predCapability.getTeam());
-	            }
-		}));//TODO changed ranged to 5 priority, all ais that were 5 downgraded to 6
-		entity.tasks.addTask(1, new VillagerAICampaignEat(entity));
+		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new FriendlyFireVillagerPredicate(entity)));//TODO changed ranged to 5 priority, all ais that were 5 downgraded to 6
+		entity.tasks.addTask(1, aiCEat);
 		entity.tasks.addTask(1, new VillagerAIEatHeal(entity));
 		entity.tasks.addTask(1, new VillagerAIHandlePlayers(entity));
 		entity.tasks.addTask(3, new VillagerAICampaignMove(entity, 490));
@@ -394,45 +386,18 @@ public class EventHandlerVil {
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVindicator.class, 8.0F, 0.8D, 0.8D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVex.class, 8.0F, 0.6D, 0.6D));
 		
+		//TODO proxy TARGETS?
 		for(String s : ConfigHandler.attackableMobs)
-			entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity,
-					EntityList.getClass(new ResourceLocation(s)), true));
-		
-		entity.targetTasks.addTask(2, new VillagerAIHurtByTarget(entity, false));
-		entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityMob.class, true));
-		entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityVillager.class, true, false, new VillagerPredicate<EntityVillager>(entity) {
-			 @Override
-			public boolean apply(@Nullable EntityVillager potentialEnemyVil)
-	            {
-				 IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-				 IImprovedVilCapability predCapability = potentialEnemyVil.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-				 	return predCapability.getTeam() != null && taskOwnerCapability.getTeam() != null && !taskOwnerCapability.getTeam().equals(predCapability.getTeam());
-	            }
-		}));
-		entity.targetTasks.addTask(3, new VillagerAIAttackNearestTarget(entity, EntityPlayer.class, true, false, new VillagerPredicate<EntityPlayer>(entity) {
-			@Override
-			public boolean apply(@Nullable EntityPlayer player)
-            {
-				IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-				return taskOwnerCapability.getTeam() != null && player.getTeam() != null && !taskOwnerCapability.getTeam().equals(player.getTeam().getName()) && checkPlayerRelations(taskOwnerCapability, player);
-            }
-			 
-			private boolean checkPlayerRelations(IImprovedVilCapability taskOwnerCapability, EntityPlayer player)
-			{
-				float reputation = taskOwnerCapability.getPlayerReputation(player.getUniqueID());
-				return reputation < 2 && (!taskOwnerCapability.isMutinous() || reputation < VillagerPlayerDealMethods.UNBEARABLE_THRESHOLD);
-			}
-		}));
-	}
-
-	public static abstract class VillagerPredicate<T extends Entity> implements Predicate<T> {
-
-		protected EntityVillager taskOwner;
-
-		protected VillagerPredicate(EntityVillager taskOwner) 
 		{
-			super();
-			this.taskOwner = taskOwner;
+			Class c = EntityList.getClass(new ResourceLocation(s));
+			if(c != null && EntityLivingBase.class.isAssignableFrom(c))
+				entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, c, true));
 		}
+		if(!ConfigHandler.whiteListMobs)
+			entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityMob.class, true));
+		//TODO static final predicates
+		entity.targetTasks.addTask(1, new VillagerAIHurtByTarget(entity, false));
+		entity.targetTasks.addTask(4, new VillagerAIAttackNearestTarget<EntityVillager>(entity, EntityVillager.class, true, new EnemyVillagerAttackPredicate<EntityVillager>(entity)));
+		entity.targetTasks.addTask(5, new VillagerAIAttackNearestTarget<EntityPlayer>(entity, EntityPlayer.class, true, new EnemyPlayerAttackPredicate<EntityPlayer>(entity)));
 	}
 }

@@ -10,23 +10,26 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 public class VilStateUpdate implements IMessage{
 
-	int guardStateVal, followStateVal, enlistC, enlistP;
+	int guardStateVal, followStateVal, dutyStateVal, enlistC, enlistP;
+	boolean hungry;
 	Vec3i vec;
 
-	public VilStateUpdate() { guardStateVal = 0; followStateVal = 0; enlistC = 0; enlistP = 0; vec = Vec3i.NULL_VECTOR; }
+	public VilStateUpdate() { guardStateVal = 0; followStateVal = 0; enlistC = 0; enlistP = 0; hungry = false; vec = Vec3i.NULL_VECTOR; }
 
-	public VilStateUpdate(int int1, int int2, int enlistC, int enlistP, Vec3i vec)
+	public VilStateUpdate(int int1, int int2, int int3, boolean hungry, int enlistC, int enlistP, Vec3i vec)
 	{
 		this.guardStateVal = int1;
 		this.followStateVal = int2;
+		this.dutyStateVal = int3;
+		this.hungry = hungry;
 		this.enlistC = enlistC;
 		this.enlistP = enlistP;
 		this.vec = vec;
 	}
 
-	public VilStateUpdate(int int1, int int2, int enlistC, int enlistP)
+	public VilStateUpdate(int int1, int int2, int int3, boolean hungry, int enlistC, int enlistP)
 	{
-		this(int1, int2, enlistC, enlistP, Vec3i.NULL_VECTOR);
+		this(int1, int2, int3, hungry, enlistC, enlistP, Vec3i.NULL_VECTOR);
 	}
 
 	@Override
@@ -34,6 +37,8 @@ public class VilStateUpdate implements IMessage{
 	{
 		buf.writeInt(this.guardStateVal);
 		buf.writeInt(this.followStateVal);
+		buf.writeInt(this.dutyStateVal);
+		buf.writeBoolean(this.hungry);
 		buf.writeInt(enlistC);
 		buf.writeInt(enlistP);
 		buf.writeInt(vec.getX());
@@ -46,6 +51,8 @@ public class VilStateUpdate implements IMessage{
 	{
 		this.guardStateVal = buf.readInt();
 		this.followStateVal = buf.readInt();
+		this.dutyStateVal = buf.readInt();
+		this.hungry = buf.readBoolean();
 		this.enlistC = buf.readInt();
 		this.enlistP = buf.readInt();
 		int x = buf.readInt();
@@ -59,7 +66,7 @@ public class VilStateUpdate implements IMessage{
 		@Override
 		public IMessage onMessage(VilStateUpdate message, MessageContext ctx)
 		{
-			 ClientProxy.updateVillagerGuardGUIInfo(message.vec, message.guardStateVal, message.followStateVal, message.enlistC, message.enlistP);
+			 ClientProxy.updateVillagerGuardGUIInfo(message.vec, message.guardStateVal, message.followStateVal, message.dutyStateVal, message.hungry, message.enlistC, message.enlistP);
 			 return null;
 		}
 	}

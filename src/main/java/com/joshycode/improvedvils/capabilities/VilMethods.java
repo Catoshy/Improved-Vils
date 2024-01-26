@@ -132,6 +132,7 @@ public class VilMethods {
 		return false;
 	}
 
+	@Nullable
 	public static UUID getPlayerId(EntityVillager e)
 	{
 		try
@@ -144,14 +145,13 @@ public class VilMethods {
 
 	public static boolean isOutsideHomeDist(EntityVillager attacker)
 	{
-		if(!attacker.isWithinHomeDistanceCurrentPosition())
+		if(!attacker.isWithinHomeDistanceCurrentPosition()) //not at home?
 		{
-			if(InventoryUtil.doesInventoryHaveItem
-					(attacker.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0)
+			if(!VilMethods.getDuty(attacker)) //not on duty?
 			{
-				return false;
+				return true; //yes he's outside
 			}
-			return true;
+			return false; //otherwise no.
 		}
 		else
 		{
@@ -246,5 +246,15 @@ public class VilMethods {
 	public static void setOutOfAmmo(EntityVillager villager, boolean noAmmo)
 	{
 		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setIsOutAmmo(noAmmo);
+	}
+
+	public static boolean getDuty(EntityVillager villager) 
+	{
+		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getActiveDuty();
+	}
+
+	public static void setDuty(EntityVillager villager, boolean duty) 
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setActiveDuty(duty);
 	}
 }

@@ -5,11 +5,14 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.ImprovedVils;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
+import com.joshycode.improvedvils.util.PathUtil;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.block.Block;
@@ -23,6 +26,8 @@ import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
+import net.minecraft.pathfinding.Path;
+import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.EntitySelectors;
@@ -31,35 +36,51 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
+//TODO combine exactsame methods between this class AIRefillKit, and AICampaignMove into one parent class for readability
 public class VillagerAIRefillFood extends EntityAIBase {
 
+	private static final String refillCooldownInfo = ImprovedVils.MODID + ":refill";
 	private EntityVillager villager;
 	private int idleTicks;
-	private int waitTicks;
+	private int pathfindingFails;
+	private int refillCooldown;
+	private final int mostPathfindingFails;
 	private boolean refilled;
 	BlockPos foodStore;
 	BlockPos prevPos;
+	private Path path;
+	private float distanceToObj;
 
-	public VillagerAIRefillFood(EntityVillager villager)
+	public VillagerAIRefillFood(EntityVillager villager, int mostFails)
 	{
 		super();
+		this.mostPathfindingFails = mostFails;
 		this.villager = villager;
+		this.refillCooldown = villager.getEntityData().getInteger(refillCooldownInfo);
+		if(this.refillCooldown <= 0)
+			this.refillCooldown = 1;
 		this.setMutexBits(3);
 	}
 
 	@Override
 	public boolean shouldExecute()
 	{
-		if((VilMethods.getFoodStorePos(villager) == null) || this.isDoingSomethingMoreImportant() || (this.villager.getRNG().nextInt(5) != 0) || this.waitTicks-- > 0)
+		if((VilMethods.getFoodStorePos(this.villager) == null) || this.isDoingSomethingMoreImportant() || (this.villager.getRNG().nextInt(5) != 0))
 			return false;
-		if(VilMethods.getGuardBlockPos(villager) != null)
+		if(this.refillCooldown-- > 0)
 		{
-			BlockPos foodStorePos = VilMethods.getFoodStorePos(villager);
+			if(this.refillCooldown % 20 == 0)
+				this.villager.getEntityData().setInteger(refillCooldownInfo, this.refillCooldown);
+			return false;
+		}
+		if(VilMethods.getGuardBlockPos(this.villager) != null)
+		{
+			BlockPos foodStorePos = VilMethods.getFoodStorePos(this.villager);
 			if(foodStorePos != null)
 			{
-				double dist = VilMethods.getGuardBlockPos(villager).getDistance(foodStorePos.getX(), foodStorePos.getY(), foodStorePos.getZ());
+				double dist = VilMethods.getGuardBlockPos(this.villager).getDistance(foodStorePos.getX(), foodStorePos.getY(), foodStorePos.getZ());
 				double distSq = dist * dist;
-
+								
 				if(distSq > CommonProxy.GUARD_IGNORE_LIMIT)
 					return false;
 			}
@@ -70,12 +91,14 @@ public class VillagerAIRefillFood extends EntityAIBase {
 		}
 
 		float totalFoodSaturation = 0;
+		float collectThreshold = ConfigHandler.collectFoodThreshold * .6F;
 		for(ItemStack foodItem : InventoryUtil.getStacksByItem(this.villager.getVillagerInventory(), ItemFood.class))
 		{
 			totalFoodSaturation += ((ItemFood) foodItem.getItem()).getSaturationModifier(foodItem) * foodItem.getCount();
 		}
-		if(totalFoodSaturation < (ConfigHandler.collectFoodThreshold * .6f))
+		if(totalFoodSaturation < collectThreshold)
 		{
+			Log.info("So true! Food! %s", this.villager.getUniqueID());
 			return true;
 		}
 
@@ -88,8 +111,17 @@ public class VillagerAIRefillFood extends EntityAIBase {
 		this.refilled = false;
 		this.idleTicks = 0;
 		VilMethods.setRefilling(this.villager, true);
-		this.foodStore = VilMethods.getFoodStorePos(villager);
-		this.villager.getNavigator().tryMoveToXYZ(foodStore.getX(), foodStore.getY(), foodStore.getZ(), this.villager.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
+		this.foodStore = VilMethods.getFoodStorePos(this.villager);
+		if(generatePath())
+		{
+			PathPoint pp = this.path.getFinalPathPoint();
+			if(pp != null)
+			{
+				this.distanceToObj = pp.distanceTo(new PathPoint(this.foodStore.getX(), this.foodStore.getY(), this.foodStore.getZ()));
+			}
+			this.villager.getNavigator().setPath(this.path, this.villager.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
+		}
+		this.prevPos = this.villager.getPosition();
 	}
 
 	private boolean isDoingSomethingMoreImportant()
@@ -108,15 +140,30 @@ public class VillagerAIRefillFood extends EntityAIBase {
 	@Override
 	public void updateTask()
 	{
-		if(this.villager.getDistanceSq(this.foodStore) < 2.0D && !this.refilled)
+		if(this.idleTicks > 20)
 		{
-			this.refilled = true;
+			this.idleTicks = 0;
+			this.tryToGetCloser();
+			this.pathfindingFails++;
+		}
+		if(this.villager.getDistanceSq(this.foodStore) < 4.0D && !this.refilled)
+		{
 			refillInventory();
 
-			Vec3d vec = getPosition();
-			if(vec != null)
-				this.villager.getNavigator().tryMoveToXYZ(vec.x, vec.y, vec.z, this.villager.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
+			Vec3d vec1 = getRandomPosition();
+			if(vec1 != null)
+				this.villager.getNavigator().tryMoveToXYZ(vec1.x, vec1.y, vec1.z, this.villager.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
 		}
+		if(this.villager.getNavigator().getPath() != null && this.villager.getNavigator().getPath().isFinished())
+		{
+			this.tryToGetCloser();
+		}
+		else if(this.villager.getNavigator().getPath() == null)
+		{
+			this.pathfindingFails++;
+			this.tryToGetCloser();
+		}
+		
 		if(this.villager.getPosition().equals(this.prevPos))
 		{
 			this.idleTicks++;
@@ -132,7 +179,7 @@ public class VillagerAIRefillFood extends EntityAIBase {
 	public boolean shouldContinueExecuting()
 	{
 		int revengeTime = this.villager.ticksExisted - this.villager.getRevengeTimer();
-		if((revengeTime < 20 && revengeTime >= 0) || this.idleTicks > 40)
+		if((revengeTime < 20 && revengeTime >= 0) || this.pathfindingFails > this.mostPathfindingFails)
 			return false;
 		if((VilMethods.getGuardBlockPos(villager) != null && this.refilled) || (this.villager.getNavigator().noPath() && this.refilled))
 			return false;
@@ -143,6 +190,9 @@ public class VillagerAIRefillFood extends EntityAIBase {
 	public void resetTask()
 	{
 		super.resetTask();
+		this.path = null;
+		this.pathfindingFails = 0;
+		this.refillCooldown = this.villager.getRNG().nextInt(50) + 75;
 		VilMethods.setRefilling(this.villager, false);
 	}
 
@@ -175,11 +225,8 @@ public class VillagerAIRefillFood extends EntityAIBase {
 			}
 			float collectedSaturation = ConfigHandler.collectFoodThreshold * .6f - saturation;
 			
-			if(collectedSaturation == 0)
-				this.waitTicks = 500;
-			
 			this.changePlayerReputation(collectedSaturation);
-				
+			this.refilled = true;
 		}
 		else
 		{
@@ -199,12 +246,12 @@ public class VillagerAIRefillFood extends EntityAIBase {
 	{
 		IInventory iinventory = null;
 		World world = this.villager.getEntityWorld();
-		IBlockState state = world.getBlockState(foodStore);
+		IBlockState state = world.getBlockState(this.foodStore);
 		Block block = state.getBlock();
 		if(!block.hasTileEntity(state))
 			return null;
 
-        TileEntity tileentity = world.getTileEntity(foodStore);
+        TileEntity tileentity = world.getTileEntity(this.foodStore);
 
         if (tileentity instanceof IInventory)
         {
@@ -212,7 +259,7 @@ public class VillagerAIRefillFood extends EntityAIBase {
 
             if (iinventory instanceof TileEntityChest && block instanceof BlockChest)
             {
-                iinventory = ((BlockChest)block).getContainer(world, foodStore, true);
+                iinventory = ((BlockChest)block).getContainer(world, this.foodStore, true);
             }
         }
 
@@ -222,7 +269,7 @@ public class VillagerAIRefillFood extends EntityAIBase {
 
         if (iinventory == null)
         {
-            List<Entity> list = world.getEntitiesInAABBexcluding((Entity)null, new AxisAlignedBB(x - 0.5D, y - 0.5D, z - 0.5D, x + 0.5D, y + 0.5D, z + 0.5D), EntitySelectors.HAS_INVENTORY);
+            List<Entity> list = world.getEntitiesInAABBexcluding((Entity) this.villager, new AxisAlignedBB(x - 0.5D, y - 0.5D, z - 0.5D, x + 0.5D, y + 0.5D, z + 0.5D), EntitySelectors.HAS_INVENTORY);
 
             if (!list.isEmpty())
             {
@@ -233,9 +280,54 @@ public class VillagerAIRefillFood extends EntityAIBase {
 	}
 
 	@Nullable
-	protected Vec3d getPosition()
+	protected Vec3d getRandomPosition()
     {
         return RandomPositionGenerator.findRandomTarget(this.villager, 8, 6);
     }
-
+	
+	private void tryToGetCloser() 
+	{
+		if(generatePath())
+		{
+			PathPoint pp = this.path.getFinalPathPoint();
+			if(pp != null)
+			{
+				float newDistanceToObj = pp.distanceTo(new PathPoint(this.foodStore.getX(), this.foodStore.getY(), this.foodStore.getZ()));
+				if(newDistanceToObj >= this.distanceToObj)
+				{
+					this.pathfindingFails++;
+				}
+				this.distanceToObj = newDistanceToObj;
+			}
+			this.villager.getNavigator().setPath(this.path, this.villager.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
+		}	
+	}
+	
+	private boolean generatePath()
+	{
+		Vec3d pos;
+		if(this.villager.getDistanceSq(this.foodStore) > CommonProxy.GUARD_MAX_PATH_SQ)
+		{
+			Vec3d pos1 = PathUtil.findNavigableBlockInDirection(this.villager.getPosition(), this.foodStore, this.villager);
+			if(pos1 != null)
+				pos = pos1;
+			else
+				pos = RandomPositionGenerator.findRandomTargetBlockTowards(this.villager, 10, 7, new Vec3d(this.foodStore));
+		}
+		else
+		{
+			pos = new Vec3d(this.foodStore);
+		}
+		if(pos == null)
+		{
+			this.pathfindingFails++;
+			return false;
+		}
+		this.path = this.villager.getNavigator().getPathToXYZ(pos.x, pos.y, pos.z);
+		if(this.path != null)
+		{
+			return true;
+		}
+		return false;
+	}
 }

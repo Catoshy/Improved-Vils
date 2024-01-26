@@ -3,6 +3,7 @@ package com.joshycode.improvedvils.gui;
 import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.entity.EntityVillagerContainer;
 import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
@@ -10,6 +11,7 @@ import com.joshycode.improvedvils.util.VillagerInvListener;
 
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.IGuiHandler;
 

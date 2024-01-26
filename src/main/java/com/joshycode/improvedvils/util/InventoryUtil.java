@@ -48,6 +48,7 @@ public class InventoryUtil {
 		return null;
 	}
 
+	@Nullable
 	public static ItemStack get1StackByItem(IInventory invIn, Item item)
 	{
 		ItemStack rStack = null;

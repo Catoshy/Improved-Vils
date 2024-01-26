@@ -2,16 +2,17 @@ package com.joshycode.improvedvils.network;
 
 import java.util.Set;
 
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.item.ItemMarshalsBaton;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -57,19 +58,29 @@ public class VilKitStorePacket extends BlockPosPacket implements IMessage {
 			{
 				EntityPlayerMP player = ctx.getServerHandler().player;
 				WorldServer world = ctx.getServerHandler().player.getServerWorld();
-				IMarshalsBatonCapability cap = player.getHeldItemMainhand().getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+				ItemStack stack;
+				if(player.getHeldItemMainhand().getItem() == CommonProxy.ItemHolder.BATON)
+					stack = player.getHeldItemMainhand();
+				else if(player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
+					stack = player.getHeldItemOffhand();
+				else
+					return;
+				
+				IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 				if(world.getBlockState(message.pos).getBlock().hasTileEntity(world.getBlockState(message.pos)))
 				{
-					if(cap != null &&  world.getTileEntity(message.pos) != null)
+					if(world.getTileEntity(message.pos) != null)
 					{
 						if(ConfigHandler.debug)
 							Log.info("Kit Store for unit ... %s", message.provisioningUnit);
 						int prevSelectedUnit = cap.selectedUnit();
 						cap.setPlatoon(message.provisioningUnit / 10, message.provisioningUnit % 10);
 						cap.setPlatoonKitStore(message.pos);
-						Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
+						Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
 						for(Entity e : villagers)
 						{
+							if(ConfigHandler.debug)
+								Log.info("Kit Store for villager ... %s", e.getUniqueID());
 							e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setKitStore(message.pos);
 						}
 						cap.setPlatoon(prevSelectedUnit / 10, prevSelectedUnit % 10);

@@ -45,7 +45,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 	{
 		if((VilMethods.getCommBlockPos(this.entityHost) == null) || (VilMethods.getGuardBlockPos(this.entityHost) != null) || this.entityHost.isMating() || VilMethods.getFollowing(this.entityHost))
 			return false;
-		if(InventoryUtil.doesInventoryHaveItem(this.entityHost.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0 && !VilMethods.getHungry(this.entityHost)) {
+		if(!VilMethods.getHungry(this.entityHost) && VilMethods.getDuty(this.entityHost)) {
 			return true;
 		}
 		return false;
@@ -81,10 +81,11 @@ public class VillagerAICampaignMove extends EntityAIBase {
 				this.pathfindingFails++;
 				return;
 			}
-			else if(this.entityHost.getDistanceSq(object) < 4D)
+			
+			if(this.entityHost.getDistanceSq(object) < 4D)
 			{
 				this.resetTask();
-				Vec3d vec = getPosition();
+				Vec3d vec = getRandomPosition();
 				this.navigator.clearPath();
 				this.finished = true;
 
@@ -102,7 +103,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 			else if(this.path == null)
 			{
 				this.pathfindingFails++;
-				this.generatePath();
+				this.tryToGetCloser(object);
 			}
 
 			if(this.entityHost.getPosition().equals(ppos))
@@ -147,7 +148,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 		Vec3d pos;
 		if(this.entityHost.getDistanceSq(VilMethods.getCommBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH_SQ)
 		{
-			Vec3d pos1 = PathUtil.findBlockInDirection(this.entityHost.getPosition(), VilMethods.getCommBlockPos(this.entityHost));
+			Vec3d pos1 = PathUtil.findNavigableBlockInDirection(this.entityHost.getPosition(), VilMethods.getCommBlockPos(this.entityHost), this.entityHost);
 			if(pos1 != null)
 			{
 				pos = pos1;
@@ -192,7 +193,7 @@ public class VillagerAICampaignMove extends EntityAIBase {
 		}
 	}
 
-    protected Vec3d getPosition()
+    protected Vec3d getRandomPosition()
     {
         return RandomPositionGenerator.findRandomTarget(this.entityHost, 8, 6);
     }
