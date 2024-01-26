@@ -11,6 +11,7 @@ import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability
 import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.gui.GuiVillagerArm;
 import com.joshycode.improvedvils.handler.ConfigHandler;
+import com.joshycode.improvedvils.network.BlankNotePacket;
 import com.joshycode.improvedvils.network.MarshalKeyEvent;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilEnlistPacket;
@@ -135,12 +136,14 @@ public class ClientProxy extends CommonProxy {
         renderer.addLayer(layerbipedarmor);
 	}
 
-	public static void updateVillagerGuardGUIInfo(@Nullable Vec3i pos, int guardStateVal, int followStateVal, int enlistStateAndCompany, int enlistPlatoon)
+	public static void updateVillagerGuardGUIInfo(@Nullable Vec3i pos, int guardStateVal, int followStateVal, int dutyStateVal, boolean hungry, int enlistStateAndCompany, int enlistPlatoon)
 	{
 		GuiScreen gui = Minecraft.getMinecraft().currentScreen;
 
 		if(gui instanceof GuiVillagerArm)
 		{
+			((GuiVillagerArm) gui).setDutyState(dutyStateVal);
+			((GuiVillagerArm) gui).setHungry(hungry);
 			if(guardStateVal == -1)
 			{
 				((GuiVillagerArm) gui).setFollowState(followStateVal);
@@ -194,7 +197,7 @@ public class ClientProxy extends CommonProxy {
 	}
 	
 	@Override
-	public Provisions getKit() 
+	public Provisions getStuff() 
 	{
 		return this.provisions;
 	}
@@ -217,34 +220,9 @@ public class ClientProxy extends CommonProxy {
 		return ctx.side.isClient() ? Minecraft.getMinecraft().player : super.getPlayerEntity(ctx);
 	}
 
-	public static void guardHere(int vilId, boolean guard)
-	{
-    	NetWrapper.NETWORK.sendToServer(new VilGuardPacket(new BlockPos(0, 0, 0), vilId, guard));
-	}
-
-	public static void followPlayer(int vilId, boolean follow)
-	{
-		NetWrapper.NETWORK.sendToServer(new VilFollowPacket(vilId, follow));
-	}
-
-	public static void queryState(int vilId)
-	{
-		NetWrapper.NETWORK.sendToServer(new VilStateQuery(vilId));
-	}
-
 	public static void close(int vilId)
 	{
 		NetWrapper.NETWORK.sendToServer(new VilStateQuery(vilId, true));
-	}
-
-	public static void enlist(int vilId, int company, int platoon)
-	{
-		NetWrapper.NETWORK.sendToServer(new VilEnlistPacket(vilId, company, platoon, true));
-	}
-
-	public static void unEnlist(int vilId)
-	{
-		NetWrapper.NETWORK.sendToServer(new VilEnlistPacket(vilId, 0, 0, false));
 	}
 
 	public static void openGuiForPlayerIfOK(int entityId)

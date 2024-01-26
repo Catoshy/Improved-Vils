@@ -20,7 +20,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  */
 public class EntityBullet extends EntityThrowable {
 
-	protected EntityBullet(World worldIn) 
+	public EntityBullet(World worldIn) 
 	{
 		super(worldIn);
 		this.damageName = "Villager's Bullet";
@@ -33,17 +33,17 @@ public class EntityBullet extends EntityThrowable {
 	//All these vals and related equations are derived from a ballistics study and are general in scope
 	//A Direct-Fire Trajectory Model for Supersonic, Transonic, and Subsonic Projectile Flight
 	//by Paul Weinach
-	private static final double SUB_SONIC_BOUND = .85d; //Mach
-	private static final double TRANS_SONIC_BOUND = 1.1d; //Mach
-	private static final double AIR_DENSITY = 1.225d; //kg/m^3
-	private static final double GRAMS_TO_POUNDS = 453.592f;
+	public static final double SUB_SONIC_BOUND = .85d; //Mach
+	public static final double TRANS_SONIC_BOUND = 1.1d; //Mach
+	public static final double AIR_DENSITY = 1.225d; //kg/m^3
+	public static final double GRAMS_TO_POUNDS = 453.592f;
 	
 	private final String damageName;
 	
-	private final double lowCoef;
-	private final double highCoef;
-	private final double n_val;
-	private final double supersonicStartVal;
+	public final double lowCoef;
+	public final double highCoef;
+	public final double n_val;
+	public final double supersonicStartVal;
 	private double mass;
 	private double halfWidthInMeter;
 	private double speed;

@@ -10,23 +10,23 @@ import net.minecraft.entity.passive.EntityVillager;
 
 public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 
-	EntityVillager e;
+	EntityVillager entityHost;
 
 	public VillagerAIMoveIndoors(EntityCreature entityIn)
 	{
 		super(entityIn);
-		this.e = (EntityVillager) entityIn;
+		this.entityHost = (EntityVillager) entityIn;
 	}
 
 	@Override
 	public boolean shouldExecute()
 	{
-		if(InventoryUtil.doesInventoryHaveItem(this.e.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0  && !VilMethods.getHungry(e))
+		if(VilMethods.getDuty(entityHost) && !VilMethods.getHungry(entityHost))
 			return false;
 
 		if(super.shouldExecute())
 		{
-			VilMethods.setMovingIndoors(this.e, true);
+			VilMethods.setMovingIndoors(this.entityHost, true);
 			return true;
 		}
 		else
@@ -40,7 +40,7 @@ public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 	{
 		if(!super.shouldContinueExecuting())
 		{
-			VilMethods.setMovingIndoors(this.e, false);
+			VilMethods.setMovingIndoors(this.entityHost, false);
 			return false;
 		}
 		return true;
@@ -49,7 +49,7 @@ public class VillagerAIMoveIndoors extends EntityAIMoveIndoors {
 	@Override
 	public void resetTask()
 	{
-		VilMethods.setMovingIndoors(this.e, false);
+		VilMethods.setMovingIndoors(this.entityHost, false);
 	}
 
 }

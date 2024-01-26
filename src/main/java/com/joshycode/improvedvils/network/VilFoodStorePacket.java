@@ -2,12 +2,12 @@ package com.joshycode.improvedvils.network;
 
 import java.util.Set;
 
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.item.ItemMarshalsBaton;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
@@ -63,7 +63,7 @@ public class VilFoodStorePacket extends BlockPosPacket implements IMessage {
 						int prevSelectedUnit = cap.selectedUnit();
 						cap.setPlatoon(message.provisioningUnit / 10, message.provisioningUnit % 10);
 						cap.setPlatoonFoodStore(message.pos);
-						Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
+						Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
 						for(Entity e : villagers)
 						{
 							e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(message.pos);

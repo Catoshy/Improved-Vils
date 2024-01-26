@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.handler.ConfigHandler;
@@ -116,6 +117,17 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	public boolean addVillager(UUID entityid, int company, int platoon) 
 	{
 		if(platoon > 10 || company > 5 ) return false;
+		
+		if(this.platoons.values().stream().anyMatch(new Predicate<Set<UUID>>() {
+				@Override 
+				public boolean test(Set<UUID> arg0) 
+				{
+					return arg0.contains(entityid);
+				}
+			}))
+		{
+			return false;
+		}
 		
 		int uniqueplatoonid = platoon + 10 * company;
 		Set<UUID> platoonSet = this.platoons.get(uniqueplatoonid);

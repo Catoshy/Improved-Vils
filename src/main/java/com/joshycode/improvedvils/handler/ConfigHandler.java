@@ -54,6 +54,7 @@ public class ConfigHandler {
 	public static float meleeAttackCooldown;
 	public static float attackReach;
 	public static float attackReachSq;
+	public static float followRange;
 	public static float blockChance;
 	public static float commandDist;
 	public static float dailyBread;
@@ -61,6 +62,7 @@ public class ConfigHandler {
 	public static boolean openBlocksLoaded = false;
 	public static boolean debug = false;
 	public static boolean renderItemsAndArmour;
+	public static int friendlyFireSearchRange;
 
 	public static void load(com.joshycode.improvedvils.CommonProxy.LoadState postinit) throws IOException {
 		if(config == null)
@@ -83,10 +85,12 @@ public class ConfigHandler {
 		meleeAttackCooldown = config.getFloat("Melee attack cooldown fraction", "general", 1f, .1f, 1.5f, "Multiplied by the number of ticks a weapon uses to cooldown to increase or decrease attack interval");
 		attackReach = config.getFloat("Attack-reach", "general", 2f, 1f, 5f, "Attack reach of Villager in blocks");
 		attackReachSq = attackReach * attackReach;
+		friendlyFireSearchRange = config.getInt("Friendly Fire Check Range", "general", 16, 1, 64, "How far out villager's checking for friendlies goes (roughly in blocks), may bear upon perforamce and higher numbers may make villagers more hesitant to fire.");
+		followRange = config.getFloat("Follow-range", "general", 16f, 3f, 64f, "How far a villager can stray from a player to attack an enemy.");
 		blockChance = config.getFloat("Block Chance", "general", .6f, 0f, 1f, "how likely a villager's attempted block is to succeed");
 		commandDist = config.getFloat("Command Distance", "general", 250f, 0f, 300f, "maximum distance in blocks a ray trace will go when right click the baton to order a villager movement");
 		dailyBread = config.getFloat("Daily Bread", "general", 3f, 1f, 20f, "how much food saturation a villager will consume as measured in \"bread per day\" while drafted");
-		collectFoodThreshold = config.getFloat("Food Refill Threshold", "general", 32f, 1f, 256f, "how far the food saturation of a villager will decrease before villager goes to refill inventory at food store");
+		collectFoodThreshold = config.getFloat("Food Refill Threshold", "general", 16f, 1f, 256f, "how far the food saturation of a villager will decrease before villager goes to refill inventory at food store");
 		debug = config.getBoolean("Debug", "general", false, "more Log info");
 		renderItemsAndArmour = config.getBoolean("Render items and armour", "general", true, "Do you want your client to render items and armour on villagers? May conflict with other mods.");
 		readEntryJson();

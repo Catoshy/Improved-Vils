@@ -23,16 +23,19 @@ public class VillagerAIFollow extends EntityAIBase {
     private final PathNavigate navigation;
     private int timeToRecalcPath;
     private final float stopDistance;
+	private final float startDistance;
+    
     private float oldWaterCost;
     private final double areaSize;
 
-    public VillagerAIFollow(final EntityVillager entityIn, double speedIn, float stopDist)
+    public VillagerAIFollow(final EntityVillager entityIn, double speedIn, float stopDist, float startDist)
     {
         this.villager = entityIn;
         this.followPredicate = new VilFollowPredicate(entityIn);
         this.speedModifier = speedIn;
         this.navigation = entityIn.getNavigator();
         this.stopDistance = stopDist;
+		this.startDistance = startDist;
         this.areaSize = entityIn.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
         this.setMutexBits(3);
     }
@@ -40,7 +43,7 @@ public class VillagerAIFollow extends EntityAIBase {
     @Override
 	public boolean shouldExecute()
     {
-    	if(VilMethods.getHungry(this.villager) || !VilMethods.getFollowing(this.villager))
+    	if(VilMethods.getHungry(this.villager) || !VilMethods.getFollowing(this.villager) || !VilMethods.getDuty(this.villager))
     		return false;
         List<EntityPlayer> list = this.villager.world.<EntityPlayer>getEntitiesWithinAABB(EntityPlayer.class, this.villager.getEntityBoundingBox().grow(this.areaSize), this.followPredicate);
 
@@ -48,7 +51,7 @@ public class VillagerAIFollow extends EntityAIBase {
         {
             for (EntityPlayer entityliving : list)
             {
-                if (!entityliving.isInvisible())
+                if (!entityliving.isInvisible() && !weaponsAndDistance(entityliving))
                 {
                     this.followingPlayer = entityliving;
                     return true;
@@ -59,10 +62,15 @@ public class VillagerAIFollow extends EntityAIBase {
         return false;
     }
 
-    @Override
+    private boolean weaponsAndDistance(EntityPlayer player) 
+    {
+		return !this.villager.getHeldItemMainhand().isEmpty() && this.villager.getDistanceSq(player) < this.startDistance * this.startDistance && this.villager.getAttackTarget() != null;
+	}
+
+	@Override
 	public boolean shouldContinueExecuting()
     {
-        return this.followingPlayer != null && !this.navigation.noPath() && this.villager.getDistanceSq(this.followingPlayer) > this.stopDistance * this.stopDistance && !VilMethods.getHungry(this.villager);
+        return this.followingPlayer != null && !this.weaponsAndDistance(this.followingPlayer) && !this.navigation.noPath() && this.villager.getDistanceSq(this.followingPlayer) > this.stopDistance * this.stopDistance && !VilMethods.getHungry(this.villager);
     }
 
     @Override

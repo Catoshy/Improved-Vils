@@ -48,7 +48,7 @@ public class VillagerAIGuard extends EntityAIBase{
 	{
 		if(VilMethods.getGuardBlockPos(this.entityHost) == null || this.setFailed || VilMethods.isRefillingFood(this.entityHost) || this.entityHost.isMating())
 			return false;
-		if(VilMethods.getHungry(this.entityHost))
+		if(VilMethods.getHungry(this.entityHost) || !VilMethods.getDuty(this.entityHost))
 		{
 			this.fail();
 			return false;
@@ -117,10 +117,8 @@ public class VillagerAIGuard extends EntityAIBase{
 		Vec3d pos;
 		if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH_SQ)
 		{
-			//pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 16, 8,
-			//		VilCapabilityMethods.guardBlockAsVec(this.entityHost));
 			if(!awayFrom)
-				pos = PathUtil.findBlockInDirection(this.entityHost.getPosition(), VilMethods.getGuardBlockPos(this.entityHost));
+				pos = PathUtil.findNavigableBlockInDirection(this.entityHost.getPosition(), VilMethods.getGuardBlockPos(this.entityHost), this.entityHost);
 			else
 				pos = RandomPositionGenerator.findRandomTargetBlockAwayFrom(entityHost, 7, 4, VilMethods.guardBlockAsVec(entityHost));
 		}
@@ -217,8 +215,7 @@ public class VillagerAIGuard extends EntityAIBase{
 		this.setFailed = true;
 		try
 		{
-			this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(null);
-			this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setReturning(false);
+			this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(null).setReturning(false);
 		} catch (NullPointerException e) {}
 	}
 }

@@ -9,6 +9,7 @@ import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import io.netty.buffer.ByteBuf;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -48,10 +49,18 @@ public class MarshalKeyEvent implements IMessage {
 			
 			ImprovedVils.proxy.getListener(ctx).addScheduledTask(() ->
 			{
+				//TODO offhand compatibility
 				if(ConfigHandler.debug)
 					Log.info("running deed for MarshalKeyEvent, player is: ", ctx.getServerHandler().player);
-				ItemStack stack = ctx.getServerHandler().player.getHeldItemMainhand();
-				if(!stack.getItem().equals(CommonProxy.ItemHolder.BATON)) return;
+				
+				EntityPlayer player = ImprovedVils.proxy.getPlayerEntity(ctx);
+				ItemStack stack;
+				if(player.getHeldItemMainhand().getItem() == CommonProxy.ItemHolder.BATON)
+					stack = player.getHeldItemMainhand();
+				else if(player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
+					stack = player.getHeldItemOffhand();
+				else
+					return;
 				
 				IMarshalsBatonCapability batonCap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 				int selectedPlatoon = batonCap.selectedUnit();
@@ -107,11 +116,11 @@ public class MarshalKeyEvent implements IMessage {
 				else if(message.keyPressed == CommonProxy.BATON_GUI)
 				{
 					//TODO
-					NetWrapper.NETWORK.sendTo(new OpenClientGui(selectedPlatoon), ctx.getServerHandler().player);
+					NetWrapper.NETWORK.sendTo(new OpenClientGui(selectedPlatoon), (EntityPlayerMP) player);
 					return;
 				}
 			//TODO
-			NetWrapper.NETWORK.sendTo(new BatonSelectData(batonCap.selectedUnit()), ctx.getServerHandler().player);
+			NetWrapper.NETWORK.sendTo(new BatonSelectData(batonCap.selectedUnit()), (EntityPlayerMP) player);
 			});
 			
 			return null;

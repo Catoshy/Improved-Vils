@@ -15,6 +15,7 @@ import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.VilAttributes;
 
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -69,7 +70,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	public boolean shouldExecute()
 	{
 		EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
-
+		
         if (entitylivingbase == null)
         {
             return false;
@@ -110,13 +111,13 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 
 	private boolean isDoingSomethingMoreImportant()
 	{
-		if((VilMethods.getCommBlockPos((EntityVillager) this.attacker) != null) || VilMethods.isOutsideHomeDist((EntityVillager) this.attacker) || VilMethods.isReturning((EntityVillager) this.attacker) || VilMethods.isRefillingFood((EntityVillager) this.attacker))
+		if((VilMethods.getCommBlockPos(this.attacker) != null) || VilMethods.isOutsideHomeDist(this.attacker) || VilMethods.isReturning(this.attacker) || VilMethods.isRefillingFood(this.attacker))
 			return true;
-		if(VilMethods.getMovingIndoors((EntityVillager) this.attacker))
+		if(VilMethods.getMovingIndoors(this.attacker))
 			return true;
-		if(((EntityVillager) this.attacker).isMating())
+		if(( this.attacker).isMating())
     		return true;
-		if(VilMethods.getFollowing((EntityVillager) this.attacker) && isDistanceTooGreat())
+		if(VilMethods.getFollowing(this.attacker) && isDistanceTooGreat())
 			return true;
 		ItemStack stack = this.attacker.getHeldItemMainhand();
 		String s= stack.getUnlocalizedName();
@@ -162,9 +163,9 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	    {
 	    	this.runAway = true;
 			modifier += .3d;
-		    if(VilMethods.getGuardBlockPos((EntityVillager) this.attacker) != null)
+		    if(VilMethods.getGuardBlockPos(this.attacker) != null)
 		    {
-				path = this.attacker.getNavigator().getPathToPos(VilMethods.getGuardBlockPos((EntityVillager) this.attacker));
+				path = this.attacker.getNavigator().getPathToPos(VilMethods.getGuardBlockPos(this.attacker));
 		    }
 		    else
 		    {
@@ -203,10 +204,9 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	    }
 	    if(path != null && !flag)
 	    {
-	    	if(VilMethods.getGuardBlockPos((EntityVillager) this.attacker) != null &&
-    			   path.getFinalPathPoint().distanceToSquared(VilMethods.guardBlockAsPP((EntityVillager) this.attacker)) > CommonProxy.MAX_GUARD_DIST - 31)
+	    	if(VilMethods.getGuardBlockPos(this.attacker) != null)
 	    	{
-	    		this.truncatePath(path, VilMethods.getGuardBlockPos((EntityVillager) this.attacker));
+	    		this.truncatePath(path, VilMethods.getGuardBlockPos(this.attacker));
 	    	}
 	    }
 
@@ -264,13 +264,13 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 		{
 			return false;
 		}
-		BlockPos pos = VilMethods.getGuardBlockPos((EntityVillager) this.attacker);
+		BlockPos pos = VilMethods.getGuardBlockPos(this.attacker);
 		if(pos != null && this.attacker.getDistanceSq(pos) > CommonProxy.MAX_GUARD_DIST - 31)
 		{
 			return false;
 		}
-		if(VilMethods.getCommBlockPos((EntityVillager) this.attacker) != null || VilMethods.isOutsideHomeDist((EntityVillager) this.attacker)
-				|| VilMethods.getMovingIndoors((EntityVillager) this.attacker))
+		if(VilMethods.getCommBlockPos(this.attacker) != null || VilMethods.isOutsideHomeDist( this.attacker)
+				|| VilMethods.getMovingIndoors(this.attacker))
 		{
     		return false;
     	}
@@ -415,21 +415,25 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 					CommonProxy.MAX_GUARD_DIST - 31 /* 2 x 2*/)
 			{
 				p.setCurrentPathLength(i);
+				return;
+			}
+			if(i < p.getCurrentPathLength() -1 && p.getPathPointFromIndex(i).y - p.getPathPointFromIndex(i + 1).y >= 2) //go not where you cannot return
+			{
+				p.setCurrentPathLength(i);
+				return;
 			}
 		}
 	}
 
 	private boolean isDistanceTooGreat()
 	{
-		try
+		UUID playerId = VilMethods.getPlayerId(this.attacker);
+		EntityPlayer player = this.attacker.getEntityWorld().getPlayerEntityByUUID(playerId);
+		double followRange = this.attacker.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
+		if(player.getDistanceSq(this.attacker) > (followRange - 2) * (followRange - 2)) 
 		{
-			UUID playerId = VilMethods.getPlayerId((EntityVillager) this.attacker);
-			EntityPlayer player = this.attacker.getEntityWorld().getPlayerEntityByUUID(playerId);
-			double followRange = this.attacker.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
-			if(player.getDistanceSq(this.attacker) > (followRange - 2) * (followRange - 2)) {
-				return true;
-			}
-		} catch(NullPointerException e) {}
+			return true;
+		}
 		return false;
 	}
 

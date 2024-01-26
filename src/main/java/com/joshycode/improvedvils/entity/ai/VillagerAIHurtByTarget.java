@@ -2,8 +2,11 @@ package com.joshycode.improvedvils.entity.ai;
 
 import javax.annotation.Nullable;
 
+import org.jline.utils.Log;
+
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
@@ -80,17 +83,15 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 	@Override
 	protected boolean isSuitableTarget(@Nullable EntityLivingBase target, boolean includeInvincibles)
 	{
-
 		if(!super.isSuitableTarget(target, includeInvincibles))
 			return false;
-		if(target != null)
+		for(Class c : CommonProxy.TARGETS)
 		{
-			for(Class c : CommonProxy.TARGETS)
+			if(ConfigHandler.debug)
+				Log.info("is Suitable Target " + target + " for class %s", c);
+			if(c.isInstance(target)) 
 			{
-				if(c.isInstance(target)) 
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 		return false;

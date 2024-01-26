@@ -36,17 +36,16 @@ public final class ProjectileHelper {
 	    	return new RayTraceResult(entity);
 	    }
 	    double d6 = 0.0D;
-	    for(int i = 0; i < 16; i++)
+	    int range = ConfigHandler.friendlyFireSearchRange;
+	    for(int i = 0; i < range; i++)
 	    {
 	    	List<Entity> list;
 
     		list = world.getEntitiesWithinAABBExcludingEntity(entityHost, axisalignedbb);
     		axisalignedbb = axisalignedbb.offset(motionX, motionY, motionZ).grow(.5D);
 	
-	        for (int ii = 0; ii < list.size(); ++ii)
-	        {
-	            Entity entity1 = list.get(ii);
-	
+	        for (Entity entity1 : list)
+	        {	
 	            if (entity1.canBeCollidedWith() && !entity1.isEntityEqual(entityHost) && !entity1.noClip)
 	            {
 	                AxisAlignedBB axisalignedbb1 = entity1.getEntityBoundingBox().grow(0.30000001192092896D);

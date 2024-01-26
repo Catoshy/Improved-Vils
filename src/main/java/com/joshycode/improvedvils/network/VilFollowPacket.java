@@ -17,28 +17,28 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 public class VilFollowPacket implements IMessage {
 
 	int id;
-	boolean followState;
+	boolean booleanState;
 
-	public VilFollowPacket() { this.id = 0; this.followState = false; }
+	public VilFollowPacket() { this.id = 0; this.booleanState = false; }
 
 	public VilFollowPacket(int id, boolean follow)
 	{
 		this.id = id;
-		this.followState = follow;
+		this.booleanState = follow;
 	}
 
 	@Override
 	public void toBytes(ByteBuf buf)
 	{
 		buf.writeInt(id);
-		buf.writeBoolean(followState);
+		buf.writeBoolean(booleanState);
 	}
 
 	@Override
 	public void fromBytes(ByteBuf buf)
 	{
 		this.id = buf.readInt();
-		this.followState = buf.readBoolean();
+		this.booleanState = buf.readBoolean();
 	}
 
 	public static class Handler implements IMessageHandler<VilFollowPacket, IMessage> {
@@ -57,19 +57,45 @@ public class VilFollowPacket implements IMessage {
 					if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 					{
 						VilMethods.setGuardBlock((EntityVillager) e, null);
-						if(message.followState)
-						{
-							VilMethods.setFollowState((EntityVillager) e, true);
-						}
-						else
-						{
-							VilMethods.setFollowState((EntityVillager) e, false);
-						}
+						VilMethods.setFollowState((EntityVillager) e, message.booleanState);
+						
 					}
 					VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) e, player);
 				}
 			});
 			return null;
+		}
+	}
+	
+	public static class VilDutyPacket extends VilFollowPacket {
+		
+		public VilDutyPacket() {}
+		
+		public VilDutyPacket(int vilId, boolean duty) { super(vilId, duty); }
+		
+		public static class Handler implements IMessageHandler<VilDutyPacket, IMessage> {
+			@Override
+			public IMessage onMessage(VilDutyPacket message, MessageContext ctx)
+			{
+				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() ->
+				{
+					EntityPlayerMP player = ctx.getServerHandler().player;
+					WorldServer world = ctx.getServerHandler().player.getServerWorld();
+					Entity e = world.getEntityByID(message.id);
+		
+					if(e instanceof EntityVillager)
+					{
+						if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
+						{
+							VilMethods.setFollowState((EntityVillager) e, false);
+							VilMethods.setGuardBlock((EntityVillager) e, null);
+							VilMethods.setDuty((EntityVillager) e, message.booleanState);
+						}
+						VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) e, player);
+					}
+				});
+				return null;
+			}
 		}
 	}
 }

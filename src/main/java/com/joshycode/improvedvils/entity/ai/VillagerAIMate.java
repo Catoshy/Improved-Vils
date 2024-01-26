@@ -1,6 +1,7 @@
 package com.joshycode.improvedvils.entity.ai;
 
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
 
@@ -39,7 +40,7 @@ public class VillagerAIMate extends EntityAIBase
         {
             return false;
         }
-        else if (InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0)
+        else if (VilMethods.getDuty(villager))
         {
         	return false;
         }

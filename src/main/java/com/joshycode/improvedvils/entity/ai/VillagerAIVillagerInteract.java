@@ -1,6 +1,7 @@
 package com.joshycode.improvedvils.entity.ai;
 
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.ai.EntityAIWatchClosest2;
@@ -29,7 +30,7 @@ public class VillagerAIVillagerInteract extends EntityAIWatchClosest2
         super.startExecuting();
 
         if (this.villager.canAbondonItems() && this.closestEntity instanceof EntityVillager && ((EntityVillager)this.closestEntity).wantsMoreFood() &&
-        		InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) == 0)
+        		VilMethods.getDuty(this.villager))
         {
             this.interactionDelay = 10;
         }

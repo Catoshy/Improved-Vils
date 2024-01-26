@@ -2,6 +2,7 @@ package com.joshycode.improvedvils.network;
 
 import java.util.Set;
 
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
@@ -9,7 +10,6 @@ import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapabilit
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignMove;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.item.ItemMarshalsBaton;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
@@ -79,7 +79,7 @@ public class VilCommandPacket extends BlockPosPacket implements IMessage {
 					{
 						if(world.isAreaLoaded(message.pos, 1))
 						{
-							Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
+							Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
 							for(Entity e : villagers)
 							{
 								if(VillagerPlayerDealMethods.getPlayerFealty(player, (EntityVillager) e))
@@ -93,7 +93,7 @@ public class VilCommandPacket extends BlockPosPacket implements IMessage {
 					{
 						if(world.isChunkGeneratedAt(message.chunkx, message.chunkz))
 						{
-							Set<Entity> villagers = ItemMarshalsBaton.getEntitiesByUUID(cap.getVillagersSelected(), world);
+							Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
 							for(Entity e : villagers)
 							{
 								 ((EntityVillager) e).tasks.taskEntries.forEach(t -> {

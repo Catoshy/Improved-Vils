@@ -8,6 +8,12 @@ import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.entity.EntityVillagerContainer;
 import com.joshycode.improvedvils.entity.InventoryHands;
+import com.joshycode.improvedvils.network.NetWrapper;
+import com.joshycode.improvedvils.network.VilEnlistPacket;
+import com.joshycode.improvedvils.network.VilFollowPacket;
+import com.joshycode.improvedvils.network.VilFollowPacket.VilDutyPacket;
+import com.joshycode.improvedvils.network.VilGuardPacket;
+import com.joshycode.improvedvils.network.VilStateQuery;
 
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -15,6 +21,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -25,18 +32,19 @@ public class GuiVillagerArm extends GuiContainer {
 	private static final ResourceLocation VILLAGER_GUI_TEXTURE = ImprovedVils.location("textures/gui/GuiVillagerArm.png");
 	private boolean villagerEnlistState;
 	private boolean hasBaton;
-	private boolean guard;
-	private boolean follow;
+	private boolean hungry;
 	private int company;
 	private int platoon;
 	private int vilId;
 
 	private List<GuiButton> enlistedButtons;
 	private List<GuiButton> notEnlistedButtons;
-	private List<GuiButton> guardButtons;
-	private List<GuiButton> notGuardButtons;
-	private List<GuiButton> followButtons;
-	private List<GuiButton> notFollowButtons;
+	private GuiButton setDutyButtons;
+	private GuiButton notDutyButtons;
+	private GuiButton guardButtons;
+	private GuiButton notGuardButtons;
+	private GuiButton followButtons;
+	private GuiButton notFollowButtons;
 	private Vec3i vec;
 
 	public GuiVillagerArm(InventoryPlayer playerInv, IInventory villagerInv, InventoryHands villagerHand, int vilId, boolean hasBaton, boolean isEnlisted)
@@ -45,17 +53,12 @@ public class GuiVillagerArm extends GuiContainer {
 		this.villagerEnlistState = isEnlisted;
 		this.hasBaton = hasBaton;
 		this.vilId = vilId;
-		this.guard = false;
-		this.follow = false;
+		this.hungry = false;
 		this.company = 0;
 		this.platoon = 0;
 		this.vec = Vec3i.NULL_VECTOR;
 		this.enlistedButtons = new ArrayList();
 		this.notEnlistedButtons = new ArrayList();
-		this.guardButtons = new ArrayList();
-		this.notGuardButtons = new ArrayList();
-		this.followButtons = new ArrayList();
-		this.notFollowButtons = new ArrayList();
 	}
 
 	public GuiVillagerArm(InventoryPlayer playerInv, IInventory villagerInv, InventoryHands villagerHand, int vilId, int company , int platoon)
@@ -69,10 +72,15 @@ public class GuiVillagerArm extends GuiContainer {
 	public void initGui()
 	{
 		super.initGui();
-		this.notGuardButtons.add(new GuiButton(106, guiLeft + 107, guiTop + 44, 24, 12, "Guard"));
-		this.guardButtons.add(new GuiButton(107, guiLeft + 107, guiTop + 44, 24, 12, "Stop"));
-		this.notFollowButtons.add(new GuiButton(108, guiLeft + 71, guiTop + 44, 24, 12, "Follow"));
-		this.followButtons.add(new GuiButton(109, guiLeft + 71, guiTop + 44, 24, 12, "Stop"));
+		this.buttonList.clear();
+		this.enlistedButtons.clear();
+		this.notEnlistedButtons.clear();
+		this.notGuardButtons = new GuiButton(106, guiLeft + 107, guiTop + 44, 24, 12, "Guard");
+		this.guardButtons = new GuiButton(107, guiLeft + 107, guiTop + 44, 24, 12, "Stop");
+		this.notFollowButtons = new GuiButton(108, guiLeft + 71, guiTop + 44, 24, 12, "Follow");
+		this.followButtons = new GuiButton(109, guiLeft + 71, guiTop + 44, 24, 12, "Stop");
+		this.notDutyButtons = new GuiButton(110, guiLeft + 143, guiTop + 60, 24, 12, "On-Duty");
+		this.setDutyButtons = new GuiButton(111, guiLeft + 143, guiTop + 60, 24, 12, "Off-Duty"); 
 		this.enlistedButtons.add(new GuiButton(105, guiLeft + 143, guiTop + 44, 24, 12, "De-Enlist"));
 
 		this.notEnlistedButtons.addAll(new ArrayList<GuiButton>()
@@ -96,7 +104,7 @@ public class GuiVillagerArm extends GuiContainer {
 				this.buttonList.addAll(enlistedButtons);
 			}
 		}
-		ClientProxy.queryState(vilId);
+		this.queryState();
 	}
 
 	@Override
@@ -121,6 +129,9 @@ public class GuiVillagerArm extends GuiContainer {
 		this.fontRenderer.drawString("X: " + Integer.toString(this.vec.getX()), guiLeft + 107, guiTop + 8, 0);
 		this.fontRenderer.drawString("Y: " + Integer.toString(this.vec.getY()), guiLeft + 107, guiTop + 17, 0);
 		this.fontRenderer.drawString("Z: " + Integer.toString(this.vec.getZ()), guiLeft + 107, guiTop + 26, 0);
+		
+		if(this.hungry)
+			this.fontRenderer.drawString("Hungry!", guiLeft + 136, guiTop + 76, 0);
 	}
 
     @Override
@@ -146,45 +157,35 @@ public class GuiVillagerArm extends GuiContainer {
     				if(!this.villagerEnlistState)
     				{
 		        		this.villagerEnlistState = true;
-    					ClientProxy.enlist(this.vilId, this.company, this.platoon);
+    					this.enlist();
     				}
 		        	break;
     			case 105:
     				if(this.villagerEnlistState)
     				{
     					this.villagerEnlistState =  false;
-		        		ClientProxy.unEnlist(this.vilId);
+		        		this.unEnlist();
     				}
 		        	break;
     			case 106:
-    				if(!this.guard)
-    				{
-    					this.guard = true;
-		        		ClientProxy.guardHere(this.vilId, true);
-    				}
+		        	this.guardHere(true);
 		        	break;
     			case 107:
-    				if(this.guard)
-    				{
-    					this.guard = false;
-		        		ClientProxy.guardHere(this.vilId, false);
-    				}
+		        	this.guardHere(false);
 		        	break;
     			case 108:
-    				if(!this.follow)
-    				{
-    					this.follow = true;
-		        		ClientProxy.followPlayer(this.vilId, true);
-    				}
+		        	this.followPlayer(true);
 		        	break;
     			case 109:
-    				if(this.follow)
-    				{
-    					this.follow = false;
-		        		ClientProxy.followPlayer(this.vilId, false);
-    				}
+		        	this.followPlayer(false);
 		        	break;
-		        }
+		    	case 110:
+		        	this.setDuty(true);
+		        	break;
+			    case 111:
+			    	this.setDuty(false);
+			    	break;
+    			}
     		}
     	super.actionPerformed(button);
     }
@@ -208,28 +209,32 @@ public class GuiVillagerArm extends GuiContainer {
 		}
 	}
 
-	public void setGuardState(Vec3i pos, int id) {
+	public void setGuardState(Vec3i pos, int id) 
+	{
 		if(!pos.equals(Vec3i.NULL_VECTOR))
 		{
 			this.vec = pos;
 		}
 		if(id == 1)
 		{
-			this.guard = false;
-			this.buttonList.removeAll(guardButtons);
-			this.buttonList.addAll(notGuardButtons);
+			this.vec = Vec3i.NULL_VECTOR;
+			this.buttonList.remove(guardButtons);
+			this.guardButtons.enabled = false;
+			this.notGuardButtons.enabled = true;
+			this.buttonList.add(notGuardButtons);
 		}
 		else if(id == 2)
 		{
-			this.guard = true;
-			this.buttonList.removeAll(notGuardButtons);
-			this.buttonList.addAll(guardButtons);
+			this.buttonList.remove(notGuardButtons);
+			this.notGuardButtons.enabled = false;
+			this.guardButtons.enabled = true;
+			this.buttonList.add(guardButtons);
 		}
 		else
 		{
-			this.guard = false;
-			this.buttonList.removeAll(notGuardButtons);
-			this.buttonList.removeAll(guardButtons);
+			this.vec = Vec3i.NULL_VECTOR;
+			this.buttonList.remove(notGuardButtons);
+			this.buttonList.remove(guardButtons);
 		}
 	}
 
@@ -237,26 +242,87 @@ public class GuiVillagerArm extends GuiContainer {
 	{
 		if(int2 == 1)
 		{
-			this.follow = false;
-			this.buttonList.removeAll(followButtons);
-			this.buttonList.addAll(notFollowButtons);
+			this.buttonList.remove(followButtons);
+			this.followButtons.enabled = false;
+			this.notFollowButtons.enabled = true;
+			this.buttonList.add(notFollowButtons);
 		}
 		else if (int2 == 2)
 		{
-			this.follow = true;
-			this.buttonList.removeAll(notFollowButtons);
-			this.buttonList.addAll(followButtons);
+			this.buttonList.remove(notFollowButtons);
+			this.notFollowButtons.enabled = false;
+			this.followButtons.enabled = true;
+			this.buttonList.add(followButtons);
 		}
 		else
 		{
-			this.follow = false;
-			this.buttonList.removeAll(notFollowButtons);
-			this.buttonList.removeAll(followButtons);
+			this.buttonList.remove(notFollowButtons);
+			this.buttonList.remove(followButtons);
+		}
+	}
+	
+	public void setDutyState(int duty)
+	{
+		if(duty == 1)
+		{
+			this.buttonList.remove(setDutyButtons);
+			this.setDutyButtons.enabled = false;
+			this.notDutyButtons.enabled = true;
+			this.buttonList.add(notDutyButtons);
+		}
+		else if (duty == 2)
+		{
+			this.buttonList.remove(notDutyButtons);
+			this.notDutyButtons.enabled = false;
+			this.setDutyButtons.enabled = true;
+			this.buttonList.add(setDutyButtons);
+		}
+		else
+		{
+			this.buttonList.remove(notDutyButtons);
+			this.buttonList.remove(setDutyButtons);
+			this.notDutyButtons.enabled = false;
+			this.setDutyButtons.enabled = false;
 		}
 	}
 	
 	public int getVilId()
 	{
 		return vilId;
+	}
+	
+	public void setHungry(boolean hungry) 
+	{
+		this.hungry = hungry;
+	}
+	
+	private void queryState()
+	{
+		NetWrapper.NETWORK.sendToServer(new VilStateQuery(this.vilId));
+	}
+	
+	private void guardHere(boolean guard)
+	{
+    	NetWrapper.NETWORK.sendToServer(new VilGuardPacket(new BlockPos(0, 0, 0), this.vilId, guard));
+	}
+	
+	private void followPlayer(boolean follow)
+	{
+		NetWrapper.NETWORK.sendToServer(new VilFollowPacket(this.vilId, follow));
+	}
+
+	private void setDuty(boolean duty) 
+	{
+		NetWrapper.NETWORK.sendToServer(new VilDutyPacket(this.vilId, duty));
+	}
+	
+	private void enlist()
+	{
+		NetWrapper.NETWORK.sendToServer(new VilEnlistPacket(this.vilId, this.company, this.platoon, true));
+	}
+	
+	private void unEnlist()
+	{
+		NetWrapper.NETWORK.sendToServer(new VilEnlistPacket(this.vilId, 0, 0, false));
 	}
 }

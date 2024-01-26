@@ -9,6 +9,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.CommonProxy.ItemHolder;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
@@ -253,13 +254,13 @@ public class VillagerPlayerDealMethods {
 
 	public static VilStateUpdate getUpdateGuiForClient(EntityVillager e, EntityPlayer player)
 	{
-		Vec3i vec = null; int guardStateVal = 0, followStateVal = 0, enlistedCompany = 0, enlistedPlatoon = 0;
+		Vec3i vec = null; int guardStateVal = 0, followStateVal = 0, dutyStateVal = 0, enlistedCompany = 0, enlistedPlatoon = 0; boolean hungry = false;
 
 		if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 		{
-			guardStateVal += InventoryUtil.doesInventoryHaveItem
-					(((EntityVillager) e).getVillagerInventory(), CommonProxy.ItemHolder.DRAFT_WRIT) != 0 ? DRAFTED : NULL;
-			guardStateVal = VilMethods.getHungry((EntityVillager) e) ? NULL : guardStateVal;
+			guardStateVal += VilMethods.getDuty(e) ? DRAFTED : NULL;
+			hungry = VilMethods.getHungry(e);
+			guardStateVal = hungry ? NULL : guardStateVal;
 
 			if(guardStateVal == 0)
 			{
@@ -268,18 +269,21 @@ public class VillagerPlayerDealMethods {
 			}
 
 			followStateVal = guardStateVal;
-			guardStateVal += VilMethods.getGuardBlockPos((EntityVillager) e) != null ? GUARDING : NULL;
-			followStateVal += VilMethods.getFollowing((EntityVillager) e) ? FOLLOWING : NULL;
-
+			guardStateVal += VilMethods.getGuardBlockPos(e) != null ? GUARDING : NULL;
+			followStateVal += VilMethods.getFollowing(e) ? FOLLOWING : NULL; 
+			
+			dutyStateVal = VilMethods.getDuty(e) ? 2 : 1;
+			dutyStateVal = InventoryUtil.doesInventoryHaveItem(player.inventory, ItemHolder.BATON) != 0 ? dutyStateVal : NULL;
 			if(guardStateVal == 2)
-				vec = VilMethods.getGuardBlockPos((EntityVillager) e);
+				vec = VilMethods.getGuardBlockPos(e);
+			
 		}
 
 		if(vec != null)
 		{
-			return new VilStateUpdate(guardStateVal, followStateVal, enlistedCompany, enlistedPlatoon, vec);
+			return new VilStateUpdate(guardStateVal, followStateVal, dutyStateVal, hungry, enlistedCompany, enlistedPlatoon, vec);
 		}
-		return new VilStateUpdate(guardStateVal, followStateVal, enlistedCompany, enlistedPlatoon);
+		return new VilStateUpdate(guardStateVal, followStateVal, dutyStateVal, hungry, enlistedCompany, enlistedPlatoon);
 	}
 
 	public static void resetInvListeners(EntityVillager entity)
@@ -330,8 +334,7 @@ public class VillagerPlayerDealMethods {
 			{
 				for(EntityVillager villager : population)
 				{
-					villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setMutinous(false);
-					villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setTeam(null);
+					villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setMutinous(false).setTeam(null);
 				}
 				village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).setTeam(null);
 			}
@@ -377,13 +380,13 @@ public class VillagerPlayerDealMethods {
 				attackVal = (float) attackMod.getAmount();
 			}
 		}
-		vilCap.setAttackValue(attackVal);
-		vilCap.setShield(entity.getHeldItemOffhand().getItemUseAction() == EnumAction.BLOCK);
-		vilCap.setSaturation(InventoryUtil.getFoodSaturation(entity.getVillagerInventory()));
+		vilCap.setAttackValue(attackVal).setShield(entity.getHeldItemOffhand().getItemUseAction() == EnumAction.BLOCK).setSaturation(InventoryUtil.getFoodSaturation(entity.getVillagerInventory()));
 	}
 
-	public static void checkArmourWeaponsAndFood(EntityVillager entity, UUID playerEntityByUUID)
+	public static void checkArmourWeaponsAndFood(EntityVillager entity, @Nullable UUID playerEntityByUUID)
 	{
+		if(playerEntityByUUID == null)
+			return;
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		int armour = entity.getTotalArmorValue();
 		int prevArmour = vilCap.getArmourValue();
@@ -417,10 +420,7 @@ public class VillagerPlayerDealMethods {
 				wholeReputationChange += 5;
 		
 		changePlayerReputation(entity, playerEntityByUUID, wholeReputationChange);
-		vilCap.setArmourValue(armour);
-		vilCap.setAttackValue(attackVal);
-		vilCap.setShield(hasShield);
-		vilCap.setSaturation(foodSaturation);
+		vilCap.setArmourValue(armour).setAttackValue(attackVal).setShield(hasShield).setSaturation(foodSaturation);
 	}
 	
 	public static void changePlayerReputation(EntityVillager entity, UUID playerEntityUUID, float wholeReputationChange) 
@@ -475,8 +475,7 @@ public class VillagerPlayerDealMethods {
 		 		}
 		 		else
 		 		{
-		 			vilCap.setFoodStore(null);
-		 			vilCap.setKitStore(null);
+		 			vilCap.setFoodStore(null).setKitStore(null);
 		 			cap.removeVillager(entity.getUniqueID());
 		 			return new VilEnlistPacket(0, 0, 0, false);
 		 		}

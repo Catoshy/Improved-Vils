@@ -1,12 +1,7 @@
 package com.joshycode.improvedvils.item;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import com.joshycode.improvedvils.ImprovedVils;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability.Provisions;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.NetWrapper;
@@ -32,12 +27,11 @@ public class ItemMarshalsBaton extends Item {
 
 	public ItemMarshalsBaton() {}
 
-	@SideOnly(Side.CLIENT)
 	@Override
 	public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand)
 	{
 		ItemStack stack = player.getHeldItemMainhand();
-		if(stack.getItem() instanceof ItemMarshalsBaton)
+		if(!world.isRemote && stack.getItem() instanceof ItemMarshalsBaton)
 		{
 			Entity entity = Minecraft.getMinecraft().getRenderViewEntity();
 			if(entity != null && Minecraft.getMinecraft() != null)
@@ -59,7 +53,7 @@ public class ItemMarshalsBaton extends Item {
 
 	private void setTileEntityStore(Entity entity, int provisioningUnit) 
 	{
-		if(ImprovedVils.proxy.getKit() == Provisions.PROVISIONS)
+		if(ImprovedVils.proxy.getStuff() == Provisions.PROVISIONS)
 		{
 			tryFoodStoreTileEntity(entity, provisioningUnit);
 		}
@@ -95,28 +89,9 @@ public class ItemMarshalsBaton extends Item {
 		RayTraceResult lookingAt = entity.rayTrace(6.0, 1.0F);
 		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK)
 		{
+			Log.info("Set kit store!");
 			BlockPos pos = lookingAt.getBlockPos();
 			NetWrapper.NETWORK.sendToServer(new VilKitStorePacket(pos, provisioningUnit));
 		}
-	}
-
-	public static synchronized Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world)
-	{
-		Set<Entity> applicable = new HashSet();
-		if(world.getLoadedEntityList() != null && world.getLoadedEntityList().size() != 0)
-		{
-			List<Entity> list = new CopyOnWriteArrayList <> (world.getLoadedEntityList());
-			for (Entity e : list)
-			{
-				if(world.getChunkFromBlockCoords(e.getPosition()).isLoaded())
-				{
-					 if(ids.contains(e.getUniqueID()))
-					 {
-						 applicable.add(e);
-					 }
-				}
-			}
-		}
-		return applicable;
 	}
 }

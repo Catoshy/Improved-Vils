@@ -2,6 +2,7 @@ package com.joshycode.improvedvils.util;
 
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.IAttribute;
 import net.minecraft.entity.ai.attributes.RangedAttribute;
@@ -13,10 +14,11 @@ public class VilAttributes {
 
 	public static void apply(EntityVillager e)
 	{
-		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(45.0D);
+		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(ConfigHandler.followRange);
 		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(.55d);
 		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(ConfigHandler.villagerHealth);
 		e.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.ARMOR).setBaseValue(ConfigHandler.villagerBaseArmour);
+		e.getAttributeMap().getAttributeInstance(EntityLivingBase.SWIM_SPEED).setBaseValue(3D);
 	}
 
 	public static void applyConstr(EntityVillager e)
