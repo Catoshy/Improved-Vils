@@ -4,7 +4,6 @@ import java.util.Random;
 
 import org.jline.utils.Log;
 
-import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;

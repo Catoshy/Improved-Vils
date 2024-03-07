@@ -10,6 +10,7 @@ import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.ai.EntityAITarget;
 import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -83,9 +84,9 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 	@Override
 	protected boolean isSuitableTarget(@Nullable EntityLivingBase target, boolean includeInvincibles)
 	{
-		if(!super.isSuitableTarget(target, includeInvincibles))
+		if(!EntityAITarget.isSuitableTarget(this.taskOwner, target, includeInvincibles, this.shouldCheckSight))
 			return false;
-		for(Class c : CommonProxy.TARGETS)
+		for(Class<?> c : CommonProxy.TARGETS)
 		{
 			if(ConfigHandler.debug)
 				Log.info("is Suitable Target " + target + " for class %s", c);

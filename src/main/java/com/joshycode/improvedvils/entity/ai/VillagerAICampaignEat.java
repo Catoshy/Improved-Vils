@@ -1,7 +1,5 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import org.jline.utils.Log;
-
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.handler.CapabilityHandler;

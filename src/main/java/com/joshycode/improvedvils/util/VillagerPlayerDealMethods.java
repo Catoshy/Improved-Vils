@@ -8,8 +8,6 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.CommonProxy.ItemHolder;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
@@ -35,7 +33,6 @@ import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
@@ -170,10 +167,19 @@ public class VillagerPlayerDealMethods {
 	public static List<EntityVillager> getVillagePopulation(Village village, World world)
 	{
 		BlockPos villageCenter = village.getCenter();
-		List<EntityVillager> list = world.getEntitiesWithinAABB(EntityVillager.class,
-										new AxisAlignedBB(
-												new Vec3d(villageCenter.getX() - village.getVillageRadius(), villageCenter.getY() - village.getVillageRadius(), villageCenter.getZ() - village.getVillageRadius()),
-												new Vec3d(villageCenter.getX() + village.getVillageRadius(), villageCenter.getY() + village.getVillageRadius(), villageCenter.getZ() + village.getVillageRadius())));
+		AxisAlignedBB villageArea = new AxisAlignedBB(
+				new BlockPos(villageCenter.getX() - village.getVillageRadius(), villageCenter.getY() - village.getVillageRadius(), villageCenter.getZ() - village.getVillageRadius()),
+				new BlockPos(villageCenter.getX() + village.getVillageRadius(), villageCenter.getY() + village.getVillageRadius(), villageCenter.getZ() + village.getVillageRadius()));
+		int i = 0;
+		for(int x = ((int)villageArea.minX)  << 4; x < ((int)villageArea.maxX << 4); x++)
+			for(int z = ((int)villageArea.minZ)  << 4; z < ((int)villageArea.maxZ << 4); z++)
+			{
+				if(i++ > 32)
+					break;
+				world.getChunkProvider().provideChunk(x, z);
+			}
+		
+		List<EntityVillager> list = world.getEntitiesWithinAABB(EntityVillager.class, villageArea);
 		Set<EntityVillager> set = new HashSet<EntityVillager>();
 		for(EntityVillager e : list)
 		{
@@ -209,7 +215,7 @@ public class VillagerPlayerDealMethods {
 	private static boolean doesPlayerHaveFealty(EntityPlayer player, EntityVillager entityIn)
 	{
 		IImprovedVilCapability vilCap = entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		if(vilCap.getTeam() == null)
+		if(vilCap.getTeam().isEmpty())
 		{
 			return vilCap.getPlayerReputation(player.getUniqueID()) > 0 && vilCap.getPlayerId().equals(player.getUniqueID());
 		}
@@ -273,7 +279,7 @@ public class VillagerPlayerDealMethods {
 			followStateVal += VilMethods.getFollowing(e) ? FOLLOWING : NULL; 
 			
 			dutyStateVal = VilMethods.getDuty(e) ? 2 : 1;
-			dutyStateVal = InventoryUtil.doesInventoryHaveItem(player.inventory, ItemHolder.BATON) != 0 ? dutyStateVal : NULL;
+			//dutyStateVal = InventoryUtil.doesInventoryHaveItem(player.inventory, ItemHolder.BATON) != 0 ? dutyStateVal : NULL;
 			if(guardStateVal == 2)
 				vec = VilMethods.getGuardBlockPos(e);
 			
@@ -293,7 +299,6 @@ public class VillagerPlayerDealMethods {
 		entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setInvListener(false);
 	}
 
-	//TODO I assume that the cast is safe, double check if crash!
 	public static void updateGuiForClient(EntityVillager entity, EntityPlayer playerEntityByUUID)
 	{
 		NetWrapper.NETWORK.sendTo(getUpdateGuiForClient(entity, playerEntityByUUID), (EntityPlayerMP) playerEntityByUUID);
@@ -313,7 +318,8 @@ public class VillagerPlayerDealMethods {
 		int villageReputation = village.getPlayerReputation(player.getUniqueID());
 		if(ConfigHandler.debug)
 			Log.info("Player is is null? %s", player.getTeam() == null);
-		if(player.getTeam() == null || player.getTeam().getName().equals(village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam()))
+		String villageTeam = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam();
+		if(player.getTeam() == null || villageTeam == null || player.getTeam().getName().equals(villageTeam))
 		{
 			villageReputationChange(entityWorld, village, player, villageReputation);
 		}
@@ -334,7 +340,7 @@ public class VillagerPlayerDealMethods {
 			{
 				for(EntityVillager villager : population)
 				{
-					villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setMutinous(false).setTeam(null);
+					villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setMutinous(false).setTeam("");
 				}
 				village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).setTeam(null);
 			}
@@ -361,9 +367,9 @@ public class VillagerPlayerDealMethods {
 		
 		IVillageCapability villageCap =  village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
 		vilCap.setHomeVillageID(villageCap.getUUID());
-		//TODO
-		if(vilCap.getTeam() != null && entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()) != null)
-			vilCap.setTeam(entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()).getName());
+		//TODO testing needed, seems to make more sense!
+		if(/*vilCap.getTeam() != null &&*/ entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()) != null)
+			vilCap.setTeam(villageCap.getTeam());
 	}
 
 	public static void updateArmourWeaponsAndFood(EntityVillager entity)
@@ -418,7 +424,8 @@ public class VillagerPlayerDealMethods {
 				wholeReputationChange -= 5;
 			else
 				wholeReputationChange += 5;
-		
+		if(ConfigHandler.debug)
+			Log.info("changing reputation for player " + playerEntityByUUID.toString() + " by %s", wholeReputationChange);
 		changePlayerReputation(entity, playerEntityByUUID, wholeReputationChange);
 		vilCap.setArmourValue(armour).setAttackValue(attackVal).setShield(hasShield).setSaturation(foodSaturation);
 	}
@@ -426,13 +433,15 @@ public class VillagerPlayerDealMethods {
 	public static void changePlayerReputation(EntityVillager entity, UUID playerEntityUUID, float wholeReputationChange) 
 	{
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		if(vilCap.getTeam() != null)
+		if(!vilCap.getTeam().isEmpty())
 		{
+			if(ConfigHandler.debug)
+				Log.info("Villager team not empty, is %s", vilCap.getTeam());
 			for(UUID playerId : vilCap.getKnownPlayers())
 			{
 				GameProfile playerProfile = entity.world.getMinecraftServer().getPlayerProfileCache().getProfileByUUID(playerId);
 				ScorePlayerTeam playersTeam = entity.world.getScoreboard().getPlayersTeam(playerProfile.getName());
-				if(playersTeam.getName().equals(vilCap.getTeam()))
+				if(playersTeam != null && playersTeam.getName().equals(vilCap.getTeam()))
 				{
 					int referenceReputation = vilCap.getHomeVillagePlayerReputationReference(playerEntityUUID);
 					float nowReputation = vilCap.getPlayerReputation(playerEntityUUID);

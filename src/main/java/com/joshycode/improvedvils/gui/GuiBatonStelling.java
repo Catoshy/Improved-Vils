@@ -2,30 +2,26 @@ package com.joshycode.improvedvils.gui;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.UUID;
-
-import org.lwjgl.opengl.GL14;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability;
 import com.joshycode.improvedvils.network.BatonSelectData.BatonSelectServerData;
 import com.joshycode.improvedvils.network.BlankNotePacket;
 import com.joshycode.improvedvils.network.NetWrapper;
+import com.joshycode.improvedvils.network.VillagerListPacket.DismissVillagers;
+import com.joshycode.improvedvils.network.VillagerListPacket.FollowVillagers;
+import com.joshycode.improvedvils.network.VillagerListPacket.GuardVillagers;
+import com.joshycode.improvedvils.network.VillagerListPacket.MoveVillagersPlatoon;
+import com.joshycode.improvedvils.network.VillagerListPacket.SetVillagersDuty;
+import com.joshycode.improvedvils.network.VillagerListPacket.StopVillagers;
 import com.joshycode.improvedvils.util.BatonDealMethods;
-import com.joshycode.improvedvils.capabilities.itemstack.EnlisteeContainer;
-import com.joshycode.improvedvils.network.VillagerListPacket.*;
 
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ResourceLocation;
 
 public class GuiBatonStelling extends GuiScreen {
@@ -378,37 +374,37 @@ public class GuiBatonStelling extends GuiScreen {
 	private void dismissAll()
 	{
 		if(this.rollList.getSelected().isEmpty()) return;
-		NetWrapper.NETWORK.sendToServer(new DismissVillagers(BatonDealMethods.getEntityIDsFromRollList(this.rollList)));
+		NetWrapper.NETWORK.sendToServer(new DismissVillagers(BatonDealMethods.getEntityIDsFromRollList(this.rollList, true)));
 	}
     
     private void changePlatoons() 
     {
 		if(this.rollList.getSelected().isEmpty()) return;
-		NetWrapper.NETWORK.sendToServer(new MoveVillagersPlatoon(BatonDealMethods.getEntityIDsFromRollList(this.rollList), this.moveCompany * 10 + this.movePlatoon));
+		NetWrapper.NETWORK.sendToServer(new MoveVillagersPlatoon(BatonDealMethods.getEntityIDsFromRollList(this.rollList, true), this.moveCompany * 10 + this.movePlatoon));
     }
 
 	private void stopAll() 
 	{
 		if(this.rollList.getSelected().isEmpty()) return;
-		NetWrapper.NETWORK.sendToServer(new StopVillagers(BatonDealMethods.getEntityIDsFromRollList(this.rollList)));
+		NetWrapper.NETWORK.sendToServer(new StopVillagers(BatonDealMethods.getEntityIDsFromRollList(this.rollList, false)));
 	}
 
 	private void platoonGuard() 
 	{
 		if(this.rollList.getSelected().isEmpty()) return;
-		NetWrapper.NETWORK.sendToServer(new GuardVillagers(BatonDealMethods.getEntityIDsFromRollList(this.rollList)));
+		NetWrapper.NETWORK.sendToServer(new GuardVillagers(BatonDealMethods.getEntityIDsFromRollList(this.rollList, false)));
 	}
 
 	private void platoonFollow() 
 	{
 		if(this.rollList.getSelected().isEmpty()) return;
-		NetWrapper.NETWORK.sendToServer(new FollowVillagers(BatonDealMethods.getEntityIDsFromRollList(this.rollList)));
+		NetWrapper.NETWORK.sendToServer(new FollowVillagers(BatonDealMethods.getEntityIDsFromRollList(this.rollList, false)));
 	}
 
 	private void updatePlatoonDuty(boolean b)
 	{
 		if(this.rollList.getSelected().isEmpty()) return;
-		NetWrapper.NETWORK.sendToServer(new SetVillagersDuty(BatonDealMethods.getEntityIDsFromRollList(this.rollList), b));
+		NetWrapper.NETWORK.sendToServer(new SetVillagersDuty(BatonDealMethods.getEntityIDsFromRollList(this.rollList, false), b));
 	}
 
 	private void updatePlatoonInfo() 

@@ -1,16 +1,12 @@
 package com.joshycode.improvedvils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 import com.joshycode.improvedvils.capabilities.CapabilityStorage;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
@@ -22,18 +18,8 @@ import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.capabilities.village.VillageCapability;
 import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.gui.VilGuiHandler;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.item.ItemMarshalsBaton;
-import com.joshycode.improvedvils.network.VillagerListPacket;
-import com.joshycode.improvedvils.network.VillagerListPacket.BatonBefolkPacket;
-import com.joshycode.improvedvils.network.VillagerListPacket.BatonBefolkUpdatePacket;
-import com.joshycode.improvedvils.network.VillagerListPacket.DismissVillagers;
-import com.joshycode.improvedvils.network.VillagerListPacket.FollowVillagers;
-import com.joshycode.improvedvils.network.VillagerListPacket.GuardVillagers;
-import com.joshycode.improvedvils.network.VillagerListPacket.MoveVillagersPlatoon;
-import com.joshycode.improvedvils.network.VillagerListPacket.SetVillagersDuty;
-import com.joshycode.improvedvils.network.VillagerListPacket.StopVillagers;
 import com.joshycode.improvedvils.network.BatonSelectData;
 import com.joshycode.improvedvils.network.BatonSelectData.BatonSelectServerData;
 import com.joshycode.improvedvils.network.BlankNotePacket;
@@ -51,15 +37,19 @@ import com.joshycode.improvedvils.network.VilGuiQuery;
 import com.joshycode.improvedvils.network.VilKitStorePacket;
 import com.joshycode.improvedvils.network.VilStateQuery;
 import com.joshycode.improvedvils.network.VilStateUpdate;
+import com.joshycode.improvedvils.network.VillagerListPacket.BatonBefolkPacket;
+import com.joshycode.improvedvils.network.VillagerListPacket.BatonBefolkUpdatePacket;
+import com.joshycode.improvedvils.network.VillagerListPacket.DismissVillagers;
+import com.joshycode.improvedvils.network.VillagerListPacket.FollowVillagers;
+import com.joshycode.improvedvils.network.VillagerListPacket.GuardVillagers;
+import com.joshycode.improvedvils.network.VillagerListPacket.MoveVillagersPlatoon;
+import com.joshycode.improvedvils.network.VillagerListPacket.SetVillagersDuty;
+import com.joshycode.improvedvils.network.VillagerListPacket.StopVillagers;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumHand;
 import net.minecraft.util.IThreadListener;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -72,7 +62,6 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraftforge.fml.common.registry.GameRegistry.ObjectHolder;
 import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 @Mod.EventBusSubscriber
 public class CommonProxy {
@@ -242,7 +231,7 @@ public class CommonProxy {
 	 */
 	public static synchronized Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world)
 	{
-		Set<Entity> applicable = new HashSet();
+		Set<Entity> applicable = new HashSet<Entity>();
 		if(world.getLoadedEntityList() != null && world.getLoadedEntityList().size() != 0)
 		{
 			List<Entity> list = new CopyOnWriteArrayList <> (world.getLoadedEntityList());

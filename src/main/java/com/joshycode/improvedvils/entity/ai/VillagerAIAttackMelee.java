@@ -15,8 +15,6 @@ import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.VilAttributes;
 
 import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIBase;
@@ -34,7 +32,6 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import openmods.Log;
 
 public class VillagerAIAttackMelee extends EntityAIBase {
 
@@ -430,7 +427,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 		UUID playerId = VilMethods.getPlayerId(this.attacker);
 		EntityPlayer player = this.attacker.getEntityWorld().getPlayerEntityByUUID(playerId);
 		double followRange = this.attacker.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
-		if(player.getDistanceSq(this.attacker) > (followRange - 2) * (followRange - 2)) 
+		if(player != null && player.getDistanceSq(this.attacker) > (followRange - 2) * (followRange - 2)) 
 		{
 			return true;
 		}

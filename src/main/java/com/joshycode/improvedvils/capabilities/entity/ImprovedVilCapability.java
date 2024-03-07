@@ -15,7 +15,6 @@ import org.apache.commons.lang3.tuple.MutablePair;
 
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.util.VillagerInvListener;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -32,7 +31,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 
 	private UUID player, homeVillageId;
 	private HashMap<UUID, MutablePair<Float, Integer>> playerReputations;
-	private String teamName;
+	private String teamName = "";
 	private boolean isHungry;
 	private BlockPos guardObj;
 	private boolean isReturning;
@@ -261,7 +260,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	public String getTeam() { return this.teamName; }
 
 	@Override
-	public IImprovedVilCapability setTeam(@Nullable String team) { this.teamName = team; return this;}
+	public IImprovedVilCapability setTeam(String team) { this.teamName = team; return this;}
 
 	@Override
 	public float getPlayerReputation(UUID uniqueID)
@@ -278,11 +277,15 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	{
 		if(this.playerReputations.get(uniqueID) != null)
 		{
+			if(ConfigHandler.debug)
+				Log.info("changing reputation for player in capability, known player " + uniqueID + " by %s", f);
 			this.playerReputations.get(uniqueID).setLeft(MathHelper.clamp(f, -30, 40.5f));
 			this.playerReputations.get(uniqueID).setRight(MathHelper.clamp(i, -30, 10));
 		}
 		else
 		{
+			if(ConfigHandler.debug)
+				Log.info("changing reputation for player in capability, unk player " + uniqueID + " by %s", f);
 			MutablePair<Float, Integer> pair = new MutablePair<>();
 			pair.setLeft(MathHelper.clamp(f, -30, 40.5f));
 			pair.setRight(MathHelper.clamp(i, -30, 10));

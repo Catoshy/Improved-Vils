@@ -45,7 +45,6 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.EntityAgeable;
-import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
@@ -64,12 +63,13 @@ import net.minecraft.entity.monster.EntityVindicator;
 import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.village.Village;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
@@ -262,12 +262,14 @@ public class EventHandlerVil {
 	}
 
 	@SubscribeEvent
-	@SideOnly(Side.CLIENT)
 	public void openVillagerInv(EntityInteractSpecific event)
 	{
 		if(!event.getWorld().isRemote && event.getTarget() instanceof EntityVillager && event.getEntityPlayer().isSneaking())
 		{
-			ClientProxy.openGuiForPlayerIfOK(event.getTarget().getEntityId());
+			//World world = null;
+			//world.init();
+			//ClientProxy.openGuiForPlayerIfOK(event.getTarget().getEntityId());
+			((WorldServer) event.getWorld()).addScheduledTask(new VilPlayerDeal(event.getTarget().getEntityId(), (EntityPlayerMP) event.getEntityPlayer(), event.getWorld()));
 		}
 	}
 	
@@ -336,7 +338,7 @@ public class EventHandlerVil {
 		font.drawString(TextFormatting.WHITE + "Selected Company: " + String.format(java.util.Locale.US, "%d", company + 1), guiX, guiY, 0);
 		font.drawString(TextFormatting.WHITE + "Selected Platoon: " + String.format(java.util.Locale.US, "%d", platoon + 1), guiX, guiY + 9, 0);
 		GlStateManager.popMatrix();
-		//TODO this method
+		//TODO SHOULD MAKE FADING TEXT
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -370,11 +372,11 @@ public class EventHandlerVil {
 		entity.tasks.addTask(3, new VillagerAICollectKit(entity, 4));
 		entity.tasks.addTask(4, new VillagerAIMate(entity));
 		entity.tasks.addTask(6, new VillagerAIMoveTowardsRestriction(entity, 0.6D));
-		entity.tasks.addTask(6, new VillagerAIFollow(entity, .67D, 6.0F, ConfigHandler.followRange - 2.0F));
+		entity.tasks.addTask(6, new VillagerAIFollow(entity, .67D, 6.0F, ConfigHandler.followRangeNormal));
 		entity.tasks.addTask(4, new VillagerAIMoveIndoors(entity));
 		entity.tasks.addTask(4, new VillagerAIDrinkPotion(entity));
 		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, .55D, false));
-		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new FriendlyFireVillagerPredicate(entity)));//TODO changed ranged to 5 priority, all ais that were 5 downgraded to 6
+		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new FriendlyFireVillagerPredicate(entity)));
 		entity.tasks.addTask(1, aiCEat);
 		entity.tasks.addTask(1, new VillagerAIEatHeal(entity));
 		entity.tasks.addTask(1, new VillagerAIHandlePlayers(entity));
@@ -386,18 +388,17 @@ public class EventHandlerVil {
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVindicator.class, 8.0F, 0.8D, 0.8D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVex.class, 8.0F, 0.6D, 0.6D));
 		
-		//TODO proxy TARGETS?
-		for(String s : ConfigHandler.attackableMobs)
+		//TODO proxy TARGETS? -OK, FIXED - BUT DOES IT WORK??
+		for(Class c : CommonProxy.TARGETS)
 		{
-			Class c = EntityList.getClass(new ResourceLocation(s));
 			if(c != null && EntityLivingBase.class.isAssignableFrom(c))
-				entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, c, true));
+				entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, c, true, ConfigHandler.targetDistance));
 		}
 		if(!ConfigHandler.whiteListMobs)
-			entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityMob.class, true));
-		//TODO static final predicates
+			entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityMob.class, true, ConfigHandler.targetDistance));
+		//TODO static final predicates - OK, FIXED - BUT DOES IT WORK??
 		entity.targetTasks.addTask(1, new VillagerAIHurtByTarget(entity, false));
-		entity.targetTasks.addTask(4, new VillagerAIAttackNearestTarget<EntityVillager>(entity, EntityVillager.class, true, new EnemyVillagerAttackPredicate<EntityVillager>(entity)));
-		entity.targetTasks.addTask(5, new VillagerAIAttackNearestTarget<EntityPlayer>(entity, EntityPlayer.class, true, new EnemyPlayerAttackPredicate<EntityPlayer>(entity)));
+		entity.targetTasks.addTask(4, new VillagerAIAttackNearestTarget<EntityVillager>(entity, EntityVillager.class, true, ConfigHandler.targetDistance, new EnemyVillagerAttackPredicate<EntityVillager>(entity)));
+		entity.targetTasks.addTask(5, new VillagerAIAttackNearestTarget<EntityPlayer>(entity, EntityPlayer.class, true, ConfigHandler.targetDistance, new EnemyPlayerAttackPredicate<EntityPlayer>(entity)));
 	}
 }

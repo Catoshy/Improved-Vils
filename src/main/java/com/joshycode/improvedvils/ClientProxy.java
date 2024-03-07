@@ -7,45 +7,39 @@ import javax.annotation.Nullable;
 import org.jline.utils.Log;
 import org.lwjgl.input.Keyboard;
 
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSyntaxException;
 import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability.Provisions;
 import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.gui.GuiVillagerArm;
 import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.network.BlankNotePacket;
 import com.joshycode.improvedvils.network.MarshalKeyEvent;
 import com.joshycode.improvedvils.network.NetWrapper;
-import com.joshycode.improvedvils.network.VilEnlistPacket;
-import com.joshycode.improvedvils.network.VilFollowPacket;
-import com.joshycode.improvedvils.network.VilGuardPacket;
 import com.joshycode.improvedvils.network.VilGuiQuery;
 import com.joshycode.improvedvils.network.VilStateQuery;
-import com.joshycode.improvedvils.renderer.LayerArmourNonBiped;
 import com.joshycode.improvedvils.renderer.LayerHeldItemNonBiped;
 import com.joshycode.improvedvils.renderer.ModelBipedVillager;
 import com.joshycode.improvedvils.renderer.RenderBullet;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiErrorScreen;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.model.ModelBiped;
-import net.minecraft.client.model.ModelZombie;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderLiving;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.layers.LayerBipedArmor;
-import net.minecraft.client.renderer.entity.layers.LayerCustomHead;
-import net.minecraft.client.renderer.entity.layers.LayerElytra;
-import net.minecraft.client.renderer.entity.layers.LayerHeldItem;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.IThreadListener;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.ModelRegistryEvent;
-import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.model.ModelLoader;
+import net.minecraftforge.fml.client.CustomModLoadingErrorDisplayException;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
@@ -61,16 +55,15 @@ public class ClientProxy extends CommonProxy {
 	private int provisioningPlatoon;
 	private Provisions provisions;
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public void preInit() throws IOException
 	{
 		super.preInit();
-		RenderingRegistry.registerEntityRenderingHandler(EntityBullet.class, new IRenderFactory() 
+		RenderingRegistry.registerEntityRenderingHandler(EntityBullet.class, new IRenderFactory<EntityBullet>() 
 		{
 			@Override
-			public Render createRenderFor(RenderManager manager) {
-				return new RenderBullet(manager);
+			public Render<EntityBullet> createRenderFor(RenderManager manager) {
+				return new RenderBullet<EntityBullet>(manager);
 			}
 		});
 	}
@@ -94,7 +87,62 @@ public class ClientProxy extends CommonProxy {
 	@Override
 	public void postInit() throws IOException
 	{
-		super.postInit();
+		try 
+		{
+			ConfigHandler.load(LoadState.POSTINIT);
+		}
+		catch(Exception ex)
+		{
+			if(ex instanceof JsonSyntaxException)
+			{
+				throw new CustomModLoadingErrorDisplayException() 
+				{
+
+					private static final long serialVersionUID = -3193026792627553979L;
+
+					@Override
+					public void initGui(GuiErrorScreen errorScreen, FontRenderer fontRenderer) {}
+
+					@Override
+					public void drawScreen(GuiErrorScreen errorScreen, FontRenderer fontRenderer, int mouseRelX,
+							int mouseRelY, float tickTime) 
+					{
+						String message = "Could not read Gun-Config Json in the configs for ImprovedVils due to improper syntax. ";
+						String messageLine2 = "Please check your configs and correct any syntax errors.";
+						String messageLine3 =  "You can delete or rename the current json to generate a readme file.";
+						int stringWidth = fontRenderer.getStringWidth(message);
+						int stringWidth2 = fontRenderer.getStringWidth(messageLine2);
+						int stringWidth3 = fontRenderer.getStringWidth(messageLine3);
+						fontRenderer.drawString(message, errorScreen.width / 2 - stringWidth / 2, errorScreen.height / 2, 16777215);
+						fontRenderer.drawString(messageLine2, errorScreen.width / 2 - stringWidth2 / 2, errorScreen.height / 2 + fontRenderer.FONT_HEIGHT, 16777215);
+						fontRenderer.drawString(messageLine3, errorScreen.width / 2 - stringWidth3 / 2, errorScreen.height / 2 + fontRenderer.FONT_HEIGHT * 2, 16777215);
+					}	
+				};
+			}
+			else if(ex instanceof IOException || ex instanceof JsonParseException)
+			{
+				throw new CustomModLoadingErrorDisplayException() 
+				{
+
+					private static final long serialVersionUID = -2189386486689782027L;
+
+					@Override
+					public void initGui(GuiErrorScreen errorScreen, FontRenderer fontRenderer) {}
+
+					@Override
+					public void drawScreen(GuiErrorScreen errorScreen, FontRenderer fontRenderer, int mouseRelX,
+							int mouseRelY, float tickTime) 
+					{
+						String message = "Could not read Gun-Config Json in the configs for ImprovedVils due to IO error. ";
+						String messageLine2 =  "Please check your configs and ensure Minecraft can access and read any files and folders.";
+						int stringWidth = fontRenderer.getStringWidth(message);
+						int stringWidth2 = fontRenderer.getStringWidth(messageLine2);
+						fontRenderer.drawString(message, errorScreen.width / 2 - stringWidth / 2, errorScreen.height / 2, 16777215);
+						fontRenderer.drawString(messageLine2, errorScreen.width / 2 - stringWidth2 / 2, errorScreen.height / 2 + fontRenderer.FONT_HEIGHT, 16777215);
+					}	
+				};
+			}
+		}
 		this.addLayersToVillagerModel();
 	}
 	

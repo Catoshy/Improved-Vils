@@ -12,6 +12,7 @@ import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.pathfinding.PathNavigate;
+import net.minecraft.pathfinding.PathNavigateGround;
 import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.util.math.Vec3d;
 
@@ -28,10 +29,10 @@ public class VillagerAIFollow extends EntityAIBase {
     private float oldWaterCost;
     private final double areaSize;
 
-    public VillagerAIFollow(final EntityVillager entityIn, double speedIn, float stopDist, float startDist)
+	public VillagerAIFollow(final EntityVillager entityIn, double speedIn, float stopDist, float startDist)
     {
         this.villager = entityIn;
-        this.followPredicate = new VilFollowPredicate(entityIn);
+        this.followPredicate = new VilFollowPredicate<>(entityIn);
         this.speedModifier = speedIn;
         this.navigation = entityIn.getNavigator();
         this.stopDistance = stopDist;
@@ -78,6 +79,7 @@ public class VillagerAIFollow extends EntityAIBase {
     {
         this.timeToRecalcPath = 0;
         this.oldWaterCost = this.villager.getPathPriority(PathNodeType.WATER);
+        ((PathNavigateGround) this.navigation).setBreakDoors(true);
         this.villager.setPathPriority(PathNodeType.WATER, 0.0F);
     }
 
@@ -86,6 +88,7 @@ public class VillagerAIFollow extends EntityAIBase {
     {
         this.followingPlayer = null;
         this.navigation.clearPath();
+        ((PathNavigateGround) this.navigation).setBreakDoors(false);
         this.villager.setPathPriority(PathNodeType.WATER, this.oldWaterCost);
     }
 

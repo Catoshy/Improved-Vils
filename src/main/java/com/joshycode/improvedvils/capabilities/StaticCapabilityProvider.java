@@ -31,6 +31,7 @@ public class StaticCapabilityProvider<C, S extends NBTBase> implements ICapabili
 		return getCapability(capability, facing) != null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T getCapability(Capability<T> capability, EnumFacing facing)
 	{
@@ -41,6 +42,7 @@ public class StaticCapabilityProvider<C, S extends NBTBase> implements ICapabili
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public S serializeNBT()
 	{

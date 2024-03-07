@@ -25,14 +25,25 @@ public abstract class VillagerPredicate<T extends Entity> implements Predicate<T
 		protected FriendlyFireVillagerPredicate(EntityVillager taskOwner) { super(taskOwner); }
 
 		@Override
-		public boolean apply(@Nullable T potentialEnemyVil)
+		public boolean apply(@Nullable T potentialEnemy)
         {
-			if(!(potentialEnemyVil instanceof EntityVillager) || potentialEnemyVil.isEntityEqual(this.taskOwner)) return false;
+			if(!(potentialEnemy instanceof EntityVillager) && !(potentialEnemy instanceof EntityPlayer)|| potentialEnemy.isEntityEqual(this.taskOwner)) return false;
 			
+			String team = null;
 			IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-			IImprovedVilCapability predCapability = potentialEnemyVil.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 			
-			return predCapability.getTeam() == null || taskOwnerCapability.getTeam() == null || taskOwnerCapability.getTeam().equals(predCapability.getTeam());
+			if(potentialEnemy instanceof EntityVillager)
+			{
+				IImprovedVilCapability predCapability = potentialEnemy.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+				team = predCapability.getTeam();
+			}
+			//TODO changes perhaps for attacking those who hurt the player? ITW
+			else if(((EntityPlayer) potentialEnemy).getTeam() != null)
+			{
+				team = ((EntityPlayer) potentialEnemy).getTeam().getName();
+			}
+			
+			return team == null || taskOwnerCapability.getTeam() == null || taskOwnerCapability.getTeam().equals(team);
         }
 	}
 	

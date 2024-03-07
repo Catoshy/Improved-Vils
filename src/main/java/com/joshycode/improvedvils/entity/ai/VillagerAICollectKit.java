@@ -7,7 +7,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
@@ -28,7 +27,6 @@ import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.EnumAction;
@@ -82,20 +80,15 @@ public class VillagerAICollectKit extends EntityAIBase {
 		
 		this.kitStore = VilMethods.getKitStorePos(this.villager);	
 		IInventory inv = getTileInventory();
-		if(this.kitStore != null && inv != null)
+		if(this.kitStore == null || inv == null) return false;
+		
+		if(VilMethods.getGuardBlockPos(this.villager) != null)
 		{
-			if(VilMethods.getGuardBlockPos(this.villager) != null)
-			{
-				double dist = VilMethods.getGuardBlockPos(this.villager).getDistance(this.kitStore.getX(), this.kitStore.getY(), this.kitStore.getZ());
-				double distSq = dist * dist;
+			double dist = VilMethods.getGuardBlockPos(this.villager).getDistance(this.kitStore.getX(), this.kitStore.getY(), this.kitStore.getZ());
+			double distSq = dist * dist;
 
-				if(distSq > CommonProxy.GUARD_IGNORE_LIMIT)
-					return false;
-			}
-		}
-		else
-		{
-			return false;
+			if(distSq > CommonProxy.GUARD_IGNORE_LIMIT)
+				return false;
 		}
 		boolean collectKit = this.canCollectKit(inv);
 		boolean collectAmmo = this.canCollectAmmo(inv);

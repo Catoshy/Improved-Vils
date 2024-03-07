@@ -1,7 +1,5 @@
 package com.joshycode.improvedvils.util;
 
-import com.joshycode.improvedvils.Log;
-
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;

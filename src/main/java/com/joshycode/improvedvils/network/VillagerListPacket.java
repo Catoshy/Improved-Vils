@@ -1,27 +1,22 @@
 package com.joshycode.improvedvils.network;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import org.jline.utils.Log;
 
-import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.CommonProxy.ItemHolder;
-import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
-import com.joshycode.improvedvils.capabilities.itemstack.EnlisteeContainer;
+import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
+import com.joshycode.improvedvils.gui.EnlisteeContainer;
 import com.joshycode.improvedvils.gui.GuiBatonStelling;
 import com.joshycode.improvedvils.gui.GuiVillagerRollList;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.network.BlankNotePacket.WarnNoRoom;
 import com.joshycode.improvedvils.util.BatonDealMethods;
-import com.joshycode.improvedvils.util.InventoryUtil;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
@@ -33,7 +28,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.Tuple;
-import net.minecraft.world.World;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;

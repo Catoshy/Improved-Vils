@@ -11,6 +11,7 @@ import net.minecraftforge.common.util.INBTSerializable;
 
 public class CapabilityStorage<T extends NBTTagCompound, S extends INBTSerializable<?>> implements IStorage<S> {
 
+	@SuppressWarnings("unchecked")
 	@Override
 	@Nullable
 	public NBTBase writeNBT(Capability<S> capability, S instance, EnumFacing side)
@@ -22,6 +23,7 @@ public class CapabilityStorage<T extends NBTTagCompound, S extends INBTSerializa
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void readNBT(Capability<S> capability, S instance, EnumFacing side, NBTBase nbt)
 	{

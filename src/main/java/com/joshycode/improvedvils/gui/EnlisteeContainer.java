@@ -1,10 +1,6 @@
-package com.joshycode.improvedvils.capabilities.itemstack;
+package com.joshycode.improvedvils.gui;
 
 import java.util.UUID;
-
-import com.joshycode.improvedvils.gui.GuiBatonStelling;
-import com.joshycode.improvedvils.gui.GuiVillagerRollList;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -108,22 +104,25 @@ public class EnlisteeContainer implements IGuiListEntry {
 			String hungerInfo = this.hungerDaysLeft + " days left";
 			int x1 = this.fatherGui.getScrollBarX() - 9;
 			int y1 = y + slotHeight - 9;
-	        this.fatherGui.getFatherGui().drawTexturedModalRect(x1, y1, 16, 27, 9, 9);
-	        if(this.hungerDaysLeft > 3)
-	        {
-		        this.fatherGui.getFatherGui().drawTexturedModalRect(x1, y1, 52, 27, 9, 9);
-	        }
-	        else if(this.hungerDaysLeft > 0)
-	        {
-		        this.fatherGui.getFatherGui().drawTexturedModalRect(x1, y1, 61, 27, 9, 9);
-	        }
-	        else
-	        {
-	        	hungerInfo = "Out of food!";
-	        }
-	        if(mouseX >= x1 && mouseX <= x1 + 9 && mouseY >= y1 && mouseY <= y + slotHeight)
-	        	this.fatherGui.getFatherGui().setHoveringWriting(hungerInfo);
-	        
+			if(line3)
+			{
+		        this.fatherGui.getFatherGui().drawTexturedModalRect(x1, y1, 16, 27, 9, 9);
+		        if(this.hungerDaysLeft > 3)
+		        {
+			        this.fatherGui.getFatherGui().drawTexturedModalRect(x1, y1, 52, 27, 9, 9);
+		        }
+		        else if(this.hungerDaysLeft > 0)
+		        {
+			        this.fatherGui.getFatherGui().drawTexturedModalRect(x1, y1, 61, 27, 9, 9);
+		        }
+		        else
+		        {
+		        	hungerInfo = "Out of food!";
+		        }
+		        if(mouseX >= x1 && mouseX <= x1 + 9 && mouseY >= y1 && mouseY <= y + slotHeight)
+		        	this.fatherGui.getFatherGui().setHoveringWriting(hungerInfo);
+			}
+		        
 	        String storeInfo = "No store";
 	        boolean flag = false;
 	        if(this.foodStore)
