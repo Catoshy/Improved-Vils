@@ -8,10 +8,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
@@ -19,7 +16,6 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAITarget;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.pathfinding.PathNavigateGround;
 import net.minecraft.util.EntitySelectors;
@@ -31,17 +27,19 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 	protected final Class<T> targetClass;
     protected final EntityAINearestAttackableTarget.Sorter sorter;
     protected final Predicate <? super T > targetEntitySelector;
+    protected final int targetDistance;
     protected T targetEntity;
 
-    public VillagerAIAttackNearestTarget(EntityCreature creature, Class<T> classTarget, boolean checkSight)
+    public VillagerAIAttackNearestTarget(EntityCreature creature, Class<T> classTarget, boolean checkSight, int targetDistance)
     {
-        this(creature, classTarget, checkSight, (Predicate)null);
+        this(creature, classTarget, checkSight, targetDistance, (Predicate<T>)null);
     }
 
-    public VillagerAIAttackNearestTarget(EntityCreature creature, Class<T> classTarget, boolean checkSight, @Nullable final Predicate <? super T > targetSelector)
+    public VillagerAIAttackNearestTarget(EntityCreature creature, Class<T> classTarget, boolean checkSight, int targetDistance, @Nullable final Predicate <? super T > targetSelector)
     {
         super(creature, checkSight,  false);
         this.targetClass = classTarget;
+        this.targetDistance = targetDistance;
         this.sorter = new EntityAINearestAttackableTarget.Sorter(creature);
         this.setMutexBits(1);
         this.targetEntitySelector = new Predicate<T>()
@@ -71,7 +69,7 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 		if(!super.shouldExecute())
 			return false;
 
-		List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
+		List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.targetDistance), this.targetEntitySelector);
         T targetEntity;
 
         if (list.isEmpty())
@@ -88,8 +86,7 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 			return false;
 		}
 
-		if(!VilMethods.getDuty((EntityVillager) this.taskOwner) && ((!this.taskOwner.world.isDaytime() || this.taskOwner.world.isRaining() && !this.taskOwner.world.getBiome(new BlockPos(this.taskOwner)).canRain())
-				&& this.taskOwner.world.provider.hasSkyLight()) && this.taskOwner.getNavigator().noPath())
+		if(isVillagerInside())
 		{
 			PathNavigateGround pathNav = ((PathNavigateGround) this.taskOwner.getNavigator());
 			pathNav.setBreakDoors(false);
@@ -109,7 +106,15 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 		return false;
 	}
 
-    @Override
+    private boolean isVillagerInside() {
+		if(!VilMethods.getDuty((EntityVillager) this.taskOwner))
+			if((!this.taskOwner.world.isDaytime() || (this.taskOwner.world.isRaining() && !this.taskOwner.world.getBiome(new BlockPos(this.taskOwner)).canRain())))
+					if(this.taskOwner.getNavigator().noPath())
+						return true;
+		return false;
+	}
+
+	@Override
 	public void startExecuting()
     {
         this.taskOwner.setAttackTarget(this.targetEntity);

@@ -1,8 +1,6 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;

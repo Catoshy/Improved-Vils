@@ -19,13 +19,13 @@ public class VillageCapability implements IVillageCapability{
 	private HashMap<String, Integer> teamRepuatations;
 	private HashMap<UUID, Double> playerRepuationMeans;
 	private String currentTeam;
-
 	private int lastTeamTime;
 
 	public VillageCapability()
 	{
 		this.teamRepuatations = new HashMap<>();
 		this.playerRepuationMeans = new HashMap<>();
+		this.currentTeam = "";
 	}
 
 	@Override
@@ -34,6 +34,7 @@ public class VillageCapability implements IVillageCapability{
 		final NBTTagCompound nbt = new NBTTagCompound();
 
 		nbt.setString(VILLAGE_NBT_KEY + "ID", this.id.toString());
+		nbt.setString(VILLAGE_NBT_KEY + "CT", this.currentTeam);
 		nbt.setInteger(VILLAGE_NBT_KEY + "LT", this.lastTeamTime);
 
 		ByteArrayOutputStream teamReputations = new ByteArrayOutputStream();
@@ -54,10 +55,12 @@ public class VillageCapability implements IVillageCapability{
 		return nbt;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void deserializeNBT(NBTTagCompound nbt)
 	{
 		this.lastTeamTime = nbt.getInteger(VILLAGE_NBT_KEY + "LT");
+		this.currentTeam = nbt.getString(VILLAGE_NBT_KEY + "CT");
 		String stringId = nbt.getString(VILLAGE_NBT_KEY + "ID");
 
 		if(stringId != null)

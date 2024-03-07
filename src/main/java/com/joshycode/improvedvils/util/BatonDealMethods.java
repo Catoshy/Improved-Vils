@@ -5,11 +5,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
-import com.joshycode.improvedvils.capabilities.itemstack.EnlisteeContainer;
+import com.joshycode.improvedvils.gui.EnlisteeContainer;
 import com.joshycode.improvedvils.gui.GuiVillagerRollList;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
@@ -54,7 +56,7 @@ public class BatonDealMethods {
 			info[2] = cap.getGuardBlockPos() != null;
 			info[3] = cap.getFoodStorePos() != null;
 			info[4] = cap.getKitStorePos() != null;
-			Log.info("food store = " + cap.getFoodStorePos() + " kit store = " + cap.getKitStorePos(), null);
+			Log.info("food store = " + cap.getFoodStorePos() + " kit store = " + cap.getKitStorePos(), (Object[])null);
 			hungerInfo = (int) Math.max(1F, InventoryUtil.getFoodSaturation(villager.getVillagerInventory()) /.6F / ConfigHandler.dailyBread);
 			if(cap.getHungry())
 				hungerInfo = 0;
@@ -63,15 +65,26 @@ public class BatonDealMethods {
 		return map;
 	}
 
-	public static Map<Integer, UUID> getEntityIDsFromRollList(GuiVillagerRollList rollList) 
+	public static Map<Integer, UUID> getEntityIDsFromRollList(GuiVillagerRollList rollList, boolean in_OutOfRender) 
 	{
 		Map<Integer, UUID> list = new HashMap<Integer, UUID>();
+		Stream<Integer> selectedStream = rollList.getSelected().stream();
 		
-		rollList.getSelected().forEach(index -> {
-			EnlisteeContainer container = rollList.getRoll().get(index);
-			list.put(container.villagerEntityId, container.villagerUUID);
-		});
-		Log.info("getEntityIDsFromRollList %s", list);
+		if(!in_OutOfRender)
+			selectedStream.filter(new Predicate<Integer>() {
+					public boolean apply(Integer input) {
+						int id = rollList.getRoll().get(input).villagerEntityId;
+						return id >= 0;
+					}
+				}).forEach(index -> {
+					EnlisteeContainer container = rollList.getRoll().get(index);
+					list.put(container.villagerEntityId, container.villagerUUID);
+				});
+		else	
+			selectedStream.forEach(index -> {
+					EnlisteeContainer container = rollList.getRoll().get(index);
+					list.put(container.villagerEntityId, container.villagerUUID);
+				});
 		return list;
 	}
 

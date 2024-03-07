@@ -2,7 +2,6 @@ package com.joshycode.improvedvils.network;
 
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.handler.VilPlayerDealData;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;

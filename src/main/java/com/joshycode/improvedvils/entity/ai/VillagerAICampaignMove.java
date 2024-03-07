@@ -2,7 +2,6 @@ package com.joshycode.improvedvils.entity.ai;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.util.InventoryUtil;
 import com.joshycode.improvedvils.util.PathUtil;
 
 import net.minecraft.entity.ai.EntityAIBase;

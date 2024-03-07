@@ -17,22 +17,22 @@ import com.joshycode.improvedvils.util.Pair;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
 
-public class VilPlayerDealData implements Runnable{
+public class VilPlayerDeal implements Runnable{
 
 	private static final double SIX_BLOCKS_SQUARED = 36D;
 
 	private WeakReference<EntityVillager> villagerRef;
-	private WeakReference<EntityPlayer> playerRef;
+	private WeakReference<EntityPlayerMP> playerRef;
 	private WeakReference<World> worldRef;
 	private World world;
-	private EntityPlayer player;
+	private EntityPlayerMP player;
 	private EntityVillager villager;
 
 	private Village village;
@@ -46,7 +46,7 @@ public class VilPlayerDealData implements Runnable{
 	private boolean isCurrentPlayer;
 	private boolean isVillagerInHomeVillage;
 
-	public VilPlayerDealData(int villagerId, EntityPlayer player, World world) {
+	public VilPlayerDeal(int villagerId, EntityPlayerMP player, World world) {
 		super();
 		EntityVillager villager = (EntityVillager) world.getEntityByID(villagerId);
 		this.villagerRef = new WeakReference<>(villager);
@@ -62,7 +62,7 @@ public class VilPlayerDealData implements Runnable{
 			Log.info("Starting Gui handler on server thread ...");
 
 		World world = this.worldRef.get();
-		EntityPlayer player = this.playerRef.get();
+		EntityPlayerMP player = this.playerRef.get();
 		if(world == null)
 		{
 			Log.warn("lost world opening Gui for player %s, returning", player);
@@ -137,7 +137,7 @@ public class VilPlayerDealData implements Runnable{
 		VillagerPlayerDealMethods.updateArmourWeaponsAndFood(this.villager);
 		VilMethods.setPlayerId(this.player, this.villager);
 
-		if(vilTeam == null || this.player.getTeam().isSameTeam(vilTeam))
+		if(this.player.getTeam() != null && (vilTeam == null || this.village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam().isEmpty()))
 			setPlayerVillageFealtyIfWorthy();
 		//checkMutiny(); TODO
 
@@ -182,14 +182,14 @@ public class VilPlayerDealData implements Runnable{
 		{
 			if(!this.isCurrentPlayer)
 			{
-				if(this.noCurrentPlayer && this.wholeVillagePlayerRep > VillagerPlayerDealMethods.BAD_THRESHOLD)
+				float currentPlayerRep = currentPlayerReputation();
+				if((this.noCurrentPlayer || currentPlayerRep < 5) && this.wholeVillagePlayerRep > VillagerPlayerDealMethods.BAD_THRESHOLD)
 				{
 					if(ConfigHandler.debug)
-						Log.info("no player, you are good enough (not bad) for villager %s", this.villager);
+						Log.info("no player, or current player not deserving of full loyalty. You are good enough (not bad) for villager %s", this.villager);
 					return true;
 				}
-				float currentPlayerRep = currentPlayerReputation();
-				if((this.villagerPlayerRep >  currentPlayerRep && currentPlayerRep < VillagerPlayerDealMethods.BAD_THRESHOLD) ||
+				if((this.villagerPlayerRep > currentPlayerRep && currentPlayerRep < VillagerPlayerDealMethods.BAD_THRESHOLD) ||
 						(this.wholeVillagePlayerRep > 0  && this.currentPlayerVillageRep < VillagerPlayerDealMethods.UNBEARABLE_THRESHOLD))
 				{
 					if(ConfigHandler.debug)
@@ -200,7 +200,7 @@ public class VilPlayerDealData implements Runnable{
 			else if(this.villagerPlayerRep > VillagerPlayerDealMethods.UNBEARABLE_THRESHOLD && this.wholeVillagePlayerRep > VillagerPlayerDealMethods.HATED_THRESHOLD)
 			{
 				if(ConfigHandler.debug)
-					Log.info("player has the fealty of villager %s, player is not too unbearable and hated", this.villager);
+					Log.info("player has the ear of villager %s, player is not too unbearable and hated", this.villager);
 				return true;
 			}
 		}
@@ -219,7 +219,7 @@ public class VilPlayerDealData implements Runnable{
 			if((this.villagerPlayerRep > 0 || this.villageCurrentTeamRep < VillagerPlayerDealMethods.UNBEARABLE_THRESHOLD) && this.wholeVillagePlayerRep > VillagerPlayerDealMethods.HATED_THRESHOLD)
 			{
 				if(ConfigHandler.debug)
-					Log.info("villager %s has a team, player is *not* ont it,  but the villager hates his own team and  will let you see his Gui", this.villager);
+					Log.info("villager %s has a team, player is *not* ont it,  but the villager cannot bear his own team and  will let you see his Gui", this.villager);
 				return true;
 			}
 		}
@@ -229,7 +229,8 @@ public class VilPlayerDealData implements Runnable{
 	private void setPlayerVillageFealtyIfWorthy()
 	{
 		//if(vilCap.getPlayerReputation(player.getUniqueID()) != 0) return;
-
+		if(this.villagerPlayerRep >= 5)
+			VilMethods.setTeam(villager, this.player.getTeam().getName());
 		if(this.isVillagerInHomeVillage)
 		{
 			if(this.wholeVillagePlayerRep < VillagerPlayerDealMethods.GOOD_THRESHOLD && this.wholeVillagePlayerRep >= 0) return;
@@ -247,6 +248,7 @@ public class VilPlayerDealData implements Runnable{
 		}
 	}
 
+	//TODO
 	private void checkMutiny() 
 	{
 		IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);

@@ -115,11 +115,9 @@ public class MarshalKeyEvent implements IMessage {
 				}
 				else if(message.keyPressed == CommonProxy.BATON_GUI)
 				{
-					//TODO
 					NetWrapper.NETWORK.sendTo(new OpenClientGui(selectedPlatoon), (EntityPlayerMP) player);
 					return;
 				}
-			//TODO
 			NetWrapper.NETWORK.sendTo(new BatonSelectData(batonCap.selectedUnit()), (EntityPlayerMP) player);
 			});
 			
@@ -128,79 +126,3 @@ public class MarshalKeyEvent implements IMessage {
 		
 	}
 }
-	/*
-	public static class Deed implements Runnable{
-
-		int keyPressed;
-		EntityPlayerMP player;
-		
-		Deed(int keyPressed, EntityPlayerMP player)
-		{
-			this.keyPressed = keyPressed;
-			this.player = player;
-		}
-		
-		@Override
-		public void run() 
-		{
-			if(ConfigHandler.debug)
-				Log.info("running deed for MarshalKeyEvent, player is: ", player);
-			ItemStack stack = player.getHeldItemMainhand();
-			if(!stack.getItem().equals(CommonProxy.ItemHolder.BATON)) return;
-			
-			IMarshalsBatonCapability batonCap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
-			int selectedPlatoon = batonCap.selectedUnit();
-			
-			if(this.keyPressed == ClientProxy.PLATOON_UP)
-			{
-				if(selectedPlatoon % 10 == 9)
-				{
-					batonCap.setPlatoon(selectedPlatoon / 10, 0);
-				}
-				else
-				{
-					selectedPlatoon++;
-					int remainder = selectedPlatoon % 10;
-					batonCap.setPlatoon(selectedPlatoon / 10, remainder);
-				}
-			}
-			else if(this.keyPressed == ClientProxy.PLATOON_DOWN)
-			{
-				if(selectedPlatoon % 10 == 0)
-				{
-					batonCap.setPlatoon(selectedPlatoon / 10, 9);
-				}
-				else
-				{
-					selectedPlatoon--;
-					int remainder = selectedPlatoon % 10;
-					batonCap.setPlatoon(selectedPlatoon / 10, remainder);
-				}
-			}
-			else if(this.keyPressed == ClientProxy.COMPANY_UP)
-			{
-				if(selectedPlatoon >= 40)
-				{
-					batonCap.setPlatoon(0, selectedPlatoon % 10);
-				}
-				else
-				{
-					batonCap.setPlatoon(selectedPlatoon / 10 + 1, 0);
-				}
-			}
-			else if(this.keyPressed == ClientProxy.COMPANY_DOWN)
-			{
-				if(selectedPlatoon < 10)
-				{
-					batonCap.setPlatoon(4, selectedPlatoon % 10);
-				}
-				else
-				{
-					batonCap.setPlatoon(selectedPlatoon / 10 - 1, 0);
-				}
-			}
-			NetWrapper.NETWORK.sendTo(new BatonSelectData(batonCap.selectedUnit()), player);
-		}
-	}
-}
-	*/

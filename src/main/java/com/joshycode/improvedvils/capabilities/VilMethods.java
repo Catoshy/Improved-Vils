@@ -4,9 +4,7 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
-import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;

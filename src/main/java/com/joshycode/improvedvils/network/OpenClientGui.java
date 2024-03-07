@@ -2,7 +2,6 @@ package com.joshycode.improvedvils.network;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.handler.VilPlayerDealData;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;

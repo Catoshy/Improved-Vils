@@ -1,6 +1,7 @@
 package com.joshycode.improvedvils.network;
 
 import com.joshycode.improvedvils.ClientProxy;
+import com.joshycode.improvedvils.ImprovedVils;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.util.math.Vec3i;
@@ -66,8 +67,10 @@ public class VilStateUpdate implements IMessage{
 		@Override
 		public IMessage onMessage(VilStateUpdate message, MessageContext ctx)
 		{
-			 ClientProxy.updateVillagerGuardGUIInfo(message.vec, message.guardStateVal, message.followStateVal, message.dutyStateVal, message.hungry, message.enlistC, message.enlistP);
-			 return null;
+			ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
+				ClientProxy.updateVillagerGuardGUIInfo(message.vec, message.guardStateVal, message.followStateVal, message.dutyStateVal, message.hungry, message.enlistC, message.enlistP);
+			});
+			return null;
 		}
 	}
 }

@@ -9,18 +9,18 @@ import org.jline.utils.Log;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.item.Item;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 public class RangeAttackEntry {
 
 	public static final class BallisticData implements Serializable{
 		
+		private static final long serialVersionUID = -769876348699811661L;
 		public final double mass;
 		public final double low_coefficient;
 		public final double high_coefficient;
 		public final float velocity;
-		public final float accuracy;
+		public final float inaccuracy;
 		
 		public BallisticData(double mass, double low_coefficient, double high_coefficient, float velocity, float accuracy) 
 		{
@@ -28,7 +28,7 @@ public class RangeAttackEntry {
 			this.low_coefficient = low_coefficient;
 			this.high_coefficient = high_coefficient;
 			this.velocity = velocity;
-			this.accuracy = accuracy;
+			this.inaccuracy = accuracy;
 		}
 		
 		@Override
@@ -45,23 +45,27 @@ public class RangeAttackEntry {
 		public final int burstCoolDown;
 		public final int shotsForBurst;
 		public final int projectiles;
+		public final float attackRange;
 		public final boolean meleeInRange;
+		public final boolean farnessFactor;
 		public final String itemUnlocalizedName;
 		
-		public WeaponBrooksData(String itemUnlocalizedName, int coolDown, int burstCoolDown, int shotsForBurst, int projectiles, boolean meleeInRange) 
+		public WeaponBrooksData(String itemUnlocalizedName, int coolDown, int burstCoolDown, int shotsForBurst, int projectiles, float attackRange, boolean meleeInRange, boolean farnessFactor) 
 		{
 			this.coolDown = coolDown;
 			this.burstCoolDown = burstCoolDown;
 			this.shotsForBurst = shotsForBurst;
 			this.projectiles = projectiles;
+			this.attackRange = attackRange;
 			this.meleeInRange = meleeInRange;
+			this.farnessFactor = farnessFactor;
 			this.itemUnlocalizedName = itemUnlocalizedName;
 		}
 		
 		@Override
 		public String toString()
 		{
-			String s = "coolDown;" + coolDown + "burstCoolDown; " + burstCoolDown + "shotsForBurst; " + shotsForBurst + "projectiles; " + projectiles + "meleeInRange; " + meleeInRange + "itemUnlocalizedName; " + itemUnlocalizedName;
+			String s = "coolDown;" + coolDown + "burstCoolDown; " + burstCoolDown + "shotsForBurst; " + shotsForBurst + "projectiles; " + projectiles + "attackRange;" + attackRange + "meleeInRange; " + meleeInRange + "itemUnlocalizedName; " + itemUnlocalizedName;
 			return s;
 		}
 	}
@@ -126,7 +130,6 @@ public class RangeAttackEntry {
 		SINGLESHOT,
 		SHOT,
 		BURST,
-		AUTO
 	}
 	
 	@Override

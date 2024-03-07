@@ -1,13 +1,10 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import java.util.List;
 import java.util.UUID;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.handler.ConfigHandler;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -15,7 +12,6 @@ import net.minecraft.entity.ai.EntityAITarget;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.BlockPos;
-import openmods.Log;
 
 public abstract class VillagerAITarget<T extends EntityLivingBase> extends EntityAITarget {
 
@@ -77,7 +73,7 @@ public abstract class VillagerAITarget<T extends EntityLivingBase> extends Entit
 		UUID playerId = VilMethods.getPlayerId((EntityVillager) this.taskOwner);
 		EntityPlayer player = this.taskOwner.getEntityWorld().getPlayerEntityByUUID(playerId);
 		double followRange = this.taskOwner.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
-		if(player.getDistanceSq(this.taskOwner) > (followRange - 2) * (followRange - 2))
+		if(player != null && player.getDistanceSq(this.taskOwner) > (followRange - 2) * (followRange - 2))
 		{
 			return true;
 		}

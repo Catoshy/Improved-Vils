@@ -85,7 +85,7 @@ public class InventoryUtil {
 
 	public static <T extends Item> ItemStack findAndIncrItem(IInventory invIn, Class<T> clazz)
 	{
-		Set<Integer> emptyStacks = new HashSet();
+		Set<Integer> emptyStacks = new HashSet<Integer>();
 		for(int i = 0; i < invIn.getSizeInventory(); i++)
 		{
 			ItemStack stack = invIn.getStackInSlot(i);
@@ -143,8 +143,8 @@ public class InventoryUtil {
 	@Nullable
 	public static Map<Item, Integer> getItemStacksInInventory(IInventory invIn, Map<Item, Integer> items)
 	{
-		Map<Item, Integer> consInVilInv = new HashMap();
-		Map<Item, Integer> toBeConsumed = new HashMap();
+		Map<Item, Integer> consInVilInv = new HashMap<Item, Integer>();
+		Map<Item, Integer> toBeConsumed = new HashMap<Item, Integer>();
 		for(int i = 0; i < invIn.getSizeInventory(); i++)
 		{
 			ItemStack stack = invIn.getStackInSlot(i);
@@ -175,9 +175,9 @@ public class InventoryUtil {
 		return toBeConsumed;
 	}
 
-	public static Set<ItemStack> getStacksByItem(IInventory invIn, Class class1)
+	public static Set<ItemStack> getStacksByItem(IInventory invIn, Class<?> class1)
 	{
-		Set<ItemStack> stacks = new HashSet();
+		Set<ItemStack> stacks = new HashSet<ItemStack>();
 		for(int i = 0; i < invIn.getSizeInventory(); i++)
 		{
 			ItemStack stack = invIn.getStackInSlot(i);

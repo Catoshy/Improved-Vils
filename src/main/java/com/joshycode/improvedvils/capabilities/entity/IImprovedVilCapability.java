@@ -5,8 +5,6 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import com.joshycode.improvedvils.util.VillagerInvListener;
-
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -42,7 +40,6 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public IImprovedVilCapability setRefilling(boolean b);
 	public boolean getListener();
 	public IImprovedVilCapability setInvListener(boolean b);
-	@Nullable
 	public String getTeam();
 	public IImprovedVilCapability setTeam(String string);
 	public float getPlayerReputation(UUID uniqueID);

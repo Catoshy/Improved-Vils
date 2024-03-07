@@ -1,12 +1,13 @@
 package com.joshycode.improvedvils.entity.ai;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
@@ -24,6 +25,7 @@ import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
 import net.minecraft.pathfinding.Path;
@@ -48,6 +50,7 @@ public class VillagerAIRefillFood extends EntityAIBase {
 	private boolean refilled;
 	BlockPos foodStore;
 	BlockPos prevPos;
+	Map<Item, Integer> foodToCollect;//TODO
 	private Path path;
 	private float distanceToObj;
 
@@ -59,6 +62,7 @@ public class VillagerAIRefillFood extends EntityAIBase {
 		this.refillCooldown = villager.getEntityData().getInteger(refillCooldownInfo);
 		if(this.refillCooldown <= 0)
 			this.refillCooldown = 1;
+		this.foodToCollect = new HashMap<Item, Integer>(); //TODO
 		this.setMutexBits(3);
 	}
 
@@ -67,27 +71,18 @@ public class VillagerAIRefillFood extends EntityAIBase {
 	{
 		if((VilMethods.getFoodStorePos(this.villager) == null) || this.isDoingSomethingMoreImportant() || (this.villager.getRNG().nextInt(5) != 0))
 			return false;
-		if(this.refillCooldown-- > 0)
-		{
-			if(this.refillCooldown % 20 == 0)
-				this.villager.getEntityData().setInteger(refillCooldownInfo, this.refillCooldown);
-			return false;
-		}
+		
+		this.foodStore = VilMethods.getFoodStorePos(this.villager);
+		IInventory inv = getTileInventory();
+		if(inv == null || this.foodStore == null) return false;
+	
 		if(VilMethods.getGuardBlockPos(this.villager) != null)
 		{
-			BlockPos foodStorePos = VilMethods.getFoodStorePos(this.villager);
-			if(foodStorePos != null)
-			{
-				double dist = VilMethods.getGuardBlockPos(this.villager).getDistance(foodStorePos.getX(), foodStorePos.getY(), foodStorePos.getZ());
-				double distSq = dist * dist;
-								
-				if(distSq > CommonProxy.GUARD_IGNORE_LIMIT)
-					return false;
-			}
-			else
-			{
+			double dist = VilMethods.getGuardBlockPos(this.villager).getDistance(this.foodStore.getX(), this.foodStore.getY(), this.foodStore.getZ());
+			double distSq = dist * dist;
+							
+			if(distSq > CommonProxy.GUARD_IGNORE_LIMIT)
 				return false;
-			}
 		}
 
 		float totalFoodSaturation = 0;
@@ -98,10 +93,22 @@ public class VillagerAIRefillFood extends EntityAIBase {
 		}
 		if(totalFoodSaturation < collectThreshold)
 		{
-			Log.info("So true! Food! %s", this.villager.getUniqueID());
-			return true;
+			return this.canCollectFood(inv);
 		}
 
+		return false;
+	}
+
+	private boolean canCollectFood(IInventory inv) 
+	{
+		this.foodToCollect.clear();//TODO
+		for(int i = 0; i < inv.getSizeInventory(); i++)
+		{
+			if(inv.getStackInSlot(i).getItem() instanceof ItemFood)
+			{
+				return true;
+			}
+		}
 		return false;
 	}
 

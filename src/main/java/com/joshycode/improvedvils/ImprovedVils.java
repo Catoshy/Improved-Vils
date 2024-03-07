@@ -16,16 +16,18 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.Mod.Instance;
 import net.minecraftforge.fml.common.SidedProxy;
+import net.minecraftforge.fml.common.event.FMLFingerprintViolationEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
-@Mod(modid = ImprovedVils.MODID, name = ImprovedVils.MODNAME, version = ImprovedVils.VERSION, dependencies = "after:openblocks;")
+@Mod(modid = ImprovedVils.MODID, name = ImprovedVils.MODNAME, version = ImprovedVils.VERSION, certificateFingerprint = ImprovedVils.certificateFingerprint, dependencies = "after:openblocks;")
 public class ImprovedVils {
 
 	public static final String MODID = "improvedvils";
 	public static final String MODNAME = "Improved Villagers";
-	public static final String VERSION = "1.0.4";
+	public static final String VERSION = "1.0.4b1";
+	public static final String certificateFingerprint = "e34b86ab6155979713e5a093503cb0140ecb7134";
 	public static final Logger logger = LogManager.getLogger(ImprovedVils.MODID);
 
 	@Instance
@@ -54,6 +56,12 @@ public class ImprovedVils {
 	public void postInit(FMLPostInitializationEvent e) throws IOException
 	{
 		proxy.postInit();
+	}
+	
+	@EventHandler
+	public void onSignatureFailed(FMLFingerprintViolationEvent e)
+	{
+		Log.warn("Fingerprint for ImprovedVils is not right. Either the mod has been edited or something is wrong. The mod author cannot support edited versions of the mod.", (Object[]) null);
 	}
 
 	public static ResourceLocation location(String string) 

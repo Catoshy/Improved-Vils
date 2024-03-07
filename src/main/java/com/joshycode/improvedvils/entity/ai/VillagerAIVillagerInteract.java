@@ -1,8 +1,6 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.util.InventoryUtil;
 
 import net.minecraft.entity.ai.EntityAIWatchClosest2;
 import net.minecraft.entity.item.EntityItem;
@@ -86,7 +84,6 @@ public class VillagerAIVillagerInteract extends EntityAIWatchClosest2
                     {
                         double d0 = this.villager.posY - 0.30000001192092896D + this.villager.getEyeHeight();
                         EntityItem entityitem = new EntityItem(this.villager.world, this.villager.posX, d0, this.villager.posZ, itemstack1);
-                        float f = 0.3F;
                         float f1 = this.villager.rotationYawHead;
                         float f2 = this.villager.rotationPitch;
                         entityitem.motionX = -MathHelper.sin(f1 * 0.017453292F) * MathHelper.cos(f2 * 0.017453292F) * 0.3F;

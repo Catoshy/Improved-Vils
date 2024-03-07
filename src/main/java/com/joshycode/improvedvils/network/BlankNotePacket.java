@@ -1,25 +1,16 @@
 package com.joshycode.improvedvils.network;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Stream;
 
-import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
-import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy.ItemHolder;
+import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.gui.GuiBatonStelling;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
-import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.util.BatonDealMethods;
-import com.joshycode.improvedvils.util.Pair;
 import com.joshycode.improvedvils.network.VillagerListPacket.BatonBefolkPacket;
+import com.joshycode.improvedvils.util.BatonDealMethods;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
@@ -46,20 +37,6 @@ public abstract class BlankNotePacket implements IMessage {
 						stack = player.getHeldItem(EnumHand.OFF_HAND);
 					if(stack.getItem() != ItemHolder.BATON)
 						return;
-					
-					/*TODO
-					Stream<Entity> allEnts = ImprovedVils.proxy.getWorld(ctx).loadedEntityList.stream().filter(new Predicate<Entity>() { @Override public boolean apply(Entity input) { return input instanceof EntityVillager;}});
-					Iterable<Entity> iterator = allEnts::iterator;
-					for(Entity e : iterator)
-					{
-						IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
-						Pair<Integer, Integer> platComp = cap.getVillagerPlace(e.getUniqueID());
-						if(platComp != null)
-						{
-							e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(cap.getPlatoonFoodStore(platComp.a, platComp.b));
-							e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setKitStore(cap.getPlatoonFoodStore(platComp.a, platComp.b));
-						}
-					}*/
 					
 					Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(player, stack);
 					Map<Integer, Tuple<Boolean[], Integer>> villagerInfo = BatonDealMethods.getVillagerCapabilityInfoAppendMap(villagerIds.keySet(), player.world);

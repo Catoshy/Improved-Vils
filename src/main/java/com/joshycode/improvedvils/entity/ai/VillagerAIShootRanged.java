@@ -35,6 +35,7 @@ import net.minecraft.entity.projectile.EntityTippedArrow;
 import net.minecraft.init.Enchantments;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBow;
 import net.minecraft.item.ItemStack;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.pathfinding.PathPoint;
@@ -47,7 +48,6 @@ import net.minecraft.world.EnumDifficulty;
 import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
 
 public class VillagerAIShootRanged extends EntityAIBase {
-	//TODO this class
 	
 	/** The entity the AI instance has been applied to */
 	final EntityVillager entityHost;
@@ -57,8 +57,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	private WeaponBrooksData weaponData;
 	private RangeAttackEntry entry;
 	private Vec3d randomPos;
-	//private boolean isGunEntryApplicable;
-	//private boolean isListening;
 	/**
 	 * A decrementing tick that spawns a ranged attack once this value reaches 0. It is then set back to the
 	 * maxRangedAttackTime.
@@ -66,6 +64,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	private int rangedAttackTime;
 	private int ticksTargetSeen;
 	private int attackTimeVariance;
+	private final float attackRangeBow;
 	private float attackRange;
 	private float attackRange_2;
 	private Random rand;
@@ -74,14 +73,13 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	private int burstCount; //shots left in current burst.
 	private int friendlyFireAvoidTicks;
 
-	public VillagerAIShootRanged(EntityVillager shooter, int attackTimeVariance, float attackRange, float speed, VillagerPredicate<Entity> predicate)
+	public VillagerAIShootRanged(EntityVillager shooter, int attackTimeVariance, float attackRangeBow, float speed, VillagerPredicate<Entity> predicate)
 	{
 		this.entityHost = shooter;
 		this.friendlyFirePredicate = predicate;
 		this.rangedAttackTime = -1;
 		this.attackTimeVariance = attackTimeVariance;
-		this.attackRange = attackRange;
-		this.attackRange_2 = attackRange * attackRange;
+		this.attackRangeBow = attackRangeBow;
 		this.burstCount = 0;
 		this.rand = new Random();
 		setMutexBits(3);
@@ -98,23 +96,33 @@ public class VillagerAIShootRanged extends EntityAIBase {
     		return false;
 		if(VilMethods.getFollowing(this.entityHost) && isDistanceTooGreat())
 			return false;
-		weaponData = villagerGunEntryForItems();
-		if(weaponData == null)
+		this.weaponData = villagerGunEntryForItems();
+		if(this.weaponData == null)
 			return false;
 		if(this.entityHost.getAttackTarget() == null)
 			return false;
 		EntityLivingBase entitylivingbase = this.entityHost.getAttackTarget();
 		
-		if(entitylivingbase == null || (CommonProxy.RANGE_BLACKLIST.contains(entitylivingbase.getClass()) && weaponData.meleeInRange)
-				|| (this.entityHost.getDistanceSq(entitylivingbase) < 8 && weaponData.meleeInRange))//TODO list of exempted entities present but not guaranteed to work!
+		if(entitylivingbase == null || (CommonProxy.RANGE_BLACKLIST.contains(entitylivingbase.getClass()) && this.weaponData.meleeInRange)
+				|| (this.entityHost.getDistanceSq(entitylivingbase) < 8 && this.weaponData.meleeInRange))
 		{
 			return false;
 		}
 		
-		attackTarget = entitylivingbase;
+		this.setAttackRange();
+		this.attackTarget = entitylivingbase;
 		return true;
 	}
 	
+	private void setAttackRange() 
+	{
+		if(this.entry.type == RangeAttackType.BOW)
+			this.attackRange = this.attackRangeBow;
+		else
+			this.attackRange = this.weaponData.attackRange;
+		this.attackRange_2 = this.attackRange * this.attackRange;
+	}
+
 	@Nullable
 	public WeaponBrooksData villagerGunEntryForItems()
 	{
@@ -178,19 +186,19 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		}
 		else
 		{
-			friendlyFireAvoidTicks = 0;
+			this.friendlyFireAvoidTicks = 0;
 		}
 		
 		if(targetInSight)
 		{
-			++ticksTargetSeen;
+			++this.ticksTargetSeen;
 		}
 		else
 		{
-			ticksTargetSeen = 0;
+			this.ticksTargetSeen = 0;
 		}
 		
-		if(d0 <= attackRange_2 && ticksTargetSeen >= 10) //When in range of attack, don't get needlessly closer
+		if(d0 <= this.attackRange_2 && this.ticksTargetSeen >= 10) //When in range of attack, don't get needlessly closer
 		{
 			this.entityHost.getNavigator().clearPath();
 		}
@@ -200,11 +208,11 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		}
 		this.entityHost.getLookHelper().setLookPositionWithEntity(attackTarget, 30.0F, 55.0F);
 		float f;
-		if(--rangedAttackTime == 0)
+		if(--this.rangedAttackTime == 0)
 		{
-			if(d0 > attackRange_2 || !targetInSight || this.checkForConflict() || this.notLookingAtTarget() || !this.attackTarget.isEntityAlive())//TODO
+			if(d0 > this.attackRange_2 || !targetInSight || this.checkForConflict() || this.notLookingAtTarget() || !this.attackTarget.isEntityAlive())
 			{
-				rangedAttackTime++;
+				this.rangedAttackTime++;
 				return;
 			}
 			
@@ -219,27 +227,27 @@ public class VillagerAIShootRanged extends EntityAIBase {
 				{
 					attackEntityWithRangedAttackGun(attackTarget, f1);
 
-					if(weaponData.shotsForBurst > 1 && burstCount-- > 0)
+					if(this.weaponData.shotsForBurst > 1 && this.burstCount-- > 0)
 					{
-						rangedAttackTime = weaponData.burstCoolDown;
+						this.rangedAttackTime = this.weaponData.burstCoolDown;
 					}
 					else
 					{
-						burstCount = weaponData.shotsForBurst;
-						rangedAttackTime = MathHelper.floor(f * (weaponData.coolDown - attackTimeVariance) + attackTimeVariance);
+						this.burstCount = this.weaponData.shotsForBurst;
+						this.rangedAttackTime = this.weaponData.farnessFactor ? (int) (f1 * this.weaponData.coolDown) : this.weaponData.coolDown;
 					}
 				}
 				else
 				{
-			         attackEntityWithRangedAttack(attackTarget, f * 2);
-					 rangedAttackTime = MathHelper.floor(f * (weaponData.coolDown - attackTimeVariance) + attackTimeVariance);
+			         attackEntityWithRangedAttack(this.attackTarget, f * 2);
+			         this.rangedAttackTime = MathHelper.floor(f * (this.weaponData.coolDown - this.attackTimeVariance) + this.attackTimeVariance);
 				}
 			}
 		}
-		else if(rangedAttackTime < 0)
+		else if(this.rangedAttackTime < 0)
 		{
-			f = MathHelper.sqrt(d0) / attackRange;
-			rangedAttackTime = MathHelper.floor(f * (weaponData.coolDown - attackTimeVariance) + attackTimeVariance);
+			f = MathHelper.sqrt(d0) / this.attackRange;
+			this.rangedAttackTime = MathHelper.floor(f * (this.weaponData.coolDown - this.attackTimeVariance) + this.attackTimeVariance);
 		}
 	}
 
@@ -263,11 +271,11 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		}
 		if(entry.type == RangeAttackEntry.RangeAttackType.SHOT)
 		{
-			shootShot(distanceFactor, target, acc);
+			this.shootShot(distanceFactor, target, acc);
 		}
 		else
 		{
-			shootGun(distanceFactor, target, acc);
+			this.shootGun(distanceFactor, target, acc);
 		}
 	}
 
@@ -293,16 +301,16 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	public void attackEntityWithRangedAttack(EntityLivingBase target, float distanceFactor)
     {
         EntityArrow entityarrow = getArrow(distanceFactor);
-        if (this.entityHost.getHeldItemMainhand().getItem() instanceof net.minecraft.item.ItemBow)
+        if (this.entityHost.getHeldItemMainhand().getItem() instanceof ItemBow)
         {
-            entityarrow = ((net.minecraft.item.ItemBow) this.entityHost.getHeldItemMainhand().getItem()).customizeArrow(entityarrow); //TODO arrow customization based on inv itemstack???
+            entityarrow = ((ItemBow) this.entityHost.getHeldItemMainhand().getItem()).customizeArrow(entityarrow); //TODO arrow customization based on inv itemstack???
         }
         double d0 = target.posX - this.entityHost.posX;
         double d1 = target.getEntityBoundingBox().minY + target.height / 3.0F - entityarrow.posY;
         double d2 = target.posZ - this.entityHost.posZ;
         double d3 = MathHelper.sqrt(d0 * d0 + d2 * d2);
         entityarrow = vanillaEnchantmentBow(this.entityHost.getHeldItemMainhand(), entityarrow, getPlayer());
-        entityarrow.shoot(d0, d1 + d3 * (0.20000000298023224D * .5), d2, 2.8F, (float)(14 - (4 - this.entityHost.getEntityWorld().getDifficulty().getDifficultyId()) * 4)); //TODO
+        entityarrow.shoot(d0, d1 + d3 * (0.20000000298023224D * .5), d2, 2.8F, (float)(14 - (4 - this.entityHost.getEntityWorld().getDifficulty().getDifficultyId()) * 4));
         this.entityHost.playSound(SoundEvents.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.entityHost.getRNG().nextFloat() * 0.4F + 0.8F));
         this.entityHost.world.spawnEntity(entityarrow);
     }
@@ -351,7 +359,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		UUID playerId = VilMethods.getPlayerId(this.entityHost);
 		EntityPlayer player = this.entityHost.getEntityWorld().getPlayerEntityByUUID(playerId);
 		double followRange = this.entityHost.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
-		if(player.getDistanceSq(this.entityHost) > (followRange - 2) * (followRange - 2))
+		if(player != null && player.getDistanceSq(this.entityHost) > (followRange - 2) * (followRange - 2))
 		{
 			return true;
 		}
@@ -421,7 +429,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		if(pos != null)
 		{
 			Path p = this.entityHost.getNavigator().getPathToEntityLiving(attackTarget);
-			if(p != null) // TODO removed a condition regarding final pathpoint distance to potentially bypass truncate method (made code harder to read)
+			if(p != null)
 			{
 				truncatePath(p, pos, CommonProxy.MAX_GUARD_DIST - 31);
 			}

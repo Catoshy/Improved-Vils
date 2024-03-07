@@ -18,7 +18,6 @@ public interface IVillageCapability extends INBTSerializable<NBTTagCompound> {
 	public int getCurrentTeamReputation();
 	public void setLastTeamDealing(int time); //TODO
 	public int lastTeamDealing();
-	@Nullable
 	public String getTeam();
 	public void setTeam(@Nullable Team teamName);
 	void setTeamReputation(Team team, int reputation);

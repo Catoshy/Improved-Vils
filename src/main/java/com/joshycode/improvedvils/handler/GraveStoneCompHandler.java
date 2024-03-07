@@ -60,6 +60,7 @@ import openmods.world.DelayedActionTickHandler;
  * helpful gravestones
  * :3   ^-^
  */
+@SuppressWarnings("deprecation")
 public class GraveStoneCompHandler {
 
 	private static final Comparator<BlockPos> SEARCH_COMPARATOR = new Comparator<BlockPos>()

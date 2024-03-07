@@ -4,12 +4,10 @@ import java.util.Set;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignMove;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
-import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
