@@ -22,41 +22,14 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 public class VilCommandPacket extends BlockPosPacket implements IMessage {
 
-	int chunkx;
-	int chunkz;
-
-	public VilCommandPacket()
-	{
-		this.chunkx = Integer.MAX_VALUE;
-		this.chunkz = Integer.MAX_VALUE;
+	public VilCommandPacket() 
+	{ 
+		super(); 
 	}
 
 	public VilCommandPacket(BlockPos pos)
 	{
 		super(pos);
-	}
-
-	public VilCommandPacket(int x, int z)
-	{
-		this(BlockPos.fromLong(Long.MAX_VALUE));
-		this.chunkx = x;
-		this.chunkz = z;
-	}
-
-	@Override
-	public void toBytes(ByteBuf buf)
-	{
-		super.toBytes(buf);
-		buf.writeInt(this.chunkx);
-		buf.writeInt(this.chunkz);
-	}
-
-	@Override
-	public void fromBytes(ByteBuf buf)
-	{
-		super.fromBytes(buf);
-		this.chunkx = buf.readInt();
-		this.chunkz = buf.readInt();
 	}
 
 	public static class Handler implements IMessageHandler<VilCommandPacket, IMessage>
@@ -73,33 +46,14 @@ public class VilCommandPacket extends BlockPosPacket implements IMessage {
 	
 				if(cap != null)
 				{
-					if(message.pos.toLong() != Long.MAX_VALUE)
+					if(world.isAreaLoaded(message.pos, 1))
 					{
-						if(world.isAreaLoaded(message.pos, 1))
+						Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
+						for(Entity e : villagers)
 						{
-							Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
-							for(Entity e : villagers)
+							if(VillagerPlayerDealMethods.getPlayerFealty(player, (EntityVillager) e) && !VilMethods.getFollowing((EntityVillager) e) && VilMethods.getGuardBlockPos((EntityVillager) e) == null)
 							{
-								if(VillagerPlayerDealMethods.getPlayerFealty(player, (EntityVillager) e))
-								{
-									VilMethods.setCommBlockPos((EntityVillager) e, message.pos);
-								}
-							}
-						}
-					}
-					else
-					{
-						if(world.isChunkGeneratedAt(message.chunkx, message.chunkz))
-						{
-							Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
-							for(Entity e : villagers)
-							{
-								 ((EntityVillager) e).tasks.taskEntries.forEach(t -> {
-									 if(t.action instanceof VillagerAICampaignMove && VillagerPlayerDealMethods.getPlayerFealty(player, (EntityVillager) e))
-									 {
-										 ((VillagerAICampaignMove) t.action).giveObjectiveChunkPos(message.chunkx, message.chunkz);
-									 }
-								 });
+								VilMethods.setCommBlockPos((EntityVillager) e, message.pos);
 							}
 						}
 					}

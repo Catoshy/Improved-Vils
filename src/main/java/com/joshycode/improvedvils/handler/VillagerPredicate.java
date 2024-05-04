@@ -27,7 +27,7 @@ public abstract class VillagerPredicate<T extends Entity> implements Predicate<T
 		@Override
 		public boolean apply(@Nullable T potentialEnemy)
         {
-			if(!(potentialEnemy instanceof EntityVillager) && !(potentialEnemy instanceof EntityPlayer)|| potentialEnemy.isEntityEqual(this.taskOwner)) return false;
+			if((!(potentialEnemy instanceof EntityVillager) && !(potentialEnemy instanceof EntityPlayer)) || potentialEnemy.isEntityEqual(this.taskOwner)) return false;
 			
 			String team = null;
 			IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);

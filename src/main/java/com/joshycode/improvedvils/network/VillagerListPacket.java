@@ -15,6 +15,7 @@ import com.joshycode.improvedvils.gui.EnlisteeContainer;
 import com.joshycode.improvedvils.gui.GuiBatonStelling;
 import com.joshycode.improvedvils.gui.GuiVillagerRollList;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.BlankNotePacket.WarnNoRoom;
 import com.joshycode.improvedvils.util.BatonDealMethods;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
@@ -67,9 +68,9 @@ public abstract class VillagerListPacket implements IMessage {
 			int entityId = buf.readInt();
 			UUID ID = new UUID(mostSig, leastSig);
 			idSet.put(entityId, ID);
-			Log.info("iteration!");
 		}
-		Log.info("ID set; %s", idSet);
+		if(ConfigHandler.debug)
+			Log.info("ID set; %s", idSet);
 		this.villagerIds = idSet;
 	}
 	
@@ -207,7 +208,7 @@ public static class BatonBefolkUpdatePacket extends BatonBefolkPacket {
 						EntityPlayer player = ImprovedVils.proxy.getPlayerEntity(ctx);
 						if(villager != null && VillagerPlayerDealMethods.getPlayerFealty(player, villager))
 						{
-							villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerId(player.getUniqueID()).setGuardBlockPos(null).setFollowing(true);
+							villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerId(player.getUniqueID()).setGuardBlockPos(null).setCommBlock(null).setFollowing(true);
 						}
 					});
 					NetWrapper.NETWORK.sendTo(new BatonBefolkUpdatePacket(message.villagerIds, BatonDealMethods.getVillagerCapabilityInfoAppendMap(message.villagerIds.keySet(), ImprovedVils.proxy.getWorld(ctx))),
@@ -237,7 +238,7 @@ public static class GuardVillagers extends VillagerListPacket {
 						EntityVillager villager = (EntityVillager) ImprovedVils.proxy.getWorld(ctx).getEntityByID(entityId);
 						EntityPlayer player = ImprovedVils.proxy.getPlayerEntity(ctx);
 						if(villager != null && VillagerPlayerDealMethods.getPlayerFealty(player, villager))
-							villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(false).setGuardBlockPos(villager.getPosition());
+							villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(false).setCommBlock(null).setGuardBlockPos(villager.getPosition());
 					});
 					NetWrapper.NETWORK.sendTo(new BatonBefolkUpdatePacket(message.villagerIds, BatonDealMethods.getVillagerCapabilityInfoAppendMap(message.villagerIds.keySet(), ImprovedVils.proxy.getWorld(ctx))),
 							(EntityPlayerMP) ImprovedVils.proxy.getPlayerEntity(ctx));

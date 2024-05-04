@@ -69,25 +69,33 @@ public class VillagerPlayerDealMethods {
 	 * @param village in question
 	 * @param player who's reputation will be modified
 	 */
-	private static void updateVillagerPlayerReputation(EntityVillager entityIn, Village village, UUID player)
+	private static void updateVillagerPlayerReputation(EntityVillager entityIn, Village village, int nowtimeReputation, UUID player)
 	{
 		IImprovedVilCapability vilCap = entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		
-		int newVillageReputation = village.getPlayerReputation(player);
 		int villagerReferenceVillageReputation = vilCap.getHomeVillagePlayerReputationReference(player);
-		int villageReputationChange = newVillageReputation - villagerReferenceVillageReputation;
+		int villageReputationChange = nowtimeReputation - villagerReferenceVillageReputation;
 		float playerReputation = vilCap.getPlayerReputation(player);
 		//If villager's perception of the player is higher than the mean it does not make sense to further raise his opinion
 		//given that his opinion is one of the sources of the better reputation. Lower reputations always come from outside
 		//the villager's personal experience
-		if(newVillageReputation > playerReputation || villageReputationChange < 0)
-		{
-			vilCap.setPlayerReputation(player, playerReputation + villageReputationChange, newVillageReputation);
-		}
-		else
-		{
-			vilCap.setPlayerReputation(player, playerReputation, newVillageReputation);
-		}
+		//TODO 21 April 2024: I do not think the above is right. Lower reputation CAN come from villager experience, and individual
+		//reputation changes are not done until AFTER the whole village has been tallied.
+		//TODO 26 April 2024: I changed my mind. Whether or not lower rep comes from vill experience, overall enthusiasm for the player
+		//wouldn't really go higher just because miulder enthusiasm is reflected by other villagers. Whereas bad rep would harm his idea of
+		//the player.
+		//ADD 2: maybe just punish the player. Getting good reputation creates a domino effect if it effects the vill's personal. 
+		//TODO 27 April: domino works both ways. idk, just update vill reference.
+		//if(/*nowtimeReputation > playerReputation ||*/ villageReputationChange < 0)
+		//{
+		//	Log.info("nowtimeReputation:" + nowtimeReputation + ", villagerReferenceVillageReputation:" + villagerReferenceVillageReputation + 
+		//		", villageReputationChange:" +  villageReputationChange + ", playerReputation:" + playerReputation);
+		//	vilCap.setPlayerReputation(player, playerReputation + villageReputationChange, nowtimeReputation);
+		//}
+		//else
+		//{
+			vilCap.setPlayerReputation(player, playerReputation, nowtimeReputation);
+		//}
 	}
 
 	public static void updateFromVillageReputation(EntityVillager villager, Village village)
@@ -118,10 +126,7 @@ public class VillagerPlayerDealMethods {
 		int nowtimeReputation = village.getPlayerReputation(player);
 		
 		for(EntityVillager entity : population)
-		{
-			//Update villager's opinion grounded on village reputation
-			updateVillagerPlayerReputation(entity, village, player);
-			
+		{	
 			//Get total reputation of player in question by all villagers here
 			IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 			sumReputation +=  vilCap.getPlayerReputation(player);
@@ -129,6 +134,12 @@ public class VillagerPlayerDealMethods {
 		//Change the village reputation to reflect the average villager's opinion
 		int difference = (int) (sumReputation/population.size()) - nowtimeReputation;
 		village.modifyPlayerReputation(player, difference);
+		
+		for(EntityVillager entity : population)
+		{
+			//Update villager's opinion grounded on village reputation
+			updateVillagerPlayerReputation(entity, village, nowtimeReputation, player);
+		}
 	}
 	
 	public static int updateVillageTeamReputation(Village village, EntityPlayer attackingPlayer) 
@@ -217,7 +228,12 @@ public class VillagerPlayerDealMethods {
 		IImprovedVilCapability vilCap = entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		if(vilCap.getTeam().isEmpty())
 		{
-			return vilCap.getPlayerReputation(player.getUniqueID()) > 0 && vilCap.getPlayerId().equals(player.getUniqueID());
+			int reference = vilCap.getHomeVillagePlayerReputationReference(player.getUniqueID());
+			float reputation = vilCap.getPlayerReputation(player.getUniqueID());
+			if(vilCap.getPlayerId().equals(player.getUniqueID()) && reference > BAD_THRESHOLD && reputation > BAD_THRESHOLD)
+			{
+				return reference > 0 || reputation > 0;
+			}
 		}
 		return false;
 	}
@@ -389,10 +405,8 @@ public class VillagerPlayerDealMethods {
 		vilCap.setAttackValue(attackVal).setShield(entity.getHeldItemOffhand().getItemUseAction() == EnumAction.BLOCK).setSaturation(InventoryUtil.getFoodSaturation(entity.getVillagerInventory()));
 	}
 
-	public static void checkArmourWeaponsAndFood(EntityVillager entity, @Nullable UUID playerEntityByUUID)
+	public static void checkArmourWeaponsAndFood(EntityVillager entity, UUID playerEntityByUUID)
 	{
-		if(playerEntityByUUID == null)
-			return;
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		int armour = entity.getTotalArmorValue();
 		int prevArmour = vilCap.getArmourValue();

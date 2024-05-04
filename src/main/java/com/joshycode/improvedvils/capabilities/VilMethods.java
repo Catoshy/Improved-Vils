@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 
+import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.pathfinding.PathPoint;
@@ -254,5 +255,21 @@ public class VilMethods {
 	public static void setDuty(EntityVillager villager, boolean duty) 
 	{
 		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setActiveDuty(duty);
+	}
+
+	public static Vec3d asVec3D(BlockPos pos) 
+	{
+		return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	public static void setLastDoor(EntityVillager villager, BlockPos lastDoor) 
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setLastDoor(lastDoor);
+
+	}
+
+	public static BlockPos getLastDoor(EntityVillager villager) 
+	{
+		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getLastDoor();
 	}
 }

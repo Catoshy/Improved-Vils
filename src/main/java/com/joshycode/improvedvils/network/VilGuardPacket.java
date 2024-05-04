@@ -62,7 +62,7 @@ public class VilGuardPacket extends BlockPosPacket implements IMessage {
 					if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 					{
 						VilMethods.setFollowState((EntityVillager) e, false);
-						
+						VilMethods.setCommBlockPos((EntityVillager) e, null);
 						if(message.guardState)
 							VilMethods.setGuardBlock((EntityVillager) e, e.getPosition());
 						else

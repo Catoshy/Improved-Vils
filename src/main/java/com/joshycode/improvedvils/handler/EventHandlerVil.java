@@ -16,6 +16,7 @@ import com.joshycode.improvedvils.entity.ai.VillagerAIAttackNearestTarget;
 import com.joshycode.improvedvils.entity.ai.VillagerAIAvoidEntity;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignEat;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignMove;
+import com.joshycode.improvedvils.entity.ai.VillagerAIClimbLadder;
 import com.joshycode.improvedvils.entity.ai.VillagerAICollectKit;
 import com.joshycode.improvedvils.entity.ai.VillagerAIDrinkPotion;
 import com.joshycode.improvedvils.entity.ai.VillagerAIEatHeal;
@@ -29,6 +30,7 @@ import com.joshycode.improvedvils.entity.ai.VillagerAIMoveTowardsRestriction;
 import com.joshycode.improvedvils.entity.ai.VillagerAIRefillFood;
 import com.joshycode.improvedvils.entity.ai.VillagerAIRestrictOpenDoor;
 import com.joshycode.improvedvils.entity.ai.VillagerAIShootRanged;
+import com.joshycode.improvedvils.entity.ai.VillagerAISwimming;
 import com.joshycode.improvedvils.entity.ai.VillagerAIVillagerInteract;
 import com.joshycode.improvedvils.entity.ai.VillagerAIWanderAvoidWater;
 import com.joshycode.improvedvils.event.ChildGrowEvent;
@@ -50,6 +52,7 @@ import net.minecraft.entity.ai.EntityAIAvoidEntity;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
+import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAITasks.EntityAITaskEntry;
 import net.minecraft.entity.ai.EntityAIVillagerInteract;
 import net.minecraft.entity.ai.EntityAIVillagerMate;
@@ -66,7 +69,9 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.IThreadListener;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.village.Village;
 import net.minecraft.world.WorldServer;
@@ -79,8 +84,10 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteractSpecific;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent.KeyInputEvent;
@@ -264,12 +271,14 @@ public class EventHandlerVil {
 	@SubscribeEvent
 	public void openVillagerInv(EntityInteractSpecific event)
 	{
-		if(!event.getWorld().isRemote && event.getTarget() instanceof EntityVillager && event.getEntityPlayer().isSneaking())
+		if(event.getSide() == Side.SERVER && event.getTarget() instanceof EntityVillager && event.getEntityPlayer().isSneaking())
 		{
 			//World world = null;
 			//world.init();
 			//ClientProxy.openGuiForPlayerIfOK(event.getTarget().getEntityId());
-			((WorldServer) event.getWorld()).addScheduledTask(new VilPlayerDeal(event.getTarget().getEntityId(), (EntityPlayerMP) event.getEntityPlayer(), event.getWorld()));
+			((IThreadListener) event.getWorld()).addScheduledTask(new VilPlayerDeal(event.getTarget().getEntityId(), (EntityPlayerMP) event.getEntityPlayer(), event.getWorld()));
+			event.setCanceled(true);
+			event.setCancellationResult(EnumActionResult.SUCCESS);
 		}
 	}
 	
@@ -361,6 +370,8 @@ public class EventHandlerVil {
 				toRem.add(ai);
 			else if(ai.action instanceof EntityAIVillagerInteract)
 				toRem.add(ai);
+			else if(ai.action instanceof EntityAISwimming)
+				toRem.add(ai);
 		}
 		entity.tasks.taskEntries.removeAll(toRem);
 		
@@ -377,12 +388,14 @@ public class EventHandlerVil {
 		entity.tasks.addTask(4, new VillagerAIDrinkPotion(entity));
 		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, .55D, false));
 		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new FriendlyFireVillagerPredicate(entity)));
+		entity.tasks.addTask(1, new VillagerAISwimming(entity));
 		entity.tasks.addTask(1, aiCEat);
 		entity.tasks.addTask(1, new VillagerAIEatHeal(entity));
 		entity.tasks.addTask(1, new VillagerAIHandlePlayers(entity));
-		entity.tasks.addTask(3, new VillagerAICampaignMove(entity, 490));
+		//entity.tasks.addTask(0, new VillagerAIClimbLadder(entity));
+		entity.tasks.addTask(1, new VillagerAICampaignMove(entity, 490));
 		entity.tasks.addTask(3, new VillagerAIRestrictOpenDoor(entity));
-		entity.tasks.addTask(1, new VillagerAIGuard(entity, CommonProxy.MAX_GUARD_DIST, 4, 32));
+		entity.tasks.addTask(1, new VillagerAIGuard(entity, CommonProxy.MAX_GUARD_DIST, 4, 128));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityZombie.class, 8.0F, 0.6D, 0.6D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityEvoker.class, 12.0F, 0.8D, 0.8D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVindicator.class, 8.0F, 0.8D, 0.8D));

@@ -38,6 +38,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	private BlockPos commObj;
 	private BlockPos foodStorePos;
 	private BlockPos kitStorePos;
+	private BlockPos lastDoor;
 	private boolean movingIndoors;
 	private boolean following;
 	private boolean invListener;
@@ -90,6 +91,11 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 		else
 			nbt.setLong(VILPLAYER_NBT_KEY + "bk", this.kitStorePos.toLong());
 
+		if(this.lastDoor == null)
+			nbt.setLong(VILPLAYER_NBT_KEY + "bLd", Long.MAX_VALUE);
+		else
+			nbt.setLong(VILPLAYER_NBT_KEY + "bLd", this.lastDoor.toLong());
+		
         if(this.player != null)
 			nbt.setString(VILPLAYER_NBT_KEY, this.player.toString());
 
@@ -152,7 +158,13 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 			this.kitStorePos = null;
 		else
 			this.kitStorePos = BlockPos.fromLong(lk);
-
+		
+		long ld = nbt.getLong(VILPLAYER_NBT_KEY + "bLd");
+		if(ld == Long.MAX_VALUE)
+			this.lastDoor = null;
+		else
+			this.lastDoor = BlockPos.fromLong(ld);
+		
 		String s = nbt.getString(VILPLAYER_NBT_KEY);
 		if(!s.isEmpty())
 			this.player = UUID.fromString(s);
@@ -241,6 +253,12 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	
 	@Override
 	public BlockPos getKitStorePos() { return this.kitStorePos; }
+	
+	@Override
+	public BlockPos getLastDoor() { return this.lastDoor; }
+
+	@Override
+	public IImprovedVilCapability setLastDoor(BlockPos pos) { this.lastDoor = pos; return this; }
 
 	@Override
 	public IImprovedVilCapability setKitStore(BlockPos pos) 
@@ -277,15 +295,15 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	{
 		if(this.playerReputations.get(uniqueID) != null)
 		{
-			if(ConfigHandler.debug)
-				Log.info("changing reputation for player in capability, known player " + uniqueID + " by %s", f);
+			//if(ConfigHandler.debug)//TODO
+			//	Log.info("changing reputation for player in capability, known player " + uniqueID + " by %s", f);
 			this.playerReputations.get(uniqueID).setLeft(MathHelper.clamp(f, -30, 40.5f));
 			this.playerReputations.get(uniqueID).setRight(MathHelper.clamp(i, -30, 10));
 		}
 		else
 		{
-			if(ConfigHandler.debug)
-				Log.info("changing reputation for player in capability, unk player " + uniqueID + " by %s", f);
+			//if(ConfigHandler.debug)
+			//	Log.info("changing reputation for player in capability, unk player " + uniqueID + " by %s", f);
 			MutablePair<Float, Integer> pair = new MutablePair<>();
 			pair.setLeft(MathHelper.clamp(f, -30, 40.5f));
 			pair.setRight(MathHelper.clamp(i, -30, 10));
@@ -310,7 +328,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	@Override
 	public int getHomeVillagePlayerReputationReference(UUID uniqueID)
 	{
-		if(this.playerReputations.get(uniqueID) != null && this.playerReputations.get(uniqueID).getRight() != null)
+		if(this.playerReputations.get(uniqueID) != null)
 		{
 			return this.playerReputations.get(uniqueID).getRight();
 		}
@@ -364,5 +382,4 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 
 	@Override
 	public IImprovedVilCapability setActiveDuty(boolean activeDuty) { this.duty = activeDuty; return this; }
-
 }

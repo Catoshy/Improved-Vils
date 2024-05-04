@@ -2,43 +2,27 @@ package com.joshycode.improvedvils.entity.ai;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import com.joshycode.improvedvils.CommonProxy;
+import org.jline.utils.Log;
+
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
-import com.joshycode.improvedvils.util.PathUtil;
 
-import net.minecraft.entity.ai.EntityAIBase;
-import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.pathfinding.Path;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 
-public class VillagerAIGuard extends EntityAIBase{
+public class VillagerAIGuard extends EntityAIGoFar{
 
-	EntityVillager entityHost;
-	BlockPos ppos;
-	private float distToCenter;
-	private int pathFails;
+	EntityVillager villager;
 	private final int maxDistanceSq;
 	private final int minDistanceSq;
-	private final int maxPathFails;
-	private Path path;
 	private boolean setFailed;
-	private int tickCounter;
 	private int randomTick;
 
 	public VillagerAIGuard(EntityVillager entityHost, int maxDistSq, int minDistSq, int maxPathFails)
 	{
-		super();
-		this.entityHost = entityHost;
+		super(entityHost, minDistSq, maxPathFails);
+		this.villager = entityHost;
 		this.maxDistanceSq = maxDistSq;
 		this.minDistanceSq = minDistSq;
-		this.distToCenter = 0;
-		this.pathFails = 0;
-		this.tickCounter = -1;
-		this.maxPathFails = maxPathFails;
-		this.path = null;
 		this.setFailed = false;
 		this.setMutexBits(3);
 	}
@@ -46,41 +30,33 @@ public class VillagerAIGuard extends EntityAIBase{
 	@Override
 	public boolean shouldExecute()
 	{
-		if(VilMethods.getGuardBlockPos(this.entityHost) == null || this.setFailed || VilMethods.isRefillingFood(this.entityHost) || this.entityHost.isMating())
+		if(VilMethods.getGuardBlockPos(this.villager) == null || this.setFailed || VilMethods.isRefillingFood(this.villager) || this.villager.isMating())
 			return false;
-		if(VilMethods.getHungry(this.entityHost) || !VilMethods.getDuty(this.entityHost))
+		if(VilMethods.getHungry(this.villager) || !VilMethods.getDuty(this.villager))
 		{
 			this.fail();
 			return false;
 		}
-		if(this.entityHost.getAttackTarget() == null && this.randomTick == 0)
+		if(this.villager.getAttackTarget() == null && this.randomTick-- == 0)
 		{
 			this.randomTick = ThreadLocalRandom.current().nextInt(40, 80 + 1);
 			return true;
 		}
-		else
+		if(this.villager.getAttackTarget() != null)
 		{
-			this.randomTick--;
-		}
-		if(this.entityHost.getAttackTarget() != null)
-		{
-			if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) > this.maxDistanceSq)
+			if(this.villager.getDistanceSq(VilMethods.getGuardBlockPos(this.villager)) > this.maxDistanceSq)
 			{
-				if(this.generatePath(false))
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 		else
 		{
-			if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) > this.minDistanceSq &&
-					(this.entityHost.ticksExisted - this.entityHost.getLastAttackedEntityTime()) > 40)
+			if(this.villager.getDistanceSq(VilMethods.getGuardBlockPos(this.villager)) > this.minDistanceSq &&
+					(this.villager.ticksExisted - this.villager.getLastAttackedEntityTime()) > 40)
 			{
-				if(this.generatePath(false))
-				{
-					return true;
-				}
+				if(this.theDebugVar)
+					Log.info("Guard too far away, must come closer");
+				return true;
 			}
 		}
 		return false;
@@ -89,16 +65,13 @@ public class VillagerAIGuard extends EntityAIBase{
 	@Override
 	public boolean shouldContinueExecuting()
 	{
-		if(VilMethods.getGuardBlockPos(this.entityHost) == null || this.setFailed)
+		if(VilMethods.getGuardBlockPos(this.villager) == null || this.setFailed || this.finished)
 			return false;
-		if(this.pathFails > this.maxPathFails)
+		if(this.pathfindingFails > this.mostPathfindingFails)
 		{
+			
+				Log.info("failing out guard %s", VilMethods.getLastDoor(this.villager));
 			this.fail();
-			return false;
-		}
-		if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) < this.minDistanceSq)
-		{
-			this.returnState();
 			return false;
 		}
 		return true;
@@ -107,115 +80,41 @@ public class VillagerAIGuard extends EntityAIBase{
 	@Override
 	public void startExecuting()
 	{
-		VilMethods.setReturning(this.entityHost, true);
-		this.entityHost.getNavigator().setPath(this.path, .7d);
-		this.ppos = this.entityHost.getPosition();
-	}
-
-	private boolean generatePath(boolean awayFrom)
-	{
-		Vec3d pos;
-		if(this.entityHost.getDistanceSq(VilMethods.getGuardBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH_SQ)
-		{
-			if(!awayFrom)
-				pos = PathUtil.findNavigableBlockInDirection(this.entityHost.getPosition(), VilMethods.getGuardBlockPos(this.entityHost), this.entityHost);
-			else
-				pos = RandomPositionGenerator.findRandomTargetBlockAwayFrom(entityHost, 7, 4, VilMethods.guardBlockAsVec(entityHost));
-		}
-		else
-		{
-			pos = VilMethods.guardBlockAsVec(this.entityHost);
-		}
-		if(pos == null)
-		{
-			this.pathFails++;
-			return false;
-		}
-		this.path = this.entityHost.getNavigator().getPathToXYZ(pos.x, pos.y, pos.z);
-		if(this.path != null)
-		{
-			return true;
-		}
-		return false;
-	}
-
-	@Override
-	public void updateTask()
-	{
-		if(this.path == null)
-		{
-			this.pathFails++;
-			if(generatePath(false))
-			{
-				this.entityHost.getNavigator().setPath(this.path, .7d);
-			}
-			return;
-		}
-		if (this.tickCounter > 20)
-		{
-			this.tickCounter = 0;
-			this.pathFails++;
-			if(generatePath(true))
-			{
-				this.entityHost.getNavigator().setPath(this.path, .7d);
-			}
-			return;
-		}
-		if(this.path.isFinished())
-		{
-			float distanceCenter = 9999f;
-
-			if(this.path.getFinalPathPoint() != null)
-				distanceCenter = this.path.getFinalPathPoint().distanceToSquared(VilMethods.guardBlockAsPP(this.entityHost));
-
-			if(distanceCenter > this.distToCenter)
-			{
-				this.pathFails++;
-			}
-			if(this.generatePath(false))
-			{
-				this.entityHost.getNavigator().setPath(this.path, .7d);
-			}
-		}
-		if(this.entityHost.getPosition().equals(ppos))
-		{
-			this.tickCounter++;
-		}
-		else
-		{
-			this.tickCounter = 0;
-		}
-		this.ppos = this.entityHost.getPosition();
-	}
-
-	@Override
-	public void resetTask()
-	{
-		this.pathFails = 0;
-		this.entityHost.getNavigator().clearPath();
-		this.path = null;
-	}
-
-	public void returnState()
-	{
-		this.setFailed = false;
-		this.entityHost.getNavigator().clearPath();
-		this.tickCounter = -1;
-		this.path = null;
-		this.pathFails = 0;
-		VilMethods.setReturning(this.entityHost, false);
+		super.startExecuting();
+		if(this.theDebugVar)
+			Log.info("Guard startExecuting!");
+		VilMethods.setReturning(this.villager, true);
 	}
 
 	public void fail()
 	{
-		this.entityHost.getNavigator().clearPath();
-		this.tickCounter = -1;
-		this.path = null;
-		this.pathFails = 0;
+		if(this.theDebugVar)
+			Log.info("fail state!");
+		this.villager.getNavigator().clearPath();
 		this.setFailed = true;
-		try
-		{
-			this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(null).setReturning(false);
-		} catch (NullPointerException e) {}
+		VilMethods.setReturning(this.villager, false);
+		VilMethods.setGuardBlock(this.villager, null);
+		VilMethods.setLastDoor(this.villager, null);
+	}
+	
+	public void returnState()
+	{
+		this.setFailed = false;
+	}
+	
+	protected BlockPos getObjectiveBlock() 
+	{ 
+		return VilMethods.getGuardBlockPos(this.villager); 
+	}
+	
+	protected boolean breakDoors() { return true; }
+	
+	protected double hostSpeed() { return .7D; }
+	
+	protected void arrivedAtObjective() 
+	{
+		this.setFailed = false;
+		VilMethods.setReturning(this.villager, false);
+		VilMethods.setLastDoor(this.villager, null);
 	}
 }

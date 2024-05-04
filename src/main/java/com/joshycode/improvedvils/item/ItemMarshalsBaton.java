@@ -29,7 +29,7 @@ public class ItemMarshalsBaton extends Item {
 	public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand)
 	{
 		ItemStack stack = player.getHeldItemMainhand();
-		if(!world.isRemote && stack.getItem() instanceof ItemMarshalsBaton)
+		if(world.isRemote && stack.getItem() instanceof ItemMarshalsBaton)
 		{
 			Entity entity = Minecraft.getMinecraft().getRenderViewEntity();
 			if(entity != null && Minecraft.getMinecraft() != null)

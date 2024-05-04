@@ -57,7 +57,7 @@ public class VilFollowPacket implements IMessage {
 					{
 						VilMethods.setGuardBlock((EntityVillager) e, null);
 						VilMethods.setFollowState((EntityVillager) e, message.booleanState);
-						
+						VilMethods.setCommBlockPos((EntityVillager) e, null);
 					}
 					VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) e, player);
 				}
