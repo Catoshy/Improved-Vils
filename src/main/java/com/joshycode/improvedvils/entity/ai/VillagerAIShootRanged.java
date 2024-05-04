@@ -21,6 +21,7 @@ import com.joshycode.improvedvils.handler.VillagerPredicate;
 import com.joshycode.improvedvils.network.GunFiredPacket;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.util.InventoryUtil;
+import com.joshycode.improvedvils.util.Pair;
 import com.joshycode.improvedvils.util.ProjectileHelper;
 
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -72,6 +73,9 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	//GUN HANDLING:
 	private int burstCount; //shots left in current burst.
 	private int friendlyFireAvoidTicks;
+	
+	//TODO
+	private String debugString = "";
 
 	public VillagerAIShootRanged(EntityVillager shooter, int attackTimeVariance, float attackRangeBow, float speed, VillagerPredicate<Entity> predicate)
 	{
@@ -212,7 +216,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		{
 			if(d0 > this.attackRange_2 || !targetInSight || this.checkForConflict() || this.notLookingAtTarget() || !this.attackTarget.isEntityAlive())
 			{
-				this.rangedAttackTime++;
+				this.rangedAttackTime = 2;
 				return;
 			}
 			
@@ -244,7 +248,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 				}
 			}
 		}
-		else if(this.rangedAttackTime < 0)
+		else if(this.rangedAttackTime < 0) //TODO else if mayhaps unneeded, add at end of original if statement.
 		{
 			f = MathHelper.sqrt(d0) / this.attackRange;
 			this.rangedAttackTime = MathHelper.floor(f * (this.weaponData.coolDown - this.attackTimeVariance) + this.attackTimeVariance);
@@ -271,27 +275,29 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		}
 		if(entry.type == RangeAttackEntry.RangeAttackType.SHOT)
 		{
-			this.shootShot(distanceFactor, target, acc);
+			//TODO
+			this.shootShot(distanceFactor, target, acc, this.debugString);
 		}
 		else
 		{
-			this.shootGun(distanceFactor, target, acc);
+			//TODO
+			this.shootGun(distanceFactor, target, acc, this.debugString);
 		}
 	}
 
-    private void shootGun(float distanceFactor, EntityLivingBase target, float f)
+    private void shootGun(float distanceFactor, EntityLivingBase target, float f, String debugString2)
     {
-		EntityBullet bullet = new EntityBullet(this.entityHost.getEntityWorld(), this.entityHost, entry, f, "Villager's Shot");
+		EntityBullet bullet = new EntityBullet(this.entityHost.getEntityWorld(), this.entityHost, entry, f, "Villager's Shot", debugString2);
 		this.entityHost.getEntityWorld().spawnEntity(bullet);
 		NetWrapper.NETWORK.sendToAllAround(new GunFiredPacket(this.entityHost.getEntityId()), new TargetPoint(this.entityHost.dimension, this.entityHost.posX, this.entityHost.posY, this.entityHost.posZ, 124));
 		this.entityHost.playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 2.0F, .05F);
 	}
 
-	private void shootShot(float distanceFactor, EntityLivingBase target, float f)
+	private void shootShot(float distanceFactor, EntityLivingBase target, float f, String debugString2)
 	{
 		for(int i = 0; i < weaponData.projectiles; i++)
 		{
-			EntityBullet bullet = new EntityBullet(this.entityHost.getEntityWorld(), this.entityHost, entry, f + 5.0F, "Villager's Shot");
+			EntityBullet bullet = new EntityBullet(this.entityHost.getEntityWorld(), this.entityHost, entry, f + 5.0F, "Villager's Shot", debugString2);
 			this.entityHost.getEntityWorld().spawnEntity(bullet);
 		}
 		NetWrapper.NETWORK.sendToAllAround(new GunFiredPacket(this.entityHost.getEntityId()), new TargetPoint(this.entityHost.dimension, this.entityHost.posX, this.entityHost.posY, this.entityHost.posZ, 124));
@@ -400,22 +406,25 @@ public class VillagerAIShootRanged extends EntityAIBase {
 
 	private boolean checkForConflict() 
 	{
-		RayTraceResult lineOfSight = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld());
-		if(ConfigHandler.debug && lineOfSight != null && lineOfSight.entityHit != null)
-			Log.info("Looking for firendly fire?! here's what we got... %s", lineOfSight.entityHit);
+		//RayTraceResult lineOfSight = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy);
+		Pair<RayTraceResult, String> pair = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy);
+		RayTraceResult lineOfSight = pair.a;
+		this.debugString = pair.b;
+		/*if(ConfigHandler.debug && lineOfSight != null && lineOfSight.entityHit != null)
+			Log.info("Looking for firendly fire?! here's what we got... %s", lineOfSight.entityHit); TODO no longer needed*/
 		if(lineOfSight != null && lineOfSight.typeOfHit == RayTraceResult.Type.ENTITY && this.friendlyFirePredicate.apply(lineOfSight.entityHit))
 		{
-			if(ConfigHandler.debug)
-				Log.info("Firendly Fire Detected! %s", lineOfSight.entityHit);
+			/*if(ConfigHandler.debug)
+				Log.info("Firendly Fire Detected! %s", lineOfSight.entityHit);*/
 			this.avoidFirendlyFire();
 			return true;
 		}
 		
-		List<EntityVillager> list = this.entityHost.getEntityWorld().getEntitiesWithinAABB(EntityVillager.class, this.attackTarget.getEntityBoundingBox().grow(2D), this.friendlyFirePredicate);
+		List<EntityVillager> list = this.entityHost.getEntityWorld().getEntitiesWithinAABB(EntityVillager.class, this.attackTarget.getEntityBoundingBox().grow(1.5D), this.friendlyFirePredicate);
 		if(!list.isEmpty())
 		{
-			if(ConfigHandler.debug)
-				Log.info("Friendlies too close to fire! %s", list.get(0));
+			/*if(ConfigHandler.debug)
+				Log.info("Friendlies too close to fire! %s", list.get(0));*/
 			this.rangedAttackTime++;
 			return true;
 		}
@@ -490,11 +499,11 @@ public class VillagerAIShootRanged extends EntityAIBase {
 			if(p.getPathPointFromIndex(i).distanceToSquared(new PathPoint(pos.getX(), pos.getY(), pos.getZ())) >
 					maxDistSq)
 			{
-				p.setCurrentPathLength(i);
+				p.setCurrentPathLength(i - 1);
 			}
-			if(i < p.getCurrentPathLength() -1 && p.getPathPointFromIndex(i).y - p.getPathPointFromIndex(i + 1).y >= 2) //go not where you cannot return
+			if(i < p.getCurrentPathLength() - 1 && p.getPathPointFromIndex(i).y - p.getPathPointFromIndex(i + 1).y >= 2) //go not where you cannot return
 			{
-				p.setCurrentPathLength(i);
+				p.setCurrentPathLength(i - 1);
 				return;
 			}
 		}

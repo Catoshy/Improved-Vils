@@ -2,6 +2,8 @@ package com.joshycode.improvedvils.util;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
@@ -15,69 +17,124 @@ import net.minecraft.world.World;
 
 public final class ProjectileHelper {
 
-	public static RayTraceResult checkForFirendlyFire(EntityLivingBase entityHost, World world)
+	//TODO
+	@Nullable
+	public static Pair<RayTraceResult, String> checkForFirendlyFire(EntityLivingBase entityHost, World world, float inaccuracy)
 	{
-		double startY = entityHost.posY + entityHost.getEyeHeight();
-		double startX = entityHost.posX;
-		double startZ = entityHost.posZ;
+		String debugString = "\nDEBUG FOR FRIENDLY FIRE! \n";
+		Entity entity = checkEntitiesNearby(entityHost, world);/*
+	    if(entity != null)
+	    {
+	    	debugString += "Entity: " + entity + "is too near to shooter. Should not even be able to get shot?!";
+	    	return new Pair<>(new RayTraceResult(entity), debugString);
+	    	//return new RayTraceResult(entity);
+	    }*/
+	    
+		double y = entityHost.posY + entityHost.getEyeHeight();
+		double x = entityHost.posX;
+		double z = entityHost.posZ;
 	    double motionX = -MathHelper.sin(entityHost.getRotationYawHead() / 180.0F * (float) Math.PI)
 	            * MathHelper.cos(entityHost.rotationPitch / 180.0F * (float) Math.PI);
 	    double motionZ = MathHelper.cos(entityHost.getRotationYawHead() / 180.0F * (float) Math.PI)
 	            * MathHelper.cos(entityHost.rotationPitch / 180.0F * (float) Math.PI);
 	    double motionY = -MathHelper.sin(entityHost.rotationPitch / 180.0F * (float) Math.PI);
-	    AxisAlignedBB axisalignedbb = new AxisAlignedBB(startX - motionX, startY - motionY, startZ - motionZ, startX + motionX, startY + motionY, startZ + motionZ).grow(1.75F);
-	    Vec3d vec1 = new Vec3d(startX, startY, startZ);
-	    Vec3d vec2 = new Vec3d(startX + (motionX * 8), startY + (motionY * 8), startZ + (motionZ * 8));
-	    RayTraceResult raytraceresult = world.rayTraceBlocks(vec1, vec2, false, true, false);
+	    //Original box to be .75 x .75 x .75
+	    //AxisAlignedBB axisalignedbb = new AxisAlignedBB(x - .375, y - .375, z - .375, x + .375, y + .375, z + .375);
 	    
-	    Entity entity = checkEntitiesNearby(entityHost, world);
-	    if(entity != null)
-	    {
-	    	return new RayTraceResult(entity);
-	    }
-	    double d6 = 0.0D;
 	    int range = ConfigHandler.friendlyFireSearchRange;
-	    for(int i = 0; i < range; i++)
+	    Vec3d vec1 = new Vec3d(x, y, z);
+	    Vec3d vec2 = new Vec3d(x + (motionX * range), y + (motionY * range), z + (motionZ * range));
+	    RayTraceResult raytraceresult = world.rayTraceBlocks(vec1, vec2, false, true, false);
+	    double rangeDistance = vec2.distanceTo(vec1);
+	    double sizeFactor = inaccuracy * rangeDistance * .0325D;
+	    AxisAlignedBB axisalignedbb = getSearchAABB(motionX, motionZ, vec1, vec2, sizeFactor);
+	    
+	    double d6 = 0.0D;
+	    if(raytraceresult != null)
 	    {
-	    	List<Entity> list;
-
-    		list = world.getEntitiesWithinAABBExcludingEntity(entityHost, axisalignedbb);
-    		axisalignedbb = axisalignedbb.offset(motionX, motionY, motionZ).grow(.5D);
-	
-	        for (Entity entity1 : list)
-	        {	
-	            if (entity1.canBeCollidedWith() && !entity1.isEntityEqual(entityHost) && !entity1.noClip)
-	            {
-	                AxisAlignedBB axisalignedbb1 = entity1.getEntityBoundingBox().grow(0.30000001192092896D);
-	                RayTraceResult raytraceresult1 = axisalignedbb1.calculateIntercept(vec1, vec2);
-	
-	                if (raytraceresult1 != null)
-	                {
-	                    double d7 = vec1.squareDistanceTo(raytraceresult1.hitVec);
-	
-	                    if (d7 < d6 || d6 == 0.0D)
-	                    {
-	                        entity = entity1;
-	                        d6 = d7;
-	                    }
-	                }
-	            }
-	        }
+	    	d6 = vec1.squareDistanceTo(raytraceresult.hitVec);
 	    }
-	    if (entity != null)
+	    
+	    List<Entity> list = world.getEntitiesWithinAABBExcludingEntity(entityHost, axisalignedbb);
+	    
+	    debugString += "    Entity Host: " + entityHost + "\n" +
+	    		"    x:" + x + "\n" +
+	    		"    y:" + y + "\n" +
+	    		"    z:" + z + "\n" +
+	    		"    lookX:" + motionX + "\n" +
+	    		"    lookY:" + motionY + "\n" +
+	    		"    lookZ:" + motionZ + "\n" +
+	    		"    vec1:" + vec1 + "\n" +
+	    		"    vec2:" + vec2 + "\n" +
+	    		"    sizeFactor:" + sizeFactor + "\n" +
+	    		"    AABB for search Area:" + axisalignedbb + "\n" +
+	    		"    list in AABB:" + list + "\n" +
+	    		"    List data...." + "\n";
+	    //for(int i = 0; i < range; i++)
+	    //{
+    	//	list = world.getEntitiesWithinAABBExcludingEntity(entityHost, axisalignedbb);
+    	//	axisalignedbb = new AxisAlignedBB(x - sizeFactor, y - sizeFactor, z - sizeFactor, x + sizeFactor, y + sizeFactor, z + sizeFactor);
+    	//	vec1 = new Vec3d(x, y, z);
+    	//	x += motionX;
+    	//	y += motionY;
+    	//	z += motionZ;
+    	//	vec2 = new Vec3d(x, y, z);
+    		
+        for(Entity entity1 : list)
+        {	
+        	debugString += "        Entity:" + entity1.toString() + "\n";
+            if(entity1.canBeCollidedWith() && !entity1.noClip)
+            {
+            	double distance = entity1.getDistance(entityHost);
+                AxisAlignedBB axisalignedbb1 = entity1.getEntityBoundingBox().grow(sizeFactor * (distance / rangeDistance));
+                RayTraceResult raytraceresult1 = axisalignedbb1.calculateIntercept(vec1, vec2);
+                
+                debugString += "            can be collided & !noClip." + "\n" +
+                "            AABB used for calculate intercept:" + axisalignedbb1 + "\n" +
+                "            grow factor was:" + sizeFactor * (distance / rangeDistance) + "\n" +
+                "            RaytraceResult:" + raytraceresult1 + "\n";
+                
+                if(raytraceresult1 != null)
+                {
+                    double d7 = vec1.squareDistanceTo(raytraceresult1.hitVec);
+                    if(d7 < d6 || d6 == 0.0D)
+                    {
+                    	debugString += "            If this is last entry for list entity above, then entity was made the result. \n";
+                        entity = entity1;
+                        d6 = d7;
+                    }
+                }
+            }
+        }
+	    //}
+	    if(entity != null)
 	    {
 	        raytraceresult = new RayTraceResult(entity);
 	    }
 	    
-	    if(ConfigHandler.debug)
-	    	Log.info("Raytrace result: %s", raytraceresult);
-	    
-	    return raytraceresult;
+	    return new Pair<>(raytraceresult, debugString);
+	    //return raytraceresult;
+	}
+
+	private static AxisAlignedBB getSearchAABB(double motionX, double motionZ, Vec3d vec1, Vec3d vec2, double sizeFactor) 
+	{
+		double mX = Math.min(vec1.x, vec2.x);
+		double mY = Math.min(vec1.y, vec2.y);
+		double mZ = Math.min(vec1.z, vec2.z);
+		double MX = Math.max(vec1.x, vec2.x);
+		double MY = Math.max(vec1.y, vec2.y);
+		double MZ = Math.max(vec1.z, vec2.z);
+		
+		double lookZ = Math.abs(motionZ);
+		double lookX = Math.abs(motionX);
+		
+		return new AxisAlignedBB(mX + (-lookZ * sizeFactor), mY - 2, mZ + (-lookX * sizeFactor),
+	    		MX + (lookZ * sizeFactor), MY + 2, MZ + (lookX * sizeFactor));
 	}
 
 	private static Entity checkEntitiesNearby(EntityLivingBase entityHost, World world) 
 	{
-		List<Entity> list = world.getEntitiesWithinAABBExcludingEntity(entityHost, entityHost.getEntityBoundingBox().grow(.5D));
+		List<Entity> list = world.getEntitiesWithinAABBExcludingEntity(entityHost, entityHost.getEntityBoundingBox().grow(.667D));
         Entity entity = null;
         double d0 = 0D;
 		for (Entity entity1 : list)

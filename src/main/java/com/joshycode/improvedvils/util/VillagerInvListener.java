@@ -28,7 +28,7 @@ public class VillagerInvListener implements IInventoryChangedListener {
 	@Override
 	public void onInventoryChanged(IInventory invBasic)
 	{
-		if(this.checkTick == this.entity.ticksExisted) return;
+		if(this.checkTick == this.entity.ticksExisted || this.playerId == null) return;
 		
 		if(this.entity.getDistanceSq(this.world.getPlayerEntityByUUID(playerId)) > 12 || !this.entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getListener()) 
 		{
@@ -36,11 +36,13 @@ public class VillagerInvListener implements IInventoryChangedListener {
 			return;
 		}
 		if(ConfigHandler.debug)
-			Log.info("inventory changed for villager", entity);
+		{
+			Log.info("inventory changed for villager, %s", entity);
+			Log.info("player in question is %s", this.playerId);
+		}
 
 		this.checkTick = this.entity.ticksExisted;
 		VillagerPlayerDealMethods.updateGuiForClient(entity, this.world.getPlayerEntityByUUID(this.playerId));
-		if(this.world.getPlayerEntityByUUID(this.playerId) != null)
-			VillagerPlayerDealMethods.checkArmourWeaponsAndFood(entity, this.playerId);
+		VillagerPlayerDealMethods.checkArmourWeaponsAndFood(entity, this.playerId);
 	}
 }

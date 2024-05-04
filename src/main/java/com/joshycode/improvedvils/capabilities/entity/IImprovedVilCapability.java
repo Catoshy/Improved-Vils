@@ -25,6 +25,8 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public IImprovedVilCapability setFoodStore(BlockPos pos);
 	public BlockPos getKitStorePos();
 	public IImprovedVilCapability setKitStore(BlockPos pos);
+	public BlockPos getLastDoor();
+	public IImprovedVilCapability setLastDoor(BlockPos pos);
 	public Collection<UUID> getKnownPlayers();
 	public boolean getHungry();
 	public IImprovedVilCapability setHungry(boolean isHungry);

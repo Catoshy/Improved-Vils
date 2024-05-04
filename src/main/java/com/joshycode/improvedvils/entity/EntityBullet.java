@@ -1,9 +1,11 @@
 package com.joshycode.improvedvils.entity;
 
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.projectile.EntityThrowable;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityDamageSourceIndirect;
@@ -21,6 +23,7 @@ public class EntityBullet extends EntityThrowable {
 	{
 		super(worldIn);
 		this.damageName = "Villager's Bullet";
+		this.debugInfo = "";
 		this.lowCoef = 0;
 		this.highCoef = 0;
 		this.n_val = 0;
@@ -44,8 +47,10 @@ public class EntityBullet extends EntityThrowable {
 	private double mass;
 	private double halfWidthInMeter;
 	private double speed;
+	
+	private final String debugInfo;
 
-	public EntityBullet(World worldIn, EntityLivingBase throwerIn, RangeAttackEntry entry, float accuracyModifier, String damageName) 
+	public EntityBullet(World worldIn, EntityLivingBase throwerIn, RangeAttackEntry entry, float accuracyModifier, String damageName, String debugInfo) 
 	{
 		super(worldIn, throwerIn);
         this.setSize(.1F, .1F);
@@ -57,6 +62,9 @@ public class EntityBullet extends EntityThrowable {
 		this.supersonicStartVal = this.highCoef * 1/Math.pow(TRANS_SONIC_BOUND, this.highCoef);
         this.ignoreEntity = throwerIn;
         this.damageName = damageName;
+        //TODO
+        this.debugInfo = debugInfo;
+        //TODO
         setLocationAndAngles(throwerIn.posX, throwerIn.posY + throwerIn.getEyeHeight(), throwerIn.posZ, throwerIn.rotationYawHead,
         		throwerIn.rotationPitch);
         this.posX -= MathHelper.cos(this.rotationYaw / 180.0F * (float) Math.PI) * 0.1;
@@ -169,6 +177,8 @@ public class EntityBullet extends EntityThrowable {
      */
     protected boolean onEntityHit(Entity entity) 
     {
+    	if(entity instanceof EntityVillager)
+    		Log.info(this.debugInfo + "\n    Shot Entity:" + entity);
         entity.attackEntityFrom(causeImpactDamage(entity, getThrower()), getImpactDamage());
         return true;
     }

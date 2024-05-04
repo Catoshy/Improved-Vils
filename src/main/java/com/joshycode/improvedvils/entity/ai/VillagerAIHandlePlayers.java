@@ -1,7 +1,5 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import java.util.Random;
-
 import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
@@ -20,14 +18,12 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 	private EntityVillager villager;
 	private Village village;
 	private int fealtyHolding;
-	private Random rand;
 	
 	public VillagerAIHandlePlayers(EntityVillager villager) 
 	{
 		super();
 		this.villager = villager;
 		this.fealtyHolding = 5;
-		this.rand = new Random();
 	}
 
 	@Override
@@ -37,7 +33,7 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 		
 		Village village = villager.getEntityWorld().getVillageCollection().getNearestVillage(new BlockPos(villager), 0);
 		if(this.villager.ticksExisted < 20 || village == null ||
-				(village.equals(this.village) && this.rand.nextInt(2000) != 0 && this.villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHomeVillageID() != null))
+				(village.equals(this.village) && this.villager.getRNG().nextInt(500) != 0 && this.villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHomeVillageID() != null))
 		{
 			return false;
 		}
@@ -60,7 +56,7 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 			float playerRep = vilCap.getPlayerReputation(vilCap.getPlayerId());
 			if(this.fealtyHolding > 0 && vilCap.getPlayerId() != null && playerRep > 0)
 			{
-				this.fealtyHolding--;
+				this.fealtyHolding = 0; //TODO what does this do?
 				return;
 			}
 			setHomeIfSame(vilCap, villageCap);
@@ -69,7 +65,7 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 		{
 			this.fealtyHolding = 5;
 		}
-		VillagerPlayerDealMethods.updateFromVillageReputation(villager, village);
+		VillagerPlayerDealMethods.updateFromVillageReputation(this.villager, this.village);
 	}
 
 	private void setHomeIfSame(IImprovedVilCapability vilCap, IVillageCapability villageCap) 

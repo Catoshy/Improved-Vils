@@ -60,30 +60,36 @@ public class VilPlayerDeal implements Runnable{
 	{
 		if(ConfigHandler.debug)
 			Log.info("Starting Gui handler on server thread ...");
-
-		World world = this.worldRef.get();
-		EntityPlayerMP player = this.playerRef.get();
-		if(world == null)
+		try
 		{
-			Log.warn("lost world opening Gui for player %s, returning", player);
-			return;
+			World world = this.worldRef.get();
+			EntityPlayerMP player = this.playerRef.get();
+			if(world == null)
+			{
+				Log.warn("lost world opening Gui for player %s, returning", player);
+				return;
+			}
+			if(player == null)
+			{
+				Log.warn("lost player opening Gui for player %s, returning", player);
+				return;
+			}
+			EntityVillager villager = this.villagerRef.get();
+			if(villager == null)
+			{
+				Log.warn("lost villager opening Gui for player %s, returning", player);
+				return;
+			}
+			this.world = world;
+			this.player = player;
+			this.villager = villager;
+			this.init();
+			this.openVillagerGUI();
 		}
-		if(player == null)
+		catch(Exception e)
 		{
-			Log.warn("lost player opening Gui for player %s, returning", player);
-			return;
+			e.printStackTrace();
 		}
-		EntityVillager villager = this.villagerRef.get();
-		if(villager == null)
-		{
-			Log.warn("lost villager opening Gui for player %s, returning", player);
-			return;
-		}
-		this.world = world;
-		this.player = player;
-		this.villager = villager;
-		this.init();
-		this.openVillagerGUI();
 	}
 
 	public void init()
@@ -137,7 +143,7 @@ public class VilPlayerDeal implements Runnable{
 		VillagerPlayerDealMethods.updateArmourWeaponsAndFood(this.villager);
 		VilMethods.setPlayerId(this.player, this.villager);
 
-		if(this.player.getTeam() != null && (vilTeam == null || this.village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam().isEmpty()))
+		if(vilTeam == null || this.village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam().isEmpty())
 			setPlayerVillageFealtyIfWorthy();
 		//checkMutiny(); TODO
 
@@ -229,11 +235,11 @@ public class VilPlayerDeal implements Runnable{
 	private void setPlayerVillageFealtyIfWorthy()
 	{
 		//if(vilCap.getPlayerReputation(player.getUniqueID()) != 0) return;
-		if(this.villagerPlayerRep >= 5)
+		if(this.villagerPlayerRep >= 5 && this.player.getTeam() != null)
 			VilMethods.setTeam(villager, this.player.getTeam().getName());
 		if(this.isVillagerInHomeVillage)
 		{
-			if(this.wholeVillagePlayerRep < VillagerPlayerDealMethods.GOOD_THRESHOLD && this.wholeVillagePlayerRep >= 0) return;
+			if(this.wholeVillagePlayerRep < VillagerPlayerDealMethods.GOOD_THRESHOLD && this.wholeVillagePlayerRep >= VillagerPlayerDealMethods.BAD_THRESHOLD) return;
 
 			if(ConfigHandler.debug)
 				Log.info("player is  either good, ill, or team member - will be granted either fealty or hatred", this.player);
@@ -246,6 +252,8 @@ public class VilPlayerDeal implements Runnable{
 			if(this.villagerPlayerRep == 0)
 				VilMethods.setPlayerReputation(this.villager, this.player.getUniqueID(), .25F, 0);
 		}
+		if(ConfigHandler.debug)
+			Log.info("setFealtyIfWorthy --- End.");
 	}
 
 	//TODO

@@ -77,7 +77,7 @@ public class CommonProxy {
 
 	}
 
-	public static final double GUARD_MAX_PATH = 16;
+	public static final double GUARD_MAX_PATH = 8;
 	public static final double GUARD_MAX_PATH_SQ = GUARD_MAX_PATH * GUARD_MAX_PATH;
 	public static final int MAX_GUARD_DIST = 256;
 	public static final int GUARD_IGNORE_LIMIT = 4096;

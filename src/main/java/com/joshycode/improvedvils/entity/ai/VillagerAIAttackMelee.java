@@ -411,12 +411,12 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 			if(p.getPathPointFromIndex(i).distanceToSquared(new PathPoint(pos.getX(), pos.getY(), pos.getZ())) >
 					CommonProxy.MAX_GUARD_DIST - 31 /* 2 x 2*/)
 			{
-				p.setCurrentPathLength(i);
+				p.setCurrentPathLength(i - 1);
 				return;
 			}
 			if(i < p.getCurrentPathLength() -1 && p.getPathPointFromIndex(i).y - p.getPathPointFromIndex(i + 1).y >= 2) //go not where you cannot return
 			{
-				p.setCurrentPathLength(i);
+				p.setCurrentPathLength(i - 1);
 				return;
 			}
 		}

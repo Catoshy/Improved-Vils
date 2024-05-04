@@ -71,6 +71,9 @@ public class ClientProxy extends CommonProxy {
 	@Override
 	public void init()
 	{
+		this.hudUpdateTime = -24000;
+		this.selectedPlatoon = 0;
+		this.provisioningPlatoon = -1;
 		keyBindings = new KeyBinding[5];
 		keyBindings[0] = new KeyBinding("key.marshal.platoon+", Keyboard.KEY_UP, "Improvedvils.keybinds");
 		keyBindings[1] = new KeyBinding("key.marshal.platoon-", Keyboard.KEY_DOWN, "Improvedvils.keybinds");

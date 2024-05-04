@@ -1,258 +1,90 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.util.PathUtil;
+import javax.annotation.Nullable;
 
-import net.minecraft.entity.ai.EntityAIBase;
+import org.jline.utils.Log;
+
+import com.joshycode.improvedvils.capabilities.VilMethods;
+
+import net.minecraft.block.BlockLilyPad;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.pathfinding.Path;
-import net.minecraft.pathfinding.PathNavigate;
-import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.chunk.Chunk;
 
-public class VillagerAICampaignMove extends EntityAIBase {
-
-	private final EntityVillager entityHost;
-	private float distanceToObj;
-	private int idleTicks;
-	private int pathfindingFails;
-	private final int pathfindingFailMax;
-	private PathNavigate navigator;
-	private Path path;
-	private BlockPos ppos;
-	private boolean finished;
+public class VillagerAICampaignMove extends EntityAIGoFar {
 
 	public VillagerAICampaignMove(EntityVillager entityHost, int pathFailMax)
 	{
-		super();
-		this.distanceToObj = 0;
-		this.pathfindingFails = 0;
-		this.idleTicks = 0;
-		this.pathfindingFailMax = pathFailMax;
-		this.entityHost = entityHost;
-		this.navigator = entityHost.getNavigator();
-		this.finished = false;
-		this.setMutexBits(1);
+		super(entityHost, 4, pathFailMax);
 	}
 
 	@Override
 	public boolean shouldExecute()
 	{
-		if((VilMethods.getCommBlockPos(this.entityHost) == null) || (VilMethods.getGuardBlockPos(this.entityHost) != null) || this.entityHost.isMating() || VilMethods.getFollowing(this.entityHost))
+		EntityVillager villager = (EntityVillager) this.entityHost;
+		if((VilMethods.getCommBlockPos(villager) == null) || (VilMethods.getGuardBlockPos(villager) != null) || villager.isMating() || VilMethods.getFollowing(villager))
 			return false;
-		if(!VilMethods.getHungry(this.entityHost) && VilMethods.getDuty(this.entityHost)) {
+		if(!VilMethods.getHungry(villager) && VilMethods.getDuty(villager)) {
 			return true;
 		}
 		return false;
-	}
-
-	@Override
-	public void startExecuting()
-	{
-		this.finished = false;
-		BlockPos object = VilMethods.getCommBlockPos(this.entityHost);
-		if(generatePath())
-		{
-			PathPoint pp = this.path.getFinalPathPoint();
-			if(pp != null)
-			{
-				this.distanceToObj = pp.distanceTo(new PathPoint(object.getX(), object.getY(), object.getZ()));
-			}
-			this.entityHost.getNavigator().setPath(this.path, .7D);
-		}
-		this.ppos = this.entityHost.getPosition();
 	}
 
 	@Override
 	public void updateTask()
 	{
-		BlockPos object = VilMethods.getCommBlockPos(this.entityHost);
-		if(object != null)
-		{
-			if(this.idleTicks > 20)
-			{
-				this.idleTicks = 0;
-				this.tryToGetCloser(object);
-				this.pathfindingFails++;
-				return;
-			}
-			
-			if(this.entityHost.getDistanceSq(object) < 4D)
-			{
-				this.resetTask();
-				Vec3d vec = getRandomPosition();
-				this.navigator.clearPath();
-				this.finished = true;
-
-				if(vec != null)
-					this.navigator.tryMoveToXYZ(vec.x, vec.y, vec.z, .6D);
-
-			}
-			else if(this.path != null && this.path.isFinished())
-			{
-				if(!this.finished)
-					this.tryToGetCloser(object);
-				else
-					this.resetTask();
-			}
-			else if(this.path == null)
-			{
-				this.pathfindingFails++;
-				this.tryToGetCloser(object);
-			}
-
-			if(this.entityHost.getPosition().equals(ppos))
-			{
-				this.idleTicks++;
-			}
-			else
-			{
-				this.idleTicks = 0;
-			}
-			this.ppos = this.entityHost.getPosition();
-		}
-		else
-		{
-			this.resetTask();
-		}
+		super.updateTask();
+		BlockPos front = this.entityHost.getPosition().offset(this.entityHost.getHorizontalFacing());
+		if(this.entityHost.getEntityWorld().getBlockState(front).getBlock() instanceof BlockLilyPad)
+			this.entityHost.getEntityWorld().destroyBlock(front, true);
+		if(this.entityHost.getEntityWorld().getBlockState(front.up()).getBlock() instanceof BlockLilyPad)
+			this.entityHost.getEntityWorld().destroyBlock(front.up(), true);
+		if(this.entityHost.getEntityWorld().getBlockState(this.entityHost.getPosition()).getBlock() instanceof BlockLilyPad)
+			this.entityHost.posY -= 0.05D;
 	}
 
 	@Override
 	public boolean shouldContinueExecuting()
 	{
-		if(VilMethods.getGuardBlockPos(this.entityHost) == null && VilMethods.getCommBlockPos(this.entityHost) != null)
+		if(this.finished && (this.navigator.noPath() || this.navigator.getPath().isFinished()))
+			return false;
+		EntityVillager villager = (EntityVillager) this.entityHost;
+		if(VilMethods.getGuardBlockPos(villager) == null && VilMethods.getCommBlockPos(villager) != null)
 		{
-			if(this.pathfindingFails < this.pathfindingFailMax)
+			if(this.pathfindingFails < this.mostPathfindingFails)
 			{
 				return true;
 			}
 		}
+		if(this.theDebugVar)
+			Log.info("we failed the test");
 		return false;
 	}
-
+    
 	@Override
-	public void resetTask()
+    protected BlockPos getObjectiveBlock() { return VilMethods.getCommBlockPos((EntityVillager) this.entityHost); }
+	
+	@Override
+	protected boolean breakDoors() { return false; }
+	
+	@Override
+	protected double hostSpeed() { return .7D; }
+	
+	@Override
+	protected void resetObjective() 
 	{
-		VilMethods.setCommBlockPos(this.entityHost, null);
-		this.distanceToObj = 0;
-		this.pathfindingFails = 0;
+		VilMethods.setCommBlockPos((EntityVillager) this.entityHost, null);
 	}
-
-	private boolean generatePath()
+	
+	@Override
+	protected void arrivedAtObjective() 
 	{
-		Vec3d pos;
-		if(this.entityHost.getDistanceSq(VilMethods.getCommBlockPos(this.entityHost)) > CommonProxy.GUARD_MAX_PATH_SQ)
-		{
-			Vec3d pos1 = PathUtil.findNavigableBlockInDirection(this.entityHost.getPosition(), VilMethods.getCommBlockPos(this.entityHost), this.entityHost);
-			if(pos1 != null)
-			{
-				pos = pos1;
-			}
-			else
-			{
-				pos = RandomPositionGenerator.findRandomTargetBlockTowards(entityHost, 10, 7, VilMethods.commPosAsVec(this.entityHost));
-			}
-		}
-		else
-		{
-			pos = VilMethods.commPosAsVec(this.entityHost);
-		}
-		if(pos == null)
-		{
-			this.pathfindingFails++;
-			return false;
-		}
-		this.path = this.entityHost.getNavigator().getPathToXYZ(pos.x, pos.y, pos.z);
-		if(this.path != null)
-		{
-			return true;
-		}
-		return false;
+		if(this.theDebugVar)
+			Log.info("we think we have arrived");
+		VilMethods.setLastDoor((EntityVillager) this.entityHost, null);
+		Vec3d vec = this.getRandomPosition();
+		if(vec != null)
+			this.navigator.tryMoveToXYZ(vec.x, vec.y, vec.z, hostSpeed());
 	}
-
-	private void tryToGetCloser(BlockPos object)
-	{
-		if(generatePath())
-		{
-			PathPoint pp = this.path.getFinalPathPoint();
-			if(pp != null)
-			{
-				float newDistanceToObj = pp.distanceTo(new PathPoint(object.getX(), object.getY(), object.getZ()));
-				if(newDistanceToObj >= this.distanceToObj)
-				{
-					this.pathfindingFails++;
-				}
-				this.distanceToObj = newDistanceToObj;
-			}
-			this.entityHost.getNavigator().setPath(this.path, .7D);
-		}
-	}
-
-    protected Vec3d getRandomPosition()
-    {
-        return RandomPositionGenerator.findRandomTarget(this.entityHost, 8, 6);
-    }
-
-    public void giveObjectiveChunkPos(int x, int z)
-    {
-    	Chunk c = this.entityHost.getWorld().getChunkFromBlockCoords(new BlockPos(this.entityHost));
-    	BlockPos entPos = this.entityHost.getPos();
-    	int entX = entPos.getX();
-    	int entY = entPos.getY();
-    	int entZ = entPos.getZ();
-
-    	int dX = x - c.x;
-    	int dZ = z - c.z;
-
-    	if(Math.abs(dX) > Math.abs(dZ))
-    	{
-    		double slope = dZ / Math.abs(dX);
-    		double runZ = entZ;
-    		int runX = entX;
-    		int step = 1;
-    		if(dX < 0)
-    			step = -1;
-
-    		for(int i = 0; i < 200; i++)
-    		{
-    			runZ += slope;
-    			runX += step;
-    			BlockPos pos = new BlockPos(runX, entY, runZ);
-    			if(this.entityHost.getWorld().getChunkFromBlockCoords(pos).equals(c))
-    			{
-    				VilMethods.setCommBlockPos(this.entityHost, pos);
-    				return;
-    			}
-    		}
-    		VilMethods.setCommBlockPos(this.entityHost, new BlockPos((c.x << 4) + this.entityHost.getRNG().nextInt(15),
-    				this.entityHost.posY, (c.z << 4) + this.entityHost.getRNG().nextInt(15)));
-    	}
-    	else
-    	{
-    		double slope = dX / Math.abs(dZ);
-    		double runX = entX;
-    		int runZ = entZ;
-    		int step = 1;
-    		if(dZ < 0)
-    			step = -1;
-
-    		for(int i = 0; i < 200; i++)
-    		{
-    			runX += slope;
-    			runZ += step;
-    			BlockPos pos = new BlockPos(runX, entY, runZ);
-    			if(this.entityHost.getWorld().getChunkFromBlockCoords(pos).equals(c))
-    			{
-    				VilMethods.setCommBlockPos(this.entityHost, pos);
-    				return;
-    			}
-    		}
-    		VilMethods.setCommBlockPos(this.entityHost, new BlockPos((c.x << 4) + this.entityHost.getRNG().nextInt(15),
-    				this.entityHost.posY, (c.z << 4) + this.entityHost.getRNG().nextInt(15)));
-    	}
-    }
 }
