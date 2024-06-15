@@ -85,8 +85,6 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 		boolean collectAmmo = this.canCollectAmmo(inv);
 		boolean collectPotions = this.canCollectPotions(inv);
 		
-		if(collectKit || collectAmmo || collectPotions)
-			Log.info("So true! %s", this.villager.getUniqueID());
 		return collectKit || collectAmmo || collectPotions;
 	}
 	

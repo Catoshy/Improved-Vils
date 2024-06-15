@@ -210,7 +210,7 @@ public class CommonProxy {
 	public World getWorld(MessageContext ctx) {
 		return ctx.getServerHandler().player.world;
 	}
-
+	
 	public void setHUDinfo(int platoon) {}
 
 	public int timeAgoSinceHudInfo() {return 24000; }
@@ -222,6 +222,9 @@ public class CommonProxy {
 	public int getProvisioningUnit() {return -1; }
 	
 	public Provisions getStuff() {return null; }
+	
+	//TODO
+	public void syncVillagerToServer(int id) {}
 
 	/**
 	 * Takes a set of unique IDs for entities and searches the loaded world for them, can be intensive- ensure use case is sparing

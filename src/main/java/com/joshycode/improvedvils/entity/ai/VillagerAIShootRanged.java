@@ -1,5 +1,6 @@
 package com.joshycode.improvedvils.entity.ai;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +35,10 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.entity.projectile.EntityTippedArrow;
 import net.minecraft.init.Enchantments;
+import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemArrow;
 import net.minecraft.item.ItemBow;
 import net.minecraft.item.ItemStack;
 import net.minecraft.pathfinding.Path;
@@ -45,6 +48,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
 
@@ -57,24 +61,25 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	@Nullable
 	private WeaponBrooksData weaponData;
 	private RangeAttackEntry entry;
-	private Vec3d randomPos;
+	private Vec3i randomPos;
 	/**
 	 * A decrementing tick that spawns a ranged attack once this value reaches 0. It is then set back to the
 	 * maxRangedAttackTime.
 	 */
 	private int rangedAttackTime;
-	private int ticksTargetSeen;
 	private int attackTimeVariance;
 	private final float attackRangeBow;
 	private float attackRange;
 	private float attackRange_2;
-	private Random rand;
 
 	//GUN HANDLING:
 	private int burstCount; //shots left in current burst.
 	private int friendlyFireAvoidTicks;
 	
-	//TODO
+	//HEAD DIRECTION DEBUG TODO
+	private ArrayList<Float> headFacing;
+	
+	//Friendly-fire debug TODO
 	private String debugString = "";
 
 	public VillagerAIShootRanged(EntityVillager shooter, int attackTimeVariance, float attackRangeBow, float speed, VillagerPredicate<Entity> predicate)
@@ -85,7 +90,8 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		this.attackTimeVariance = attackTimeVariance;
 		this.attackRangeBow = attackRangeBow;
 		this.burstCount = 0;
-		this.rand = new Random();
+		//HEAD DIRECTION DEBUG TODO
+		this.headFacing = new ArrayList<>();
 		setMutexBits(3);
 	}
 
@@ -168,22 +174,24 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	@Override
 	public boolean shouldContinueExecuting()
 	{
-		return attackTarget.isEntityAlive() && (shouldExecute() || !this.entityHost.getNavigator().noPath()) && !VilMethods.outOfAmmo(this.entityHost);
+		return attackTarget.isEntityAlive() && shouldExecute() && !VilMethods.outOfAmmo(this.entityHost);
 	}
 
 	@Override
 	public void updateTask()
 	{
 		double d0 = this.entityHost.getDistanceSq(attackTarget.posX, attackTarget.posY, attackTarget.posZ);
+		double movementSpeed = this.entityHost.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue();
 		boolean targetInSight = this.entityHost.getEntitySenses().canSee(attackTarget);
-
+		
 		if(this.friendlyFireAvoidTicks > 0 && this.randomPos != null)
 		{
-			this.entityHost.getNavigator().tryMoveToXYZ(randomPos.x, randomPos.y, randomPos.z, .67D);
-			if(friendlyFireAvoidTicks-- == 0)
+			this.entityHost.getNavigator().tryMoveToXYZ(randomPos.getX(), randomPos.getY(), randomPos.getZ(), movementSpeed);
+			if(friendlyFireAvoidTicks-- == 0 || this.entityHost.getPosition().distanceSq(randomPos) < 1.0D)
 			{
+				this.friendlyFireAvoidTicks = 0;
 				this.entityHost.getNavigator().clearPath();
-				this.entityHost.getNavigator().tryMoveToEntityLiving(attackTarget, .67D);
+				this.entityHost.getNavigator().tryMoveToEntityLiving(attackTarget, movementSpeed);
 				this.rangedAttackTime = 10;
 			}
 			return;
@@ -191,28 +199,24 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		else
 		{
 			this.friendlyFireAvoidTicks = 0;
+			this.randomPos = null;
 		}
 		
-		if(targetInSight)
-		{
-			++this.ticksTargetSeen;
-		}
-		else
-		{
-			this.ticksTargetSeen = 0;
-		}
-		
-		if(d0 <= this.attackRange_2 && this.ticksTargetSeen >= 10) //When in range of attack, don't get needlessly closer
+		if(d0 <= this.attackRange_2 && targetInSight) //When in range of attack, don't get needlessly closer
 		{
 			this.entityHost.getNavigator().clearPath();
 		}
 		else
 		{
-			getToTarget();
+			getToTarget(movementSpeed);
 		}
-		this.entityHost.getLookHelper().setLookPositionWithEntity(attackTarget, 30.0F, 55.0F);
+		this.entityHost.getLookHelper().setLookPositionWithEntity(this.attackTarget, 30.0F, 55.0F);
 		float f;
-		if(--this.rangedAttackTime == 0)
+		
+		//HEAD DIRECTION DEBUG TODO
+		this.recordHeadFacing();
+		
+		if(--this.rangedAttackTime <= 0)
 		{
 			if(d0 > this.attackRange_2 || !targetInSight || this.checkForConflict() || this.notLookingAtTarget() || !this.attackTarget.isEntityAlive())
 			{
@@ -247,12 +251,36 @@ public class VillagerAIShootRanged extends EntityAIBase {
 			         this.rangedAttackTime = MathHelper.floor(f * (this.weaponData.coolDown - this.attackTimeVariance) + this.attackTimeVariance);
 				}
 			}
+			else
+			{
+				f = MathHelper.sqrt(d0) / this.attackRange;
+				this.rangedAttackTime = MathHelper.floor(f * (this.weaponData.coolDown - this.attackTimeVariance) + this.attackTimeVariance);
+			}
 		}
-		else if(this.rangedAttackTime < 0) //TODO else if mayhaps unneeded, add at end of original if statement.
+	}
+
+	//HEAD DIRECTION DEBUG TODO
+	private void recordHeadFacing() 
+	{
+		this.headFacing.add(this.entityHost.getRotationYawHead());
+		if(this.headFacing.size() > 5)
+			this.headFacing.remove(5);
+	}
+	
+	//HEAD DIRECTION DEBUG TODO
+	private boolean shiftInLastFive()
+	{
+		if(this.headFacing.size() < 5)
+			return false;
+		float sumDifference = 0;
+		float prevFacing = this.headFacing.get(4);
+		for(int i = 3; i >= 0; i--)
 		{
-			f = MathHelper.sqrt(d0) / this.attackRange;
-			this.rangedAttackTime = MathHelper.floor(f * (this.weaponData.coolDown - this.attackTimeVariance) + this.attackTimeVariance);
+			float facing = this.headFacing.get(i);
+			sumDifference += MathHelper.wrapDegrees(facing - prevFacing);
+			prevFacing = facing;
 		}
+		return Math.abs(sumDifference) > 30;
 	}
 
 	private void attackEntityWithRangedAttackGun(EntityLivingBase target, float distanceFactor)
@@ -275,24 +303,38 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		}
 		if(entry.type == RangeAttackEntry.RangeAttackType.SHOT)
 		{
-			//TODO
+        	//TODO DEBUG
 			this.shootShot(distanceFactor, target, acc, this.debugString);
 		}
 		else
 		{
-			//TODO
+        	//TODO DEBUG
 			this.shootGun(distanceFactor, target, acc, this.debugString);
 		}
 	}
 
+	//TODO DEBUG
     private void shootGun(float distanceFactor, EntityLivingBase target, float f, String debugString2)
     {
 		EntityBullet bullet = new EntityBullet(this.entityHost.getEntityWorld(), this.entityHost, entry, f, "Villager's Shot", debugString2);
 		this.entityHost.getEntityWorld().spawnEntity(bullet);
 		NetWrapper.NETWORK.sendToAllAround(new GunFiredPacket(this.entityHost.getEntityId()), new TargetPoint(this.entityHost.dimension, this.entityHost.posX, this.entityHost.posY, this.entityHost.posZ, 124));
 		this.entityHost.playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 2.0F, .05F);
-	}
+		if(this.shiftInLastFive() && ConfigHandler.debug)
+		{
+			Log.info("HEAD DIRECTION DEBUG\n" +
+					"Attack Target: " + this.attackTarget + "\n" +
+					"Target Alive: " + this.attackTarget.isEntityAlive() + "\n" +
+					"Target Pos: " + this.attackTarget.getPosition() + "\n" +
+					"Head Yaws: " + this.headFacing.get(4) + "\n" +
+					"4: " + this.headFacing.get(3) + "\n" +
+					"3: " + this.headFacing.get(2) + "\n" +
+					"2: " + this.headFacing.get(1) + "\n" +
+					"1: " + this.headFacing.get(0) + "\n");
+		}
+    }
 
+	//TODO DEBUG
 	private void shootShot(float distanceFactor, EntityLivingBase target, float f, String debugString2)
 	{
 		for(int i = 0; i < weaponData.projectiles; i++)
@@ -309,7 +351,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
         EntityArrow entityarrow = getArrow(distanceFactor);
         if (this.entityHost.getHeldItemMainhand().getItem() instanceof ItemBow)
         {
-            entityarrow = ((ItemBow) this.entityHost.getHeldItemMainhand().getItem()).customizeArrow(entityarrow); //TODO arrow customization based on inv itemstack???
+            entityarrow = ((ItemBow) this.entityHost.getHeldItemMainhand().getItem()).customizeArrow(entityarrow);
         }
         double d0 = target.posX - this.entityHost.posX;
         double d1 = target.getEntityBoundingBox().minY + target.height / 3.0F - entityarrow.posY;
@@ -374,9 +416,23 @@ public class VillagerAIShootRanged extends EntityAIBase {
 
     protected EntityArrow getArrow(float damage)
     {
-        EntityTippedArrow entitytippedarrow = new EntityTippedArrow(this.entityHost.world, this.entityHost);
-        entitytippedarrow.setEnchantmentEffectsFromEntity(this.entityHost, damage);
-        return entitytippedarrow;
+        EntityArrow entityarrow;
+        ItemArrow arrowItem = null;
+        for(Item item : this.entry.getConsumables().keySet())
+        {
+        	if(item instanceof ItemArrow)
+        	{
+        		arrowItem = (ItemArrow) item;
+        	}
+        }
+        if(arrowItem == null)
+        {
+        	arrowItem = (ItemArrow) Items.ARROW;
+        }
+        ItemStack falseStack = new ItemStack(arrowItem);
+        entityarrow = arrowItem.createArrow(this.entityHost.getEntityWorld(), falseStack, this.entityHost);
+        entityarrow.setEnchantmentEffectsFromEntity(this.entityHost, damage);
+        return entityarrow;
     }
 
     @Nullable
@@ -407,15 +463,13 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	private boolean checkForConflict() 
 	{
 		//RayTraceResult lineOfSight = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy);
+		//Friendly-fire debug
+    	//TODO DEBUG
 		Pair<RayTraceResult, String> pair = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy);
 		RayTraceResult lineOfSight = pair.a;
 		this.debugString = pair.b;
-		/*if(ConfigHandler.debug && lineOfSight != null && lineOfSight.entityHit != null)
-			Log.info("Looking for firendly fire?! here's what we got... %s", lineOfSight.entityHit); TODO no longer needed*/
 		if(lineOfSight != null && lineOfSight.typeOfHit == RayTraceResult.Type.ENTITY && this.friendlyFirePredicate.apply(lineOfSight.entityHit))
 		{
-			/*if(ConfigHandler.debug)
-				Log.info("Firendly Fire Detected! %s", lineOfSight.entityHit);*/
 			this.avoidFirendlyFire();
 			return true;
 		}
@@ -432,7 +486,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	}
 
     
-    private void getToTarget()
+    private void getToTarget(double movementSpeed)
     {
     	BlockPos pos = VilMethods.getGuardBlockPos(this.entityHost);
 		if(pos != null)
@@ -442,7 +496,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 			{
 				truncatePath(p, pos, CommonProxy.MAX_GUARD_DIST - 31);
 			}
-			this.entityHost.getNavigator().setPath(p, .67D);
+			this.entityHost.getNavigator().setPath(p, movementSpeed);
 			return;
 		} 
 		else if(VilMethods.getFollowing(this.entityHost))
@@ -460,17 +514,17 @@ public class VillagerAIShootRanged extends EntityAIBase {
 					{
 						truncatePath(p, pos, (float) (followRange * followRange / 2 /* use half regular follow range */));
 					}
-					this.entityHost.getNavigator().setPath(p, .67D);
+					this.entityHost.getNavigator().setPath(p, movementSpeed);
 				}
 				return;
 			}
 		}
-		this.entityHost.getNavigator().tryMoveToEntityLiving(attackTarget, .67D);
+		this.entityHost.getNavigator().tryMoveToEntityLiving(attackTarget, movementSpeed);
     }
     
     private void avoidFirendlyFire()
     {
-		friendlyFireAvoidTicks = 25;
+		friendlyFireAvoidTicks = this.entityHost.getRNG().nextInt(20) + 20;
 		this.entityHost.getNavigator().clearPath();
 		boolean randomDirection = this.entityHost.getEntityWorld().rand.nextBoolean();
 		float z = MathHelper.sin((float) Math.toRadians(this.entityHost.getRotationYawHead()));
@@ -480,15 +534,12 @@ public class VillagerAIShootRanged extends EntityAIBase {
 			z = -z;
 			x = -x;
 		}
-		float randomModifier = this.rand.nextInt(7);
-		randomPos = new Vec3d(this.entityHost.posX + (x * randomModifier), this.entityHost.posY, this.entityHost.posZ + (z * randomModifier));
+		float randomModifier = this.entityHost.getRNG().nextInt(7);
+		randomPos = new Vec3i(this.entityHost.posX + (x * randomModifier), this.entityHost.posY, this.entityHost.posZ + (z * randomModifier));
 		
-		if(ConfigHandler.debug)
-			Log.info("random position towards; %s", randomPos);
-		
-		if(randomPos != null && this.rand.nextInt(2) == 0)
+		if(randomPos != null && this.entityHost.getRNG().nextInt(2) == 0)
 		{
-			this.entityHost.getNavigator().tryMoveToXYZ(randomPos.x, randomPos.y, randomPos.z, .67F);
+			this.entityHost.getNavigator().tryMoveToXYZ(randomPos.getX(), randomPos.getY(), randomPos.getZ(), this.entityHost.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue());
 		}
     }
 
@@ -513,7 +564,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	public void resetTask()
 	{
 		attackTarget = null;
-		ticksTargetSeen = 0;
 		if(this.entry.type != RangeAttackType.SINGLESHOT && this.entry.type != RangeAttackType.SHOT)
 			rangedAttackTime = -1;
 		this.entityHost.getNavigator().clearPath();

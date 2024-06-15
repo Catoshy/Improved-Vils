@@ -58,6 +58,7 @@ public class ConfigHandler {
 	public static float commandDist;
 	public static float dailyBread;
 	public static float collectFoodThreshold;
+	public static float movementSpeed;
 	public static boolean openBlocksLoaded = false;
 	public static boolean debug = false;
 	public static boolean renderItemsAndArmour;
@@ -98,6 +99,7 @@ public class ConfigHandler {
 		commandDist = config.getFloat("Command Distance", "general", 250f, 0f, 300f, "maximum distance in blocks a ray trace will go when right click the baton to order a villager movement");
 		dailyBread = config.getFloat("Daily Bread", "general", 3f, 1f, 20f, "how much food saturation a villager will consume as measured in \"bread per day\" while drafted");
 		collectFoodThreshold = config.getFloat("Food Refill Threshold", "general", 16f, 1f, 256f, "how far the food saturation of a villager will decrease before villager goes to refill inventory at food store");
+		movementSpeed = config.getFloat("Movement Speed", "general", .67f, .25f, 1f, "how fast the villager moves. Default for villagers in MC is .55");
 		debug = config.getBoolean("Debug", "general", false, "more Log info");
 		renderItemsAndArmour = config.getBoolean("Render items and armour", "general", true, "Do you want your client to render items and armour on villagers? May conflict with other mods.");
 		

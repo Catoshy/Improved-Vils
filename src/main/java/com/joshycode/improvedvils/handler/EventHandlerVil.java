@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 
+import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
@@ -237,19 +238,24 @@ public class EventHandlerVil {
 
 	private void handleVillageBadReputation(EntityVillager villager, EntityPlayer attackingPlayer, int reputationCost)
 	{
+		if(ConfigHandler.debug)
+			Log.info("handleVillageBadReputation");
 		Village village = villager.getEntityWorld().getVillageCollection().getNearestVillage(villager.getPosition(), 0);
 		if(village != null)
 		{
 			IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
 			IImprovedVilCapability vilCap = villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+			if(ConfigHandler.debug)
+				Log.info("handleVillageBadReputation: village not null \n" +
+			"Villager Team: " + vilCap.getTeam() + "\n" +
+			"Village Team: " + villageCap.getTeam());
 			if((vilCap.getTeam() != null &&  vilCap.getTeam().equals(villageCap.getTeam()))
 					||	vilCap.getTeam() == null || villager.isChild())
 			{
 				if(ConfigHandler.debug)
-					Log.info("unjustified attack: costing %s reputation", reputationCost);
+					Log.info("unjustified attack: costing reputation:" + reputationCost);
 				VillagerPlayerDealMethods.villageBadReputationChange(villager.getEntityWorld(), village, attackingPlayer);
 			}
-			else
 			{
 				village.modifyPlayerReputation(attackingPlayer.getUniqueID(), reputationCost);
 			}
@@ -261,9 +267,9 @@ public class EventHandlerVil {
 		Village village = entity.getEntityWorld().getVillageCollection().getNearestVillage(entity.getPosition(), 0);
 		if(village != null)
 		{
-			if(ConfigHandler.debug)
-				Log.info("found village, will increase player reputation. Reputation is ", village.getPlayerReputation(player.getUniqueID()));
 			village.modifyPlayerReputation(player.getUniqueID(), reputation);
+			if(ConfigHandler.debug)
+				Log.info("found village, will increase player reputation. Reputation is %s", village.getPlayerReputation(player.getUniqueID()));
 			VillagerPlayerDealMethods.villageGoodReputationChange(entity.getEntityWorld(), village, player);
 		}
 	}
@@ -273,9 +279,6 @@ public class EventHandlerVil {
 	{
 		if(event.getSide() == Side.SERVER && event.getTarget() instanceof EntityVillager && event.getEntityPlayer().isSneaking())
 		{
-			//World world = null;
-			//world.init();
-			//ClientProxy.openGuiForPlayerIfOK(event.getTarget().getEntityId());
 			((IThreadListener) event.getWorld()).addScheduledTask(new VilPlayerDeal(event.getTarget().getEntityId(), (EntityPlayerMP) event.getEntityPlayer(), event.getWorld()));
 			event.setCanceled(true);
 			event.setCancellationResult(EnumActionResult.SUCCESS);
@@ -347,7 +350,7 @@ public class EventHandlerVil {
 		font.drawString(TextFormatting.WHITE + "Selected Company: " + String.format(java.util.Locale.US, "%d", company + 1), guiX, guiY, 0);
 		font.drawString(TextFormatting.WHITE + "Selected Platoon: " + String.format(java.util.Locale.US, "%d", platoon + 1), guiX, guiY + 9, 0);
 		GlStateManager.popMatrix();
-		//TODO SHOULD MAKE FADING TEXT
+		//TODO should make the text fade
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -401,7 +404,6 @@ public class EventHandlerVil {
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVindicator.class, 8.0F, 0.8D, 0.8D));
 		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVex.class, 8.0F, 0.6D, 0.6D));
 		
-		//TODO proxy TARGETS? -OK, FIXED - BUT DOES IT WORK??
 		for(Class c : CommonProxy.TARGETS)
 		{
 			if(c != null && EntityLivingBase.class.isAssignableFrom(c))
@@ -409,9 +411,8 @@ public class EventHandlerVil {
 		}
 		if(!ConfigHandler.whiteListMobs)
 			entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityMob.class, true, ConfigHandler.targetDistance));
-		//TODO static final predicates - OK, FIXED - BUT DOES IT WORK??
 		entity.targetTasks.addTask(1, new VillagerAIHurtByTarget(entity, false));
-		entity.targetTasks.addTask(4, new VillagerAIAttackNearestTarget<EntityVillager>(entity, EntityVillager.class, true, ConfigHandler.targetDistance, new EnemyVillagerAttackPredicate<EntityVillager>(entity)));
-		entity.targetTasks.addTask(5, new VillagerAIAttackNearestTarget<EntityPlayer>(entity, EntityPlayer.class, true, ConfigHandler.targetDistance, new EnemyPlayerAttackPredicate<EntityPlayer>(entity)));
+		entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityVillager.class, true, ConfigHandler.targetDistance, new EnemyVillagerAttackPredicate(entity)));
+		entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityPlayer.class, true, ConfigHandler.targetDistance, new EnemyPlayerAttackPredicate(entity)));
 	}
 }

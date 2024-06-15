@@ -146,7 +146,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		PathPoint point = this.path.getPathPointFromIndex(i);
 		//BlockPos pointPos = new BlockPos(point.x, point.y, point.z);
 		BlockPos pointPos = this.entityHost.getPosition();
-		PathNodeType type = this.entityHost.getNavigator().getNodeProcessor().getPathNodeType(this.entityHost.getEntityWorld(), point.x, point.y, point.z);
+		PathNodeType type = this.navigator.getNodeProcessor().getPathNodeType(this.entityHost.getEntityWorld(), point.x, point.y, point.z);
 		if(type == PathNodeType.DOOR_OPEN || type == PathNodeType.DOOR_WOOD_CLOSED)
 		{
 			BlockPos savedPos = VilMethods.getLastDoor((EntityVillager) this.entityHost);
@@ -202,7 +202,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 			Log.info("reset task");
 		resetObjective();
 		this.path = null;
-		this.navigator.setPath(null, 0);
+		this.navigator.clearPath();
 		this.idleTicks = 0;
 		this.distanceToObj = 0;
 		this.pathfindingFails = 0;

@@ -117,18 +117,31 @@ public class VilPlayerDeal implements Runnable{
 		}
 
 		currentPlayerVillageRep = getCurrentPlayerWholeVillageRep();
-
+		
+		
 		if(ConfigHandler.debug)
 		{
-			Log.info("vilTeam %s", this.vilTeam);
+			if(this.village != null)
+			{
+				Log.info("village Team %s", this.village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam());
+				Log.info("wholeVillagePlayerRep %s", this.wholeVillagePlayerRep);
+				Log.info("villageCurrentTeamRep %s", this.villageCurrentTeamRep);
+				Log.info("currentPlayerVillageRep %s", this.currentPlayerVillageRep);
+			}
+			else
+			{
+				Log.info("Village is Null!");
+			}
+			Log.info("VilTeam Name: %s", VilMethods.getTeam(this.villager));
+			if(this.vilTeam == null)
+				Log.info("vilTeam is null");
+			else
+				Log.info("vilTeam %s", this.vilTeam);
 			Log.info("villagerPlayerRep %s", this.villagerPlayerRep);
-			Log.info("wholeVillagePlayerRep %s", this.wholeVillagePlayerRep);
-			Log.info("villageCurrentTeamRep %s", this.villageCurrentTeamRep);
 			Log.info("villager's Home Village %s", VilMethods.getHomeVillageId(villager));
 			Log.info("isVillagerInHomeVillage %s", this.isVillagerInHomeVillage);
 			Log.info("noCurrentPlayer %s", this.noCurrentPlayer);
 			Log.info("isCurrentPlayer %s", this.isCurrentPlayer);
-			Log.info("currentPlayerVillageRep %s", this.currentPlayerVillageRep);
 		}
 
 	}
@@ -143,7 +156,7 @@ public class VilPlayerDeal implements Runnable{
 		VillagerPlayerDealMethods.updateArmourWeaponsAndFood(this.villager);
 		VilMethods.setPlayerId(this.player, this.villager);
 
-		if(vilTeam == null || this.village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam().isEmpty())
+		if(vilTeam == null || (this.village != null && this.village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam().isEmpty()))
 			setPlayerVillageFealtyIfWorthy();
 		//checkMutiny(); TODO
 
@@ -236,7 +249,7 @@ public class VilPlayerDeal implements Runnable{
 	{
 		//if(vilCap.getPlayerReputation(player.getUniqueID()) != 0) return;
 		if(this.villagerPlayerRep >= 5 && this.player.getTeam() != null)
-			VilMethods.setTeam(villager, this.player.getTeam().getName());
+			VilMethods.setTeam(this.villager, this.player.getTeam().getName());
 		if(this.isVillagerInHomeVillage)
 		{
 			if(this.wholeVillagePlayerRep < VillagerPlayerDealMethods.GOOD_THRESHOLD && this.wholeVillagePlayerRep >= VillagerPlayerDealMethods.BAD_THRESHOLD) return;
@@ -269,12 +282,12 @@ public class VilPlayerDeal implements Runnable{
 	private void checkAndTryToClaimVillageForTeam()
 	{
 		IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
-		if(this.player.getTeam() == null || villageCap.getTeam() != null) return;
+		if(this.player.getTeam() == null || !villageCap.getTeam().isEmpty()) return;
 
 		if(ConfigHandler.debug)
 			Log.info("looking into claiming for team .. %s", this.villager, this.player);
 
-		int teamReputation = VillagerPlayerDealMethods.updateVillageTeamReputation(village, player);
+		int teamReputation = VillagerPlayerDealMethods.updateVillageTeamReputation(village, player.getTeam());
 		
 		if(teamReputation <= VillagerPlayerDealMethods.HATED_THRESHOLD) return;
 		if(ConfigHandler.debug)
@@ -316,7 +329,7 @@ public class VilPlayerDeal implements Runnable{
 	 */
 	private int getWholeVillagePlayerRep()
 	{
-		if(this.village != null && this.isVillagerInHomeVillage)
+		if(this.isVillagerInHomeVillage)
 		{
 			return village.getPlayerReputation(this.player.getUniqueID());
 		}
@@ -335,21 +348,24 @@ public class VilPlayerDeal implements Runnable{
 
 	private int getCurrentPlayerWholeVillageRep()
 	{
-		if(!this.isCurrentPlayer)
+		if(this.isVillagerInHomeVillage)
 		{
-			if(this.vilsPlayerId != null)
-				return this.village.getPlayerReputation(this.vilsPlayerId);
-		}
-		else
-		{
-			return this.wholeVillagePlayerRep;
+			if(!this.isCurrentPlayer)
+			{
+				if(this.vilsPlayerId != null)
+					return this.village.getPlayerReputation(this.vilsPlayerId);
+			}
+			else
+			{
+				return this.wholeVillagePlayerRep;
+			}
 		}
 		return 0;
 	}
 
 	private int getVillageTeamRep()
 	{
-		if(this.village == null) return 0;
+		if(!this.isVillagerInHomeVillage) return 0;
 		return this.village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getCurrentTeamReputation();
 	}
 
