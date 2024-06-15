@@ -17,18 +17,11 @@ import net.minecraft.world.World;
 
 public final class ProjectileHelper {
 
-	//TODO
 	@Nullable
 	public static Pair<RayTraceResult, String> checkForFirendlyFire(EntityLivingBase entityHost, World world, float inaccuracy)
 	{
 		String debugString = "\nDEBUG FOR FRIENDLY FIRE! \n";
-		Entity entity = checkEntitiesNearby(entityHost, world);/*
-	    if(entity != null)
-	    {
-	    	debugString += "Entity: " + entity + "is too near to shooter. Should not even be able to get shot?!";
-	    	return new Pair<>(new RayTraceResult(entity), debugString);
-	    	//return new RayTraceResult(entity);
-	    }*/
+		Entity entity = checkEntitiesNearby(entityHost, world);
 	    
 		double y = entityHost.posY + entityHost.getEyeHeight();
 		double x = entityHost.posX;
@@ -38,9 +31,7 @@ public final class ProjectileHelper {
 	    double motionZ = MathHelper.cos(entityHost.getRotationYawHead() / 180.0F * (float) Math.PI)
 	            * MathHelper.cos(entityHost.rotationPitch / 180.0F * (float) Math.PI);
 	    double motionY = -MathHelper.sin(entityHost.rotationPitch / 180.0F * (float) Math.PI);
-	    //Original box to be .75 x .75 x .75
-	    //AxisAlignedBB axisalignedbb = new AxisAlignedBB(x - .375, y - .375, z - .375, x + .375, y + .375, z + .375);
-	    
+
 	    int range = ConfigHandler.friendlyFireSearchRange;
 	    Vec3d vec1 = new Vec3d(x, y, z);
 	    Vec3d vec2 = new Vec3d(x + (motionX * range), y + (motionY * range), z + (motionZ * range));
@@ -57,6 +48,7 @@ public final class ProjectileHelper {
 	    
 	    List<Entity> list = world.getEntitiesWithinAABBExcludingEntity(entityHost, axisalignedbb);
 	    
+	    //TODO DEBUG
 	    debugString += "    Entity Host: " + entityHost + "\n" +
 	    		"    x:" + x + "\n" +
 	    		"    y:" + y + "\n" +
@@ -70,28 +62,23 @@ public final class ProjectileHelper {
 	    		"    AABB for search Area:" + axisalignedbb + "\n" +
 	    		"    list in AABB:" + list + "\n" +
 	    		"    List data...." + "\n";
-	    //for(int i = 0; i < range; i++)
-	    //{
-    	//	list = world.getEntitiesWithinAABBExcludingEntity(entityHost, axisalignedbb);
-    	//	axisalignedbb = new AxisAlignedBB(x - sizeFactor, y - sizeFactor, z - sizeFactor, x + sizeFactor, y + sizeFactor, z + sizeFactor);
-    	//	vec1 = new Vec3d(x, y, z);
-    	//	x += motionX;
-    	//	y += motionY;
-    	//	z += motionZ;
-    	//	vec2 = new Vec3d(x, y, z);
     		
         for(Entity entity1 : list)
         {	
+        	//TODO DEBUG
         	debugString += "        Entity:" + entity1.toString() + "\n";
             if(entity1.canBeCollidedWith() && !entity1.noClip)
             {
             	double distance = entity1.getDistance(entityHost);
-                AxisAlignedBB axisalignedbb1 = entity1.getEntityBoundingBox().grow(sizeFactor * (distance / rangeDistance));
+            	double grow = Math.max(sizeFactor * (distance / rangeDistance), 0.4D);
+                AxisAlignedBB axisalignedbb1 = entity1.getEntityBoundingBox().grow(grow);
                 RayTraceResult raytraceresult1 = axisalignedbb1.calculateIntercept(vec1, vec2);
-                
+            	
+                //TODO DEBUG
                 debugString += "            can be collided & !noClip." + "\n" +
                 "            AABB used for calculate intercept:" + axisalignedbb1 + "\n" +
                 "            grow factor was:" + sizeFactor * (distance / rangeDistance) + "\n" +
+                "            grow var was:" + grow + "\n" +
                 "            RaytraceResult:" + raytraceresult1 + "\n";
                 
                 if(raytraceresult1 != null)
@@ -99,6 +86,7 @@ public final class ProjectileHelper {
                     double d7 = vec1.squareDistanceTo(raytraceresult1.hitVec);
                     if(d7 < d6 || d6 == 0.0D)
                     {
+                    	//TODO DEBUG
                     	debugString += "            If this is last entry for list entity above, then entity was made the result. \n";
                         entity = entity1;
                         d6 = d7;
@@ -106,14 +94,14 @@ public final class ProjectileHelper {
                 }
             }
         }
-	    //}
 	    if(entity != null)
 	    {
 	        raytraceresult = new RayTraceResult(entity);
 	    }
 	    
-	    return new Pair<>(raytraceresult, debugString);
 	    //return raytraceresult;
+    	//TODO DEBUG
+	    return new Pair<>(raytraceresult, debugString);
 	}
 
 	private static AxisAlignedBB getSearchAABB(double motionX, double motionZ, Vec3d vec1, Vec3d vec2, double sizeFactor) 

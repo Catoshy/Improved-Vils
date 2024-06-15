@@ -131,7 +131,10 @@ public class VillageCapability implements IVillageCapability{
 	@Override
 	public void setTeam(Team team)
 	{
-		this.currentTeam = team.getName();
+		if(team != null)
+			this.currentTeam = team.getName();
+		else
+			this.currentTeam = "";
 	}
 
 	@Override

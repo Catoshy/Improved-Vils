@@ -1,5 +1,7 @@
 package com.joshycode.improvedvils.entity.ai;
 
+import java.util.UUID;
+
 import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
@@ -32,8 +34,14 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 		if(this.villager.getEntityWorld().isRemote) return false;
 		
 		Village village = villager.getEntityWorld().getVillageCollection().getNearestVillage(new BlockPos(villager), 0);
+		UUID homeId = this.villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHomeVillageID();
+		if(village != null && homeId == null)
+		{
+			this.village = village;
+			return true;
+		}
 		if(this.villager.ticksExisted < 20 || village == null ||
-				(village.equals(this.village) && this.villager.getRNG().nextInt(500) != 0 && this.villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHomeVillageID() != null))
+				(village.equals(this.village) && this.villager.getRNG().nextInt(500) != 0))
 		{
 			return false;
 		}
@@ -70,11 +78,12 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 
 	private void setHomeIfSame(IImprovedVilCapability vilCap, IVillageCapability villageCap) 
 	{
-		if(vilCap.getTeam() == null || vilCap.getTeam().equals(villageCap.getTeam()))
+		if(vilCap.getTeam().isEmpty() || vilCap.getTeam().equals(villageCap.getTeam()))
 		{
 			if(ConfigHandler.debug)
 				Log.info("setting home village ID %s", villageCap.getUUID());
 			vilCap.setHomeVillageID(villageCap.getUUID());
+			vilCap.setTeam(villageCap.getTeam());
 		}
 	}
 }

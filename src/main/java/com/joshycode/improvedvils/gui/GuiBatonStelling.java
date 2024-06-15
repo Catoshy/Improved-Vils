@@ -18,11 +18,14 @@ import com.joshycode.improvedvils.network.VillagerListPacket.SetVillagersDuty;
 import com.joshycode.improvedvils.network.VillagerListPacket.StopVillagers;
 import com.joshycode.improvedvils.util.BatonDealMethods;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class GuiBatonStelling extends GuiScreen {
 
@@ -67,12 +70,12 @@ public class GuiBatonStelling extends GuiScreen {
 	private int platoon;
 	private int moveCompany;
 	private int movePlatoon;
-	private int messageCounter; 
+	private int messageCounter;
 	private boolean doSomething;
 	private boolean moveThosePicked;
 	private boolean pickMany;
 	private boolean initialized;
-	private long tick;
+	private boolean resetSear;
 	
 	public GuiBatonStelling(int selectedPlatoon) 
 	{
@@ -84,8 +87,8 @@ public class GuiBatonStelling extends GuiScreen {
 		this.initialized = false;
 		this.pickMany = false;
 		this.moveThosePicked = false;
+		this.resetSear = false;
 		this.movePickedButtons = new ArrayList<GuiButton>();
-		this.tick = -1;
 	}
 
 	@SuppressWarnings({ "serial" })
@@ -107,25 +110,7 @@ public class GuiBatonStelling extends GuiScreen {
 		this.guiLeft = (this.width - this.xSize) / 2;
         this.guiTop = (this.height - this.ySize) / 2;
                 
-        this.pickAllButton = new GuiButton(PICK_ALL, guiLeft + 4, guiTop + 22, 121, 12, "Pick All");
-        this.unpickAllButton = new GuiButton(UNPICK_ALL, guiLeft + 4, guiTop + 22, 121, 12, "Unpick All");
         this.pickManyButton = new GuiButton(PICK_MANY, guiLeft + 4, guiTop + 10, 121, 12, "Pick Many");
-    	this.rawMovePickedButton = new GuiButton(MOVE_SELECTED, guiLeft + 152, guiTop + 142, 72, 18, "Move Selected");
-    	this.dismissButton = new GuiButton(DISMISS_RU_SURE, guiLeft + 127, guiTop + 20, 64, 16, "Sure?");
-    	this.dismissButton.enabled = false;
-    	this.rawDismissButton = new GuiButton(DISMISS, guiLeft + 127, guiTop + 20, 64, 16, "Dismiss!");
-
-		this.movePickedButtons.addAll(new ArrayList<GuiButton>()
-		{
-			{
-				add(new GuiButton(MOVE_COMPANY_LESS, guiLeft + 158, guiTop + 136, 6, 12, "<"));
-				add(new GuiButton(MOVE_COMPANY_MORE, guiLeft + 176, guiTop + 136, 6, 12, ">"));
-				add(new GuiButton(MOVE_PLATOON_LESS, guiLeft + 158, guiTop + 160, 6, 12, "<"));
-				add(new GuiButton(MOVE_PLATOON_MORE, guiLeft + 176, guiTop + 160, 6, 12, ">"));
-				add(new GuiButton(MOVE, guiLeft + 200, guiTop + 154, 32, 12, "Move"));
-				add(new GuiButton(CANCEL_MOVE, guiLeft + 200, guiTop + 140, 32, 12, "Cancel"));
-			}
-		});
 		this.buttonList.addAll(new ArrayList<GuiButton>()
 		{
 			{
@@ -142,28 +127,23 @@ public class GuiBatonStelling extends GuiScreen {
 				add(new GuiButton(STOP, guiLeft + 127, guiTop + 110, 64, 16, "Stop!"));
 			}
 		});
-		this.buttonList.add(this.rawDismissButton);
+		addRawDismissButton();
+		this.buttonList.add(this.pickManyButton);
 		if(!this.moveThosePicked)
 		{
-			this.movePickedButtons.forEach(t -> {t.enabled = false;});
-			this.buttonList.add(this.rawMovePickedButton);
+			addRawMovePickedButton();
 		}
 		else
 		{
-			this.rawMovePickedButton.enabled = false;
-			this.buttonList.addAll(this.movePickedButtons);
+			addMovePickedButtons();
 		}
 		if(!this.pickMany)
 		{
-	        this.unpickAllButton.enabled = false;
-			this.buttonList.add(this.pickAllButton);
-			this.buttonList.add(this.pickManyButton);
+	        addPickAllButton();
 		}
 		else
 		{
-			this.pickManyButton.enabled = false;
-			this.buttonList.add(this.pickManyButton);
-			this.buttonList.add(this.unpickAllButton);
+			addUnpickAllButton();
 		}
 		
 		this.guiLeft = (this.width - this.xSize) / 2;
@@ -176,6 +156,7 @@ public class GuiBatonStelling extends GuiScreen {
     @Override
 	public void drawScreen(int mouseX, int mouseY, float partialTicks)
     {
+
     	this.hoveringWriting = null;
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         if(this.rollList != null)
@@ -212,8 +193,8 @@ public class GuiBatonStelling extends GuiScreen {
 		}
 		
         super.drawScreen(mouseX, mouseY, partialTicks);
-        
-        if(this.hoveringWriting != null)
+		
+		if(this.hoveringWriting != null)
 		{
             this.drawHoveringText(Lists.newArrayList(Splitter.on("\n").split(this.hoveringWriting)), mouseX, mouseY);
 		}
@@ -225,151 +206,198 @@ public class GuiBatonStelling extends GuiScreen {
         this.rollList.handleMouseInput();
     }
     
+    @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException
     {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
         this.rollList.mouseClicked(mouseX, mouseY, mouseButton);
+    	if(this.resetSear) return;
+    	if (mouseButton == 0)
+        {
+            for (int i = 0; i < this.buttonList.size(); ++i)
+            {
+                GuiButton guibutton = this.buttonList.get(i);
+
+                if (guibutton.mousePressed(this.mc, mouseX, mouseY))
+                {
+                    net.minecraftforge.client.event.GuiScreenEvent.ActionPerformedEvent.Pre event = new net.minecraftforge.client.event.GuiScreenEvent.ActionPerformedEvent.Pre(this, guibutton, this.buttonList);
+                    if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event))
+                        break;
+                    guibutton = event.getButton();
+                    this.selectedButton = guibutton;
+                    guibutton.playPressSound(this.mc.getSoundHandler());
+                    this.actionPerformed(guibutton);
+                    if (this.equals(this.mc.currentScreen))
+                        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.client.event.GuiScreenEvent.ActionPerformedEvent.Post(this, event.getButton(), this.buttonList));
+                    break;
+                }
+            }
+        }
     }
 
+    @Override
     protected void mouseReleased(int mouseX, int mouseY, int state)
     {
         super.mouseReleased(mouseX, mouseY, state);
         this.rollList.mouseReleased(mouseX, mouseY, state);
+        this.resetSear = false;
     }
 
     @Override
-    protected void actionPerformed(net.minecraft.client.gui.GuiButton button) throws IOException
+    protected void actionPerformed(GuiButton button) throws IOException
     {
-    	//TODO below works in preventing "double click" bug where overlapping buttons wont work on first click, but louder sound steadygoes.
-    	if(this.tick == this.mc.world.getWorldTime())
-    		return;
-    	else
-    		this.tick = this.mc.world.getWorldTime();
-    	if(button.enabled)
-    	{
-    		switch(button.id)
-    		{
-    			case PROVISION:
-    				this.doSomething = true;
-    				ImprovedVils.proxy.setProvisioningPlatoon(this.company * 10  + this.platoon, MarshalsBatonCapability.Provisions.PROVISIONS);
-    				this.mc.displayGuiScreen((GuiScreen)null);
-                    this.mc.setIngameFocus();
-    				break;
-    			case KIT:
-    				this.doSomething = true;
-    				ImprovedVils.proxy.setProvisioningPlatoon(this.company * 10 + this.platoon, MarshalsBatonCapability.Provisions.KIT);
-    				this.mc.displayGuiScreen((GuiScreen)null);
-                    this.mc.setIngameFocus();
-    				break;
-    			case COMPANY_LESS:
-		            this.company = this.company <= 0 ? 0 : this.company - 1;
-		            this.updatePlatoonInfo();
-		            break;
-    			case COMPANY_MORE:
-		        	this.company = this.company >= 4 ? 4 : this.company + 1;
-		            this.updatePlatoonInfo();
-		        	break;
-    			case PLATOON_LESS:
-    				this.platoon = this.platoon <= 0 ? 0 : this.platoon - 1;
-		            this.updatePlatoonInfo();
-    				break;
-    			case PLATOON_MORE:
-		        	this.platoon = this.platoon >= 9 ? 9 : this.platoon + 1;
-		            this.updatePlatoonInfo();
-		        	break;
-    			case DISMISS:
-    				this.buttonList.remove(this.rawDismissButton);
-    				this.rawDismissButton.enabled = false;
-    				this.dismissButton.enabled = true;
-    				this.buttonList.add(this.dismissButton);
-    				break;
-    			case DISMISS_RU_SURE:
-    				this.buttonList.remove(this.dismissButton);
-    				this.dismissButton.enabled = false;
-    				this.rawDismissButton.enabled = true;
-    				this.buttonList.add(this.rawDismissButton);
-    				this.dismissAll();
-    				break;
-    			case SET_ON_DUTY:
-    				this.updatePlatoonDuty(true);
-    				break;
-    			case SET_OFF_DUTY:
-    				this.updatePlatoonDuty(false);
-    				break;
-    			case FOLLOW_ME:
-    				this.platoonFollow();
-    				break;
-    			case GUARD_NOW:
-    				this.platoonGuard();
-    				break;
-    			case STOP:
-    				this.stopAll();
-    				break;
-    			case MOVE_SELECTED:
-    				this.moveThosePicked = true;
-    				this.buttonList.remove(this.rawMovePickedButton);
-    				this.rawMovePickedButton.enabled = false;
-    				this.movePickedButtons.forEach(t -> {t.enabled = true;});
-    				this.buttonList.addAll(this.movePickedButtons);
-    				break;
-    			case MOVE_COMPANY_LESS:
-    				this.moveCompany = this.moveCompany <= 0 ? 0 : this.moveCompany - 1;
-    				break;
-    			case MOVE_COMPANY_MORE:
-    				this.moveCompany = this.moveCompany >= 4 ? 4 : this.moveCompany + 1;
-    				break;
-    			case MOVE_PLATOON_LESS:
-    				this.movePlatoon = this.movePlatoon <= 0 ? 0 : this.movePlatoon - 1;
-    				break;
-    			case MOVE_PLATOON_MORE:
-    				this.movePlatoon = this.movePlatoon >= 9 ? 9 : this.movePlatoon + 1;
-    				break;
-    			case MOVE:
-    				this.changePlatoons();
-    				this.resetMoveButtons();
-    				break;
-    			case CANCEL_MOVE:
-    				this.resetMoveButtons();
-    				break;
-    			case PICK_MANY:
-    				this.pickMany = true;
-    				this.pickManyButton.enabled = false;
-    				this.buttonList.remove(this.pickAllButton);
-    				this.pickAllButton.enabled = false;
-    				this.unpickAllButton.enabled = true;
-    				this.buttonList.add(this.unpickAllButton);
-    				break;
-    			case PICK_ALL:
-    				this.pickMany = true;
-    				this.pickManyButton.enabled = false;
-    				this.rollList.selectAll();
-    				this.buttonList.remove(this.pickAllButton);
-    				this.pickAllButton.enabled = false;
-    				this.unpickAllButton.enabled = true;
-    				this.buttonList.add(this.unpickAllButton);
-    				break;
-    			case UNPICK_ALL:
-    				this.pickMany = false;
-    				this.pickManyButton.enabled = true;
-    				this.rollList.unselectAll();
-    				this.buttonList.remove(this.unpickAllButton);
-    				this.unpickAllButton.enabled = false;
-    				this.pickAllButton.enabled = true;
-    				this.buttonList.add(this.pickAllButton);
-    				break;
-    				
-    		}
-    	}
-    	super.actionPerformed(button);
+    	this.resetSear = true;
+		switch(button.id)
+		{
+			case PROVISION:
+				this.doSomething = true;
+				ImprovedVils.proxy.setProvisioningPlatoon(this.company * 10  + this.platoon, MarshalsBatonCapability.Provisions.PROVISIONS);
+				this.mc.displayGuiScreen((GuiScreen)null);
+                this.mc.setIngameFocus();
+				break;
+			case KIT:
+				this.doSomething = true;
+				ImprovedVils.proxy.setProvisioningPlatoon(this.company * 10 + this.platoon, MarshalsBatonCapability.Provisions.KIT);
+				this.mc.displayGuiScreen((GuiScreen)null);
+                this.mc.setIngameFocus();
+				break;
+			case COMPANY_LESS:
+	            this.company = this.company <= 0 ? 0 : this.company - 1;
+	            this.updatePlatoonInfo();	        
+	            break;
+			case COMPANY_MORE:
+	        	this.company = this.company >= 4 ? 4 : this.company + 1;
+	            this.updatePlatoonInfo();
+	        	break;
+			case PLATOON_LESS:
+				this.platoon = this.platoon <= 0 ? 0 : this.platoon - 1;
+	            this.updatePlatoonInfo();
+				break;
+			case PLATOON_MORE:
+	        	this.platoon = this.platoon >= 9 ? 9 : this.platoon + 1;
+	            this.updatePlatoonInfo();
+	        	break;
+			case DISMISS:
+				Minecraft.getMinecraft().addScheduledTask(new ChangeButtons(this, DISMISS));
+				break;
+			case DISMISS_RU_SURE:
+				Minecraft.getMinecraft().addScheduledTask(new ChangeButtons(this, DISMISS_RU_SURE));
+				break;
+			case SET_ON_DUTY:
+				this.updatePlatoonDuty(true);
+				break;
+			case SET_OFF_DUTY:
+				this.updatePlatoonDuty(false);
+				break;
+			case FOLLOW_ME:
+				this.platoonFollow();
+				break;
+			case GUARD_NOW:
+				this.platoonGuard();
+				break;
+			case STOP:
+				this.stopAll();
+				break;
+			case MOVE_SELECTED:
+				Minecraft.getMinecraft().addScheduledTask(new ChangeButtons(this, MOVE_SELECTED));
+				break;
+			case MOVE_COMPANY_LESS:
+				this.moveCompany = this.moveCompany <= 0 ? 0 : this.moveCompany - 1;
+				break;
+			case MOVE_COMPANY_MORE:
+				this.moveCompany = this.moveCompany >= 4 ? 4 : this.moveCompany + 1;
+				break;
+			case MOVE_PLATOON_LESS:
+				this.movePlatoon = this.movePlatoon <= 0 ? 0 : this.movePlatoon - 1;
+				break;
+			case MOVE_PLATOON_MORE:
+				this.movePlatoon = this.movePlatoon >= 9 ? 9 : this.movePlatoon + 1;
+				break;
+			case MOVE:
+				Minecraft.getMinecraft().addScheduledTask(new ChangeButtons(this, MOVE));
+				break;
+			case CANCEL_MOVE:
+				Minecraft.getMinecraft().addScheduledTask(new ChangeButtons(this, CANCEL_MOVE));
+				break;
+			case PICK_MANY:
+				Minecraft.getMinecraft().addScheduledTask(new ChangeButtons(this, PICK_MANY));
+				break;
+			case PICK_ALL:
+				Minecraft.getMinecraft().addScheduledTask(new ChangeButtons(this, PICK_ALL));
+				break;
+			case UNPICK_ALL:
+				Minecraft.getMinecraft().addScheduledTask(new ChangeButtons(this, UNPICK_ALL));
+				break;
+		}
     }
-
-	public void resetMoveButtons() 
-	{
-		this.moveThosePicked = false;
-		this.buttonList.removeAll(this.movePickedButtons);
-		this.buttonList.add(this.rawMovePickedButton);
-		this.rawMovePickedButton.enabled = true;
-	}
+    
+    @SideOnly(Side.CLIENT)
+    protected class ChangeButtons implements Runnable 
+    {
+		private GuiBatonStelling gui;
+    	private int taskCode;
+    	
+    	public ChangeButtons(GuiBatonStelling gui, int taskCode) 
+    	{
+			super();
+			this.gui = gui;
+			this.taskCode = taskCode;
+		}
+    	
+		@Override
+		public void run() 
+		{
+			if(Minecraft.getMinecraft().currentScreen != this.gui)
+				return;
+			switch(this.taskCode)
+			{
+				case DISMISS:
+					this.gui.addDismissButton();
+					this.gui.removeRawDismissButton();
+					break;
+				case DISMISS_RU_SURE:
+					this.gui.addRawDismissButton();
+					this.gui.removeDismissButton();
+					this.gui.dismissAll();
+					break;
+				case MOVE_SELECTED:
+					this.gui.moveThosePicked = true;
+					this.gui.addMovePickedButtons();
+					this.gui.removedRawMovePickedButton();
+					break;
+				case MOVE:	
+					this.gui.changePlatoons();
+					this.gui.moveThosePicked = false;
+					this.gui.addRawMovePickedButton();
+					this.gui.removeMovePickedButtons();
+					break;
+				case CANCEL_MOVE:
+					this.gui.moveThosePicked = false;
+					this.gui.addRawMovePickedButton();
+					this.gui.removeMovePickedButtons();
+					break;
+				case PICK_MANY:
+					this.gui.pickMany = true;
+					this.gui.pickManyButton.enabled = false;
+					this.gui.addUnpickAllButton();
+					this.gui.removePickAllButton();
+					break;
+				case PICK_ALL:
+					this.gui.pickMany = true;
+					this.gui.pickManyButton.enabled = false;
+					this.gui.rollList.selectAll();
+					this.gui.addUnpickAllButton();
+					this.gui.removePickAllButton();
+					break;
+				case UNPICK_ALL:
+					this.gui.pickMany = false;
+					this.gui.pickManyButton.enabled = true;
+					this.gui.rollList.unselectAll();
+					this.gui.addPickAllButton();
+					this.gui.removeUnpickAllButton();
+					break;
+			}
+		}
+    }
 	
 	private void dismissAll()
 	{
@@ -453,34 +481,88 @@ public class GuiBatonStelling extends GuiScreen {
 	{
 		this.hoveringWriting = hoveringWriting;
 	}
+	
+	//BUTTONS
+	private void addDismissButton()
+	{
+		
+    	this.dismissButton = new GuiButton(DISMISS_RU_SURE, guiLeft + 127, guiTop + 20, 64, 16, "Sure?");
+    	this.buttonList.add(this.dismissButton);
+	}
+	
+	private void removeDismissButton()
+	{
+		this.buttonList.remove(this.dismissButton);
+		this.dismissButton = null;
+	}
+
+	private void addRawDismissButton() 
+	{
+    	this.rawDismissButton = new GuiButton(DISMISS, guiLeft + 127, guiTop + 20, 64, 16, "Dismiss!");
+		this.buttonList.add(this.rawDismissButton);
+	}
+	
+	private void removeRawDismissButton() 
+	{
+		this.buttonList.remove(this.rawDismissButton);
+    	this.rawDismissButton = null;
+	}
+
+	private void addUnpickAllButton() 
+	{
+        this.unpickAllButton = new GuiButton(UNPICK_ALL, guiLeft + 4, guiTop + 22, 121, 12, "Unpick All");
+		this.buttonList.add(this.unpickAllButton);
+	}
+	
+	private void removeUnpickAllButton() 
+	{
+		this.buttonList.remove(this.unpickAllButton);
+        this.unpickAllButton = null;
+	}
+
+	private void addPickAllButton() 
+	{
+        this.pickAllButton = new GuiButton(PICK_ALL, guiLeft + 4, guiTop + 22, 121, 12, "Pick All");
+		this.buttonList.add(this.pickAllButton);
+	}
+	
+	private void removePickAllButton() 
+	{
+		this.buttonList.remove(this.pickAllButton);
+        this.pickAllButton = null;
+	}
+
+	private void addMovePickedButtons() 
+	{
+		this.movePickedButtons.addAll(new ArrayList<GuiButton>()
+		{
+			{
+				add(new GuiButton(MOVE_COMPANY_LESS, guiLeft + 158, guiTop + 136, 6, 12, "<"));
+				add(new GuiButton(MOVE_COMPANY_MORE, guiLeft + 176, guiTop + 136, 6, 12, ">"));
+				add(new GuiButton(MOVE_PLATOON_LESS, guiLeft + 158, guiTop + 160, 6, 12, "<"));
+				add(new GuiButton(MOVE_PLATOON_MORE, guiLeft + 176, guiTop + 160, 6, 12, ">"));
+				add(new GuiButton(MOVE, guiLeft + 200, guiTop + 154, 32, 12, "Move"));
+				add(new GuiButton(CANCEL_MOVE, guiLeft + 200, guiTop + 140, 32, 12, "Cancel"));
+			}
+		});
+		this.buttonList.addAll(this.movePickedButtons);
+	}
+	
+	private void removeMovePickedButtons()
+	{
+		this.buttonList.removeAll(this.movePickedButtons);
+		this.movePickedButtons.clear();
+	}
+
+	private void addRawMovePickedButton() 
+	{
+    	this.rawMovePickedButton = new GuiButton(MOVE_SELECTED, guiLeft + 152, guiTop + 142, 72, 18, "Move Selected"); 
+		this.buttonList.add(this.rawMovePickedButton);
+	}
+	
+	private void removedRawMovePickedButton() 
+	{
+		this.buttonList.remove(this.rawMovePickedButton);
+		this.rawMovePickedButton = null; 
+	}
 }
-
-/* Sigh...... Wish this worked
-public void drawTexturedModalRectWithWindow(int x, int y, int textureX, int textureY, int width, int height, int windowX, int windowY, int windowWidth, int windowHeight)
-{
-	GlStateManager.enableBlend();
-	GlStateManager.glBlendEquation(GL14.GL_FUNC_SUBTRACT);
-    GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-    
-    float f = 0.00390625F;
-    float f1 = 0.00390625F;
-    Tessellator tessellator = Tessellator.getInstance();
-    BufferBuilder bufferbuilder = tessellator.getBuffer();
-    bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-    bufferbuilder.pos((double)(x + 0), (double)(y + height), (double)this.zLevel).tex((double)((float)(textureX + 0) * 0.00390625F), (double)((float)(textureY + height) * 0.00390625F)).endVertex();
-    bufferbuilder.pos((double)(x + width), (double)(y + height), (double)this.zLevel).tex((double)((float)(textureX + width) * 0.00390625F), (double)((float)(textureY + height) * 0.00390625F)).endVertex();
-    bufferbuilder.pos((double)(x + width), (double)(y + 0), (double)this.zLevel).tex((double)((float)(textureX + width) * 0.00390625F), (double)((float)(textureY + 0) * 0.00390625F)).endVertex();
-    bufferbuilder.pos((double)(x + 0), (double)(y + 0), (double)this.zLevel).tex((double)((float)(textureX + 0) * 0.00390625F), (double)((float)(textureY + 0) * 0.00390625F)).endVertex();
-    tessellator.draw();
-    bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
-    bufferbuilder.
-    bufferbuilder.pos((double)(windowX + 0), (double)(windowY + windowHeight), (double)this.zLevel).color(1, 1, 1, 0.0F).endVertex();
-    bufferbuilder.pos((double)(windowX + windowWidth), (double)(windowY + windowHeight), (double)this.zLevel).color(1, 1, 1, 0.0F).endVertex();
-    bufferbuilder.pos((double)(windowX + windowWidth), (double)(windowY + 0), (double)this.zLevel).color(1, 1, 1, 0.0F).endVertex();
-    bufferbuilder.pos((double)(windowX + 0), (double)(windowY + 0), (double)this.zLevel).color(1, 1, 1, 0.0F).endVertex();
-    tessellator.draw();
-    
-    GlStateManager.glBlendEquation(GL14.GL_FUNC_ADD);
-	GlStateManager.disableBlend();
-
-}*/

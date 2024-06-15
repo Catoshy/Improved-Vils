@@ -208,25 +208,19 @@ public class GuiVillagerArm extends GuiContainer {
     {
     	if(this.dutyState == 1)
 		{
-			//this.buttonList.remove(setDutyButtons);
 			this.setDutyButtons.visible = false;
 			this.notDutyButtons.enabled = true;
 			this.notDutyButtons.visible = true;
-			//this.buttonList.add(notDutyButtons);
 			this.followState = 0;
 			this.guardState = 0;
 		}
 		else if (this.dutyState == 2)
 		{
-			//this.buttonList.remove(notDutyButtons);
-			this.notDutyButtons.visible = false; //TODO crash from null pntr, this method prolly called b4 init so notDutyButtons are unInited
+			this.notDutyButtons.visible = false;
 			this.setDutyButtons.visible = true;
-			//this.buttonList.add(setDutyButtons);
 		}
 		else
 		{
-			//this.buttonList.remove(notDutyButtons);
-			//this.buttonList.remove(setDutyButtons);
 			this.notDutyButtons.visible = false;
 			this.setDutyButtons.visible = false;
 		}

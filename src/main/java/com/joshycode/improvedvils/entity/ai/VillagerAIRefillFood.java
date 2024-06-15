@@ -38,7 +38,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-//TODO combine exactsame methods between this class AIRefillKit, and AICampaignMove into one parent class for readability
 public class VillagerAIRefillFood extends EntityAIGoFar {
 
 	private static final String refillCooldownInfo = ImprovedVils.MODID + ":refill";
@@ -93,7 +92,7 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 	private boolean isDoingSomethingMoreImportant()
 	{
 		EntityVillager villager = (EntityVillager) this.entityHost;
-		if((VilMethods.getCommBlockPos(villager) != null) || VilMethods.isOutsideHomeDist(villager) || VilMethods.isReturning(villager) || VilMethods.getMovingIndoors(villager))
+		if((VilMethods.getCommBlockPos(villager) != null) /*|| VilMethods.isOutsideHomeDist(villager)*/ || VilMethods.isReturning(villager) || VilMethods.getMovingIndoors(villager))
 			return true;
 		if(villager.isMating())
     		return true;

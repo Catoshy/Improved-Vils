@@ -69,12 +69,12 @@ public class VillagerPlayerDealMethods {
 	 * @param village in question
 	 * @param player who's reputation will be modified
 	 */
-	private static void updateVillagerPlayerReputation(EntityVillager entityIn, Village village, int nowtimeReputation, UUID player)
+	private static void updateVillagerPlayerReputation(EntityVillager entityIn, Village village, int newReputation, UUID player)
 	{
 		IImprovedVilCapability vilCap = entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 		
 		int villagerReferenceVillageReputation = vilCap.getHomeVillagePlayerReputationReference(player);
-		int villageReputationChange = nowtimeReputation - villagerReferenceVillageReputation;
+		int villageReputationChange = newReputation - villagerReferenceVillageReputation;
 		float playerReputation = vilCap.getPlayerReputation(player);
 		//If villager's perception of the player is higher than the mean it does not make sense to further raise his opinion
 		//given that his opinion is one of the sources of the better reputation. Lower reputations always come from outside
@@ -82,20 +82,28 @@ public class VillagerPlayerDealMethods {
 		//TODO 21 April 2024: I do not think the above is right. Lower reputation CAN come from villager experience, and individual
 		//reputation changes are not done until AFTER the whole village has been tallied.
 		//TODO 26 April 2024: I changed my mind. Whether or not lower rep comes from vill experience, overall enthusiasm for the player
-		//wouldn't really go higher just because miulder enthusiasm is reflected by other villagers. Whereas bad rep would harm his idea of
+		//wouldn't really go higher just because milder enthusiasm is reflected by other villagers. Whereas bad rep would harm his idea of
 		//the player.
 		//ADD 2: maybe just punish the player. Getting good reputation creates a domino effect if it effects the vill's personal. 
 		//TODO 27 April: domino works both ways. idk, just update vill reference.
-		//if(/*nowtimeReputation > playerReputation ||*/ villageReputationChange < 0)
-		//{
-		//	Log.info("nowtimeReputation:" + nowtimeReputation + ", villagerReferenceVillageReputation:" + villagerReferenceVillageReputation + 
-		//		", villageReputationChange:" +  villageReputationChange + ", playerReputation:" + playerReputation);
-		//	vilCap.setPlayerReputation(player, playerReputation + villageReputationChange, nowtimeReputation);
-		//}
-		//else
-		//{
-			vilCap.setPlayerReputation(player, playerReputation, nowtimeReputation);
-		//}
+		if(newReputation > playerReputation || villageReputationChange < 0)
+		{
+			if(ConfigHandler.debug)
+				Log.info("newReputation:" + newReputation + ", villagerReferenceVillageReputation:" + villagerReferenceVillageReputation + 
+						", villageReputationChange:" +  villageReputationChange + ", playerReputation:" + playerReputation);
+			vilCap.setPlayerReputation(player, playerReputation + villageReputationChange, newReputation);
+		}
+		else
+		{
+			vilCap.setPlayerReputation(player, playerReputation, newReputation);
+		}
+	}
+	
+	private static void setVillagerReferenceReputation(EntityVillager entityIn, Village village, int referenceReputation, UUID player) 
+	{
+		IImprovedVilCapability vilCap = entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+		float playerReputation = vilCap.getPlayerReputation(player);
+		vilCap.setPlayerReputation(player, playerReputation, referenceReputation);
 	}
 
 	public static void updateFromVillageReputation(EntityVillager villager, Village village)
@@ -104,24 +112,42 @@ public class VillagerPlayerDealMethods {
 		IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
 		if(!isVillagerInHomeVillage(villageCap.getUUID(), vilCap.getHomeVillageID())) return;
 
-		if(villageCap.getTeam() != null && !villageCap.getTeam().equals(vilCap.getTeam()))
+		if(!villageCap.getTeam().equals(vilCap.getTeam()))
 		{
-			vilCap.setTeam(villageCap.getTeam());
+			VilMethods.setTeam(villager, villageCap.getTeam());
 		}
 		for(UUID playerId : vilCap.getKnownPlayers())
 		{
 			int playerReputation = village.getPlayerReputation(playerId);
 			if(playerReputation > 5 || playerReputation < 0 || vilCap.getPlayerReputation(playerId) > 15F)
 			{
-				updateVillageReputationFromMean(villager.getEntityWorld(), village, playerId);
+				List<EntityVillager> population = getVillagePopulation(village, villager.getWorld());
+				int updateReputation = getVillageReputationFromMean(village, playerId, population) ;
+				updateVillageReputation(villager.getEntityWorld(), village, playerId, updateReputation, population);
+				
 			}
 		}
+		updateVillageTeamReputation(village, villager.getEntityWorld().getScoreboard().getTeam(vilCap.getTeam()));
 	}
 
-	public static void updateVillageReputationFromMean(World world, Village village, UUID player)
+	public static void updateVillageReputation(World world, Village village, UUID player, int updateReputation, List<EntityVillager> population)
 	{
-		//Get villagers at home here
-		List<EntityVillager> population = getVillagePopulation(village, world);
+		for(EntityVillager entity : population)
+		{
+			//Update villager's opinion grounded on village reputation
+			updateVillagerPlayerReputation(entity, village, updateReputation, player);
+		}
+		
+		//Now that villagers' opinion has been updated, get a new average and use that as a reference, so the villagers' opinions don't keep rising or falling.
+		int newReferenceReputation = getVillageReputationFromMean(village, player, population);
+		for(EntityVillager entity : population)
+		{
+			setVillagerReferenceReputation(entity, village, newReferenceReputation, player);
+		}
+	}
+	
+	private static int getVillageReputationFromMean(Village village, UUID player, List<EntityVillager> population) 
+	{
 		double sumReputation = 0;
 		int nowtimeReputation = village.getPlayerReputation(player);
 		
@@ -132,32 +158,27 @@ public class VillagerPlayerDealMethods {
 			sumReputation +=  vilCap.getPlayerReputation(player);
 		}
 		//Change the village reputation to reflect the average villager's opinion
-		int difference = (int) (sumReputation/population.size()) - nowtimeReputation;
+		int newReputation = (int) (sumReputation / population.size());
+		int difference = newReputation - nowtimeReputation;
 		village.modifyPlayerReputation(player, difference);
-		
-		for(EntityVillager entity : population)
-		{
-			//Update villager's opinion grounded on village reputation
-			updateVillagerPlayerReputation(entity, village, nowtimeReputation, player);
-		}
+		return newReputation;
 	}
 	
-	public static int updateVillageTeamReputation(Village village, EntityPlayer attackingPlayer) 
+	public static int updateVillageTeamReputation(Village village, Team attackingPlayerTeam) 
 	{
 		IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
 		
-		if(villageCap.getTeam() == null || attackingPlayer.getTeam() == null) return 0;
+		if(villageCap.getTeam().isEmpty() || attackingPlayerTeam == null) return 0;
 		
 		boolean evilPlayer = false;
 		float sum = 0;
 		int denom = 0;
 		
-		for (String playerUsername : attackingPlayer.getTeam().getMembershipCollection()) 
+
+		for (String playerUsername : attackingPlayerTeam.getMembershipCollection()) 
 		{
 			@SuppressWarnings("deprecation")
-			int reputation = village.getPlayerReputation(playerUsername); /* Must test multiplayer TODO*/
-			if(ConfigHandler.debug)
-				Log.info("Deprecated methods?! Village reputation by this String usrname is  %s", reputation);
+			int reputation = village.getPlayerReputation(playerUsername);
 			if(reputation < VillagerPlayerDealMethods.EVIL)
 			{
 				evilPlayer = true;
@@ -171,7 +192,7 @@ public class VillagerPlayerDealMethods {
 		{	
 			return VillagerPlayerDealMethods.HATED_THRESHOLD;
 		}
-		villageCap.setTeamReputation(attackingPlayer.getTeam(), teamReputation);
+		villageCap.setTeamReputation(attackingPlayerTeam, teamReputation);
 		return teamReputation;
 	}
 
@@ -312,6 +333,7 @@ public class VillagerPlayerDealMethods {
 	{
 		if(ConfigHandler.debug)
 			Log.info("closing out inv changed listener %s", entity);
+		if(entity.isDead) return;
 		entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setInvListener(false);
 	}
 
@@ -323,10 +345,7 @@ public class VillagerPlayerDealMethods {
 	public static void villageBadReputationChange(World entityWorld, Village village, EntityPlayer attackingPlayer)
 	{
 		int villageReputation = village.getPlayerReputation(attackingPlayer.getUniqueID());
-		if(villageReputation < 0)
-		{
-			villageReputationChange(entityWorld, village, attackingPlayer, villageReputation);
-		}
+		villageReputationChange(entityWorld, village, attackingPlayer, villageReputation);
 	}
 	
 	public static void villageGoodReputationChange(World entityWorld, Village village, EntityPlayer player)
@@ -335,7 +354,7 @@ public class VillagerPlayerDealMethods {
 		if(ConfigHandler.debug)
 			Log.info("Player is is null? %s", player.getTeam() == null);
 		String villageTeam = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam();
-		if(player.getTeam() == null || villageTeam == null || player.getTeam().getName().equals(villageTeam))
+		if(player.getTeam() == null || villageTeam.isEmpty() || player.getTeam().getName().equals(villageTeam))
 		{
 			villageReputationChange(entityWorld, village, player, villageReputation);
 		}
@@ -343,20 +362,22 @@ public class VillagerPlayerDealMethods {
 
 	private static void villageReputationChange(World entityWorld, Village village, EntityPlayer player, int villageReputation)
 	{
+		if(ConfigHandler.debug)
+			Log.info("villageReputationChange, villageReputation is %s", villageReputation);
 		List<EntityVillager> population = getVillagePopulation(village, entityWorld);
 		
 		if(villageReputation < 0 || villageReputation > 5)
 		{
-			updateVillageReputationFromMean(entityWorld, village, player.getUniqueID());
+			updateVillageReputation(entityWorld, village, player.getUniqueID(), villageReputation, population);
 		}
-		int villageTeamReputation = updateVillageTeamReputation(village, player);
+		int villageTeamReputation = updateVillageTeamReputation(village, player.getTeam());
 		if(player.getTeam() != null && player.getTeam().getName().equals(village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).getTeam()))
 		{	
 			if(villageTeamReputation < HATED_THRESHOLD)
 			{
 				for(EntityVillager villager : population)
 				{
-					villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setMutinous(false).setTeam("");
+					VilMethods.setTeam(villager, "");
 				}
 				village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null).setTeam(null);
 			}
@@ -383,9 +404,8 @@ public class VillagerPlayerDealMethods {
 		
 		IVillageCapability villageCap =  village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
 		vilCap.setHomeVillageID(villageCap.getUUID());
-		//TODO testing needed, seems to make more sense!
 		if(/*vilCap.getTeam() != null &&*/ entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()) != null)
-			vilCap.setTeam(villageCap.getTeam());
+			VilMethods.setTeam(entity, villageCap.getTeam());
 	}
 
 	public static void updateArmourWeaponsAndFood(EntityVillager entity)

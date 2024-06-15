@@ -29,7 +29,7 @@ public abstract class VillagerPredicate<T extends Entity> implements Predicate<T
         {
 			if((!(potentialEnemy instanceof EntityVillager) && !(potentialEnemy instanceof EntityPlayer)) || potentialEnemy.isEntityEqual(this.taskOwner)) return false;
 			
-			String team = null;
+			String team = "";
 			IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 			
 			if(potentialEnemy instanceof EntityVillager)
@@ -43,22 +43,20 @@ public abstract class VillagerPredicate<T extends Entity> implements Predicate<T
 				team = ((EntityPlayer) potentialEnemy).getTeam().getName();
 			}
 			
-			return team == null || taskOwnerCapability.getTeam() == null || taskOwnerCapability.getTeam().equals(team);
+			return team.isEmpty() || taskOwnerCapability.getTeam().isEmpty() || taskOwnerCapability.getTeam().equals(team);
         }
 	}
 	
-	public static class EnemyVillagerAttackPredicate<T extends Entity> extends VillagerPredicate<T> {
+	public static class EnemyVillagerAttackPredicate<T extends EntityVillager> extends VillagerPredicate<T> {
 	
 		protected EnemyVillagerAttackPredicate(EntityVillager taskOwner) { super(taskOwner); }
 		
 		@Override
-		public boolean apply(@Nullable T potentialEnemyVil)
+		public boolean apply(T potentialEnemyVil)
         {
-			if(!(potentialEnemyVil instanceof EntityVillager) || potentialEnemyVil.isEntityEqual(this.taskOwner)) return false;
-
 			IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-			IImprovedVilCapability predCapability = potentialEnemyVil.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-			return predCapability.getTeam() != null && taskOwnerCapability.getTeam() != null && !taskOwnerCapability.getTeam().equals(predCapability.getTeam());
+			IImprovedVilCapability potentCapability = potentialEnemyVil.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+			return !potentCapability.getTeam().isEmpty() && !taskOwnerCapability.getTeam().isEmpty() && !taskOwnerCapability.getTeam().equals(potentCapability.getTeam());
 	 	}
 	}
 	
@@ -72,7 +70,7 @@ public abstract class VillagerPredicate<T extends Entity> implements Predicate<T
 			if(!(entity instanceof EntityPlayer)) return false;
 			
 			IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-			return taskOwnerCapability.getTeam() != null && entity.getTeam() != null && !taskOwnerCapability.getTeam().equals(entity.getTeam().getName()) && checkPlayerRelations(taskOwnerCapability, (EntityPlayer) entity);
+			return !taskOwnerCapability.getTeam().isEmpty() && entity.getTeam() != null && !taskOwnerCapability.getTeam().equals(entity.getTeam().getName()) && checkPlayerRelations(taskOwnerCapability, (EntityPlayer) entity);
         }
 		 
 		private boolean checkPlayerRelations(IImprovedVilCapability taskOwnerCapability, EntityPlayer player)

@@ -1,2 +1,8 @@
 item.improvedvils.draft_writ.name=Draft Writ
 item.improvedvils.marshals_baton.name=Field Marshal's Baton
+key.marshal.platoon+=Platoon Select Up
+key.marshal.platoon-=Platoon Select Down
+key.marshal.company+=Company Select Up
+key.marshal.company-=Company Select Down
+key.marshal.baton_gui=Open Marshal's Baton Command GUI
+Improvedvils.keybinds=Improved Villagers

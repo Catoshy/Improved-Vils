@@ -47,8 +47,6 @@ public class BatonSelectData implements IMessage {
 		@Override
 		public IMessage onMessage(BatonSelectData message, MessageContext ctx) 
 		{
-			if(ConfigHandler.debug)
-				Log.info("received packet at client side for baton selection data");
 			ImprovedVils.proxy.setHUDinfo(message.platoon);
 			return null;
 		}

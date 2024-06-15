@@ -17,6 +17,7 @@ import com.joshycode.improvedvils.network.MarshalKeyEvent;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilGuiQuery;
 import com.joshycode.improvedvils.network.VilStateQuery;
+import com.joshycode.improvedvils.network.VilTeamSync;
 import com.joshycode.improvedvils.renderer.LayerHeldItemNonBiped;
 import com.joshycode.improvedvils.renderer.ModelBipedVillager;
 import com.joshycode.improvedvils.renderer.RenderBullet;
@@ -270,7 +271,7 @@ public class ClientProxy extends CommonProxy {
 	{
 		return ctx.side.isClient() ? Minecraft.getMinecraft().player : super.getPlayerEntity(ctx);
 	}
-
+	
 	public static void close(int vilId)
 	{
 		NetWrapper.NETWORK.sendToServer(new VilStateQuery(vilId, true));

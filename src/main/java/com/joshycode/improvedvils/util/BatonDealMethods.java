@@ -56,7 +56,8 @@ public class BatonDealMethods {
 			info[2] = cap.getGuardBlockPos() != null;
 			info[3] = cap.getFoodStorePos() != null;
 			info[4] = cap.getKitStorePos() != null;
-			Log.info("food store = " + cap.getFoodStorePos() + " kit store = " + cap.getKitStorePos(), (Object[])null);
+			if(ConfigHandler.debug)
+				Log.info("Villager Capability Info Append-Map: food store = " + cap.getFoodStorePos() + " kit store = " + cap.getKitStorePos(), (Object[])null);
 			hungerInfo = (int) Math.max(1F, InventoryUtil.getFoodSaturation(villager.getVillagerInventory()) /.6F / ConfigHandler.dailyBread);
 			if(cap.getHungry())
 				hungerInfo = 0;

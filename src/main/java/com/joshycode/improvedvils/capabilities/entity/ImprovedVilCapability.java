@@ -263,7 +263,8 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	@Override
 	public IImprovedVilCapability setKitStore(BlockPos pos) 
 	{ 
-		Log.info("setting Kits store pos in cap, %s", pos);
+		if(ConfigHandler.debug)
+			Log.info("setting Kits store pos in cap, %s", pos);
 		this.kitStorePos = pos; 
 		return this;
 	}
@@ -295,15 +296,11 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	{
 		if(this.playerReputations.get(uniqueID) != null)
 		{
-			//if(ConfigHandler.debug)//TODO
-			//	Log.info("changing reputation for player in capability, known player " + uniqueID + " by %s", f);
 			this.playerReputations.get(uniqueID).setLeft(MathHelper.clamp(f, -30, 40.5f));
 			this.playerReputations.get(uniqueID).setRight(MathHelper.clamp(i, -30, 10));
 		}
 		else
 		{
-			//if(ConfigHandler.debug)
-			//	Log.info("changing reputation for player in capability, unk player " + uniqueID + " by %s", f);
 			MutablePair<Float, Integer> pair = new MutablePair<>();
 			pair.setLeft(MathHelper.clamp(f, -30, 40.5f));
 			pair.setRight(MathHelper.clamp(i, -30, 10));

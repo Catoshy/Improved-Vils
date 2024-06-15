@@ -23,6 +23,7 @@ public class EntityBullet extends EntityThrowable {
 	{
 		super(worldIn);
 		this.damageName = "Villager's Bullet";
+		//TODO Friendly-fire debug
 		this.debugInfo = "";
 		this.lowCoef = 0;
 		this.highCoef = 0;
@@ -48,9 +49,10 @@ public class EntityBullet extends EntityThrowable {
 	private double halfWidthInMeter;
 	private double speed;
 	
+	//TODO Friendly-fire debug
 	private final String debugInfo;
 
-	public EntityBullet(World worldIn, EntityLivingBase throwerIn, RangeAttackEntry entry, float accuracyModifier, String damageName, String debugInfo) 
+	public EntityBullet(World worldIn, EntityLivingBase throwerIn, RangeAttackEntry entry, float accuracyModifier, String damageName, String debugInfo)
 	{
 		super(worldIn, throwerIn);
         this.setSize(.1F, .1F);
@@ -62,15 +64,14 @@ public class EntityBullet extends EntityThrowable {
 		this.supersonicStartVal = this.highCoef * 1/Math.pow(TRANS_SONIC_BOUND, this.highCoef);
         this.ignoreEntity = throwerIn;
         this.damageName = damageName;
-        //TODO
+        //TODO Friendly-fire debug
         this.debugInfo = debugInfo;
-        //TODO
         setLocationAndAngles(throwerIn.posX, throwerIn.posY + throwerIn.getEyeHeight(), throwerIn.posZ, throwerIn.rotationYawHead,
         		throwerIn.rotationPitch);
         this.posX -= MathHelper.cos(this.rotationYaw / 180.0F * (float) Math.PI) * 0.1;
         this.posZ -= MathHelper.sin(this.rotationYaw / 180.0F * (float) Math.PI) * 0.1;
         setPosition(posX, posY, posZ);
-        this. motionX = -MathHelper.sin(this.rotationYaw / 180.0F * (float) Math.PI)
+        this.motionX = -MathHelper.sin(this.rotationYaw / 180.0F * (float) Math.PI)
                 * MathHelper.cos(this.rotationPitch / 180.0F * (float) Math.PI);
         this.motionZ = MathHelper.cos(this.rotationYaw / 180.0F * (float) Math.PI)
                 * MathHelper.cos(this.rotationPitch / 180.0F * (float) Math.PI);
@@ -177,6 +178,7 @@ public class EntityBullet extends EntityThrowable {
      */
     protected boolean onEntityHit(Entity entity) 
     {
+    	//TODO Friendly-Fire Debug
     	if(entity instanceof EntityVillager)
     		Log.info(this.debugInfo + "\n    Shot Entity:" + entity);
         entity.attackEntityFrom(causeImpactDamage(entity, getThrower()), getImpactDamage());
