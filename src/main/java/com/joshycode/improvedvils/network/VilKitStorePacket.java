@@ -5,12 +5,13 @@ import java.util.Set;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
@@ -58,15 +59,10 @@ public class VilKitStorePacket extends BlockPosPacket implements IMessage {
 			{
 				EntityPlayerMP player = ctx.getServerHandler().player;
 				WorldServer world = ctx.getServerHandler().player.getServerWorld();
-				ItemStack stack;
-				if(player.getHeldItemMainhand().getItem() == CommonProxy.ItemHolder.BATON)
-					stack = player.getHeldItemMainhand();
-				else if(player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
-					stack = player.getHeldItemOffhand();
-				else
+				if(player.getHeldItemMainhand().getItem() != CommonProxy.ItemHolder.BATON && player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
 					return;
 				
-				IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+				IMarshalsBatonCapability cap = player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 				if(world.getBlockState(message.pos).getBlock().hasTileEntity(world.getBlockState(message.pos)))
 				{
 					if(world.getTileEntity(message.pos) != null)
@@ -76,8 +72,8 @@ public class VilKitStorePacket extends BlockPosPacket implements IMessage {
 						int prevSelectedUnit = cap.selectedUnit();
 						cap.setPlatoon(message.provisioningUnit / 10, message.provisioningUnit % 10);
 						cap.setPlatoonKitStore(message.pos);
-						Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
-						for(Entity e : villagers)
+						Set<EntityVillager> villagers = ImprovedVils.proxy.getEntitiesByUUID(EntityVillager.class, cap.getVillagersSelected(), world);
+						for(EntityVillager e : villagers)
 						{
 							if(ConfigHandler.debug)
 								Log.info("Kit Store for villager ... %s", e.getUniqueID());

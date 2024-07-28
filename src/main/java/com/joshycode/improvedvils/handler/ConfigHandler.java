@@ -174,13 +174,43 @@ public class ConfigHandler {
 		gunConfigReadme.close();
 	}
 	
-	public static boolean readJson(Gson gson, File child) throws FileNotFoundException
+	public static boolean readJson(Gson gson, File child) throws FileNotFoundException, JsonParseException
 	{
-		boolean flag;
-		flag = true;
+		boolean flag = true;
 		JsonReader jsonReader = new JsonReader(new FileReader(child));
 		Type type = new TypeToken<Map<WeaponBrooksData, ArrayList<RangeAttackEntry>>>(){}.getType();
 		ConfigHandler.configuredGuns = gson.fromJson(jsonReader, type);
+		boolean flag1 = false;
+		for(Map.Entry<WeaponBrooksData, ArrayList<RangeAttackEntry>> entry : configuredGuns.entrySet())
+		{
+			if(entry.getKey() == null)
+			{
+				flag1 = true;
+				break;
+			}
+			if(entry.getValue() == null || entry.getValue().isEmpty())
+			{
+				flag1 = true;
+				break;
+			}	
+			for(RangeAttackEntry rangeEntry : entry.getValue())
+			{
+				if(rangeEntry == null)
+				{
+					flag1 = true;
+					break;
+				}
+				if(rangeEntry.ballisticData == null)
+				{
+					flag1 = true;
+					break;
+				}
+			}
+		}
+		if(flag1)
+		{
+			throw new JsonParseException("Null Values obtained from Json");
+		}
 		return flag;
 	}
 

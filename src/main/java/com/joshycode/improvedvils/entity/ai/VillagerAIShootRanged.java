@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -30,6 +31,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIBase;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
@@ -98,30 +100,38 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	@Override
 	public boolean shouldExecute()
 	{
-		if((VilMethods.getCommBlockPos(this.entityHost) != null) || VilMethods.isOutsideHomeDist(this.entityHost) || VilMethods.isReturning(this.entityHost) || VilMethods.isRefillingFood(this.entityHost))
-			return false;
-		if(VilMethods.getMovingIndoors(this.entityHost))
-			return false;
-		if(this.entityHost.isMating())
-    		return false;
-		if(VilMethods.getFollowing(this.entityHost) && isDistanceTooGreat())
-			return false;
-		this.weaponData = villagerGunEntryForItems();
-		if(this.weaponData == null)
-			return false;
-		if(this.entityHost.getAttackTarget() == null)
-			return false;
-		EntityLivingBase entitylivingbase = this.entityHost.getAttackTarget();
-		
-		if(entitylivingbase == null || (CommonProxy.RANGE_BLACKLIST.contains(entitylivingbase.getClass()) && this.weaponData.meleeInRange)
-				|| (this.entityHost.getDistanceSq(entitylivingbase) < 8 && this.weaponData.meleeInRange))
+		if(VilMethods.getCommBlockPos(this.entityHost) != null
+				|| VilMethods.isOutsideHomeDist(this.entityHost) 
+				|| VilMethods.isReturning(this.entityHost) 
+				|| VilMethods.isRefillingFood(this.entityHost)
+				|| VilMethods.getMovingIndoors(this.entityHost)
+				|| this.entityHost.isMating()
+				|| (VilMethods.getFollowing(this.entityHost) && isDistanceTooGreat()))
 		{
 			return false;
 		}
 		
+		this.weaponData = villagerGunEntryForItems();
+		if(this.weaponData == null || this.entityHost.getAttackTarget() == null)
+			return false;
+	
+		EntityLivingBase entitylivingbase = this.entityHost.getAttackTarget();
+		if(checkIfMelee(entitylivingbase))
+			return false;
+		
 		this.setAttackRange();
 		this.attackTarget = entitylivingbase;
 		return true;
+	}
+
+	private boolean checkIfMelee(EntityLivingBase entitylivingbase) 
+	{
+		boolean hasBlacklist = CommonProxy.RANGE_BLACKLIST.contains(entitylivingbase.getClass()) 
+												&& this.weaponData.meleeInRange;
+		boolean isCloseEnough = this.entityHost.getDistanceSq(entitylivingbase) < 16 
+												&& this.weaponData.meleeInRange
+												&& this.rangedAttackTime > 20;
+		return hasBlacklist || isCloseEnough;
 	}
 	
 	private void setAttackRange() 
@@ -165,7 +175,10 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		Map<Item, Integer> inInventory = InventoryUtil.getItemStacksInInventory(this.entityHost.getVillagerInventory(), entry.getConsumables());
 		if(inInventory != null)
 		{
-			InventoryUtil.consumeItems(this.entityHost.getVillagerInventory(), inInventory, entry.getConsumables());
+			Set<ItemStack> itemsToSpill = InventoryUtil.consumeItems(this.entityHost.getVillagerInventory(), inInventory, entry.getConsumables());
+			itemsToSpill.forEach(stack -> {
+				this.entityHost.entityDropItem(stack, this.entityHost.getEyeHeight());
+				});
 			return true;
 		}
 		return false;
@@ -210,9 +223,9 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		{
 			getToTarget(movementSpeed);
 		}
-		this.entityHost.getLookHelper().setLookPositionWithEntity(this.attackTarget, 30.0F, 55.0F);
 		float f;
-		
+		this.entityHost.getLookHelper().setLookPositionWithEntity(this.attackTarget, 30.0F, 55.0F);
+
 		//HEAD DIRECTION DEBUG TODO
 		this.recordHeadFacing();
 		
@@ -318,7 +331,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
     {
 		EntityBullet bullet = new EntityBullet(this.entityHost.getEntityWorld(), this.entityHost, entry, f, "Villager's Shot", debugString2);
 		this.entityHost.getEntityWorld().spawnEntity(bullet);
-		NetWrapper.NETWORK.sendToAllAround(new GunFiredPacket(this.entityHost.getEntityId()), new TargetPoint(this.entityHost.dimension, this.entityHost.posX, this.entityHost.posY, this.entityHost.posZ, 124));
+		NetWrapper.NETWORK.sendToAllAround(new GunFiredPacket(this.entityHost.getEntityId(), this.getParticleData()), new TargetPoint(this.entityHost.dimension, this.entityHost.posX, this.entityHost.posY, this.entityHost.posZ, 124));
 		this.entityHost.playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 2.0F, .05F);
 		if(this.shiftInLastFive() && ConfigHandler.debug)
 		{
@@ -342,8 +355,19 @@ public class VillagerAIShootRanged extends EntityAIBase {
 			EntityBullet bullet = new EntityBullet(this.entityHost.getEntityWorld(), this.entityHost, entry, f + 5.0F, "Villager's Shot", debugString2);
 			this.entityHost.getEntityWorld().spawnEntity(bullet);
 		}
-		NetWrapper.NETWORK.sendToAllAround(new GunFiredPacket(this.entityHost.getEntityId()), new TargetPoint(this.entityHost.dimension, this.entityHost.posX, this.entityHost.posY, this.entityHost.posZ, 124));
+		NetWrapper.NETWORK.sendToAllAround(new GunFiredPacket(this.entityHost.getEntityId(), this.getParticleData()), new TargetPoint(this.entityHost.dimension, this.entityHost.posX, this.entityHost.posY, this.entityHost.posZ, 124));
 		this.entityHost.playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 3.0F, 2.0F);
+	}
+
+	private double[] getParticleData() 
+	{
+		double[] data = new double[6];
+		data[0] = this.entityHost.posX;
+		data[1] = this.entityHost.posY;
+		data[2] = this.entityHost.posZ;
+		data[3] = this.entityHost.rotationYawHead;
+		data[4] = this.entityHost.rotationPitch;
+		return data;
 	}
 
 	public void attackEntityWithRangedAttack(EntityLivingBase target, float distanceFactor)
@@ -446,9 +470,15 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		}
 		return null;
     }
-    
+
+    //TODO
 	private boolean notLookingAtTarget() 
 	{
+		if(this.attackTarget != this.entityHost.getAttackTarget())
+		{
+			this.attackTarget = this.entityHost.getAttackTarget();
+			return true;
+		}
 		double diffX = this.attackTarget.posX - this.entityHost.posX;
 		double diffZ = this.attackTarget.posZ - this.entityHost.posZ;
         float attackerYaw = (float)(MathHelper.atan2(diffZ, diffX) * (180D / Math.PI)) - 90.0F;
@@ -465,7 +495,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		//RayTraceResult lineOfSight = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy);
 		//Friendly-fire debug
     	//TODO DEBUG
-		Pair<RayTraceResult, String> pair = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy);
+		Pair<RayTraceResult, String> pair = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy, ConfigHandler.friendlyFireSearchRange);
 		RayTraceResult lineOfSight = pair.a;
 		this.debugString = pair.b;
 		if(lineOfSight != null && lineOfSight.typeOfHit == RayTraceResult.Type.ENTITY && this.friendlyFirePredicate.apply(lineOfSight.entityHit))

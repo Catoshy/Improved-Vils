@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability;
 import com.joshycode.improvedvils.network.BatonSelectData.BatonSelectServerData;
 import com.joshycode.improvedvils.network.BlankNotePacket;
 import com.joshycode.improvedvils.network.NetWrapper;
@@ -27,7 +27,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class GuiBatonStelling extends GuiScreen {
+public class GuiBaton extends GuiScreen {
 
     private static final int STOP = 110;
 	private static final int GUARD_NOW = 109;
@@ -77,7 +77,7 @@ public class GuiBatonStelling extends GuiScreen {
 	private boolean initialized;
 	private boolean resetSear;
 	
-	public GuiBatonStelling(int selectedPlatoon) 
+	public GuiBaton(int selectedPlatoon) 
 	{
 		int remainder = selectedPlatoon % 10;
 		this.company = selectedPlatoon / 10;
@@ -333,10 +333,10 @@ public class GuiBatonStelling extends GuiScreen {
     @SideOnly(Side.CLIENT)
     protected class ChangeButtons implements Runnable 
     {
-		private GuiBatonStelling gui;
+		private GuiBaton gui;
     	private int taskCode;
     	
-    	public ChangeButtons(GuiBatonStelling gui, int taskCode) 
+    	public ChangeButtons(GuiBaton gui, int taskCode) 
     	{
 			super();
 			this.gui = gui;
@@ -566,3 +566,33 @@ public class GuiBatonStelling extends GuiScreen {
 		this.rawMovePickedButton = null; 
 	}
 }
+
+/* Sigh...... Wish this worked
+public void drawTexturedModalRectWithWindow(int x, int y, int textureX, int textureY, int width, int height, int windowX, int windowY, int windowWidth, int windowHeight)
+{
+	GlStateManager.enableBlend();
+	GlStateManager.glBlendEquation(GL14.GL_FUNC_SUBTRACT);
+    GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+    
+    float f = 0.00390625F;
+    float f1 = 0.00390625F;
+    Tessellator tessellator = Tessellator.getInstance();
+    BufferBuilder bufferbuilder = tessellator.getBuffer();
+    bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+    bufferbuilder.pos((double)(x + 0), (double)(y + height), (double)this.zLevel).tex((double)((float)(textureX + 0) * 0.00390625F), (double)((float)(textureY + height) * 0.00390625F)).endVertex();
+    bufferbuilder.pos((double)(x + width), (double)(y + height), (double)this.zLevel).tex((double)((float)(textureX + width) * 0.00390625F), (double)((float)(textureY + height) * 0.00390625F)).endVertex();
+    bufferbuilder.pos((double)(x + width), (double)(y + 0), (double)this.zLevel).tex((double)((float)(textureX + width) * 0.00390625F), (double)((float)(textureY + 0) * 0.00390625F)).endVertex();
+    bufferbuilder.pos((double)(x + 0), (double)(y + 0), (double)this.zLevel).tex((double)((float)(textureX + 0) * 0.00390625F), (double)((float)(textureY + 0) * 0.00390625F)).endVertex();
+    tessellator.draw();
+    bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
+    bufferbuilder.
+    bufferbuilder.pos((double)(windowX + 0), (double)(windowY + windowHeight), (double)this.zLevel).color(1, 1, 1, 0.0F).endVertex();
+    bufferbuilder.pos((double)(windowX + windowWidth), (double)(windowY + windowHeight), (double)this.zLevel).color(1, 1, 1, 0.0F).endVertex();
+    bufferbuilder.pos((double)(windowX + windowWidth), (double)(windowY + 0), (double)this.zLevel).color(1, 1, 1, 0.0F).endVertex();
+    bufferbuilder.pos((double)(windowX + 0), (double)(windowY + 0), (double)this.zLevel).color(1, 1, 1, 0.0F).endVertex();
+    tessellator.draw();
+    
+    GlStateManager.glBlendEquation(GL14.GL_FUNC_ADD);
+	GlStateManager.disableBlend();
+
+}*/

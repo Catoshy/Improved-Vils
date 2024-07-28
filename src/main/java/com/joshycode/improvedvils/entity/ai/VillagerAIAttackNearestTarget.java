@@ -68,7 +68,9 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 	{
 		if(!super.shouldExecute())
 			return false;
-
+		if(this.taskOwner.getRevengeTarget() != null && this.taskOwner.ticksExisted - this.taskOwner.getRevengeTimer() < 100 && !this.taskOwner.getRevengeTarget().isDead)
+			return false;
+		
 		List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.targetDistance), this.targetEntitySelector);
         T targetEntity;
 
@@ -81,7 +83,7 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
             Collections.sort(list, this.sorter);
             targetEntity = list.get(0);
         }
-		if(this.taskOwner.getHeldItemMainhand().getItem() == Items.AIR)
+		if(this.taskOwner.getHeldItemMainhand().isEmpty())
 		{
 			return false;
 		}

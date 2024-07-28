@@ -60,10 +60,6 @@ public class EntityVillagerContainer extends Container {
 	            });
 			}
         }
-		//this.addSlotToContainer(new Slot(villagerHand, 5, 8, 8));	//head
-		//this.addSlotToContainer(new Slot(villagerHand, 4, 8, 26));	//chest
-		//this.addSlotToContainer(new Slot(villagerHand, 3, 26, 8));	//legs
-		//this.addSlotToContainer(new Slot(villagerHand, 2, 26, 26));	//feet
 		this.addSlotToContainer(new Slot(villagerHand, 0, 44, 8));	//MH
 		this.addSlotToContainer(new Slot(villagerHand, 1, 44, 26));	//OH
 		for(int i = 0; i < 4; i++)
@@ -84,8 +80,8 @@ public class EntityVillagerContainer extends Container {
 	@Override
 	public ItemStack transferStackInSlot(EntityPlayer par1EntityPlayer, int par2)
 	{
-	ItemStack itemstack = ItemStack.EMPTY;
-	Slot slot = this.inventorySlots.get(par2);
+		ItemStack itemstack = ItemStack.EMPTY;
+		Slot slot = this.inventorySlots.get(par2);
 
 		if (slot != null && slot.getHasStack())
 		{

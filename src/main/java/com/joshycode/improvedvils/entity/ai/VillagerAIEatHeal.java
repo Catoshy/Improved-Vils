@@ -24,7 +24,7 @@ public class VillagerAIEatHeal extends EntityAIBase {
 	{
 		if(this.hungerCooldown <= 0)
 		{
-			if(InventoryUtil.getStacksByItem(this.entityHost.getVillagerInventory(), ItemFood.class).size() > 0 && this.entityHost.getHealth() < this.entityHost.getMaxHealth())
+			if(InventoryUtil.getStacksByItemClass(this.entityHost.getVillagerInventory(), ItemFood.class).size() > 0 && this.entityHost.getHealth() < this.entityHost.getMaxHealth())
 				return true;
 		}
 		else

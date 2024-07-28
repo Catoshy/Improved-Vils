@@ -4,11 +4,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 
-import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.entity.InventoryHands;
@@ -17,7 +17,6 @@ import com.joshycode.improvedvils.entity.ai.VillagerAIAttackNearestTarget;
 import com.joshycode.improvedvils.entity.ai.VillagerAIAvoidEntity;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignEat;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignMove;
-import com.joshycode.improvedvils.entity.ai.VillagerAIClimbLadder;
 import com.joshycode.improvedvils.entity.ai.VillagerAICollectKit;
 import com.joshycode.improvedvils.entity.ai.VillagerAIDrinkPotion;
 import com.joshycode.improvedvils.entity.ai.VillagerAIEatHeal;
@@ -73,9 +72,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.IThreadListener;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.village.Village;
-import net.minecraft.world.WorldServer;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
@@ -85,10 +84,8 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteractSpecific;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent.KeyInputEvent;
@@ -141,12 +138,26 @@ public class EventHandlerVil {
 			
 		addAiTasks((EntityVillager) e.getEntity());
 		VilAttributes.apply((EntityVillager) e.getEntity());
-		VillagerPlayerDealMethods.childGrown((EntityVillager) e.getEntity());
+		childGrown((EntityVillager) e.getEntity());
 		if(ConfigHandler.villagerHealth != 20f)
 		{
 			((EntityVillager) e.getEntity()).setHealth(ConfigHandler.villagerHealth);
 		}
 		((EntityVillager) e.getEntity()).getEntityData().setBoolean(modify_villager, true);
+	}
+	
+	private void childGrown(EntityVillager entity)
+	{
+		if(entity.getEntityWorld().isRemote) return;
+		
+		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+		Village village = entity.getEntityWorld().getVillageCollection().getNearestVillage(new BlockPos(entity), 0);
+		if(vilCap.getHomeVillageID() != null || village == null) return;
+		
+		IVillageCapability villageCap =  village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
+		vilCap.setHomeVillageID(villageCap.getUUID());
+		if(/*vilCap.getTeam() != null &&*/ entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()) != null)
+			VilMethods.setTeam(entity, villageCap.getTeam());
 	}
 
 	@SubscribeEvent
@@ -249,13 +260,16 @@ public class EventHandlerVil {
 				Log.info("handleVillageBadReputation: village not null \n" +
 			"Villager Team: " + vilCap.getTeam() + "\n" +
 			"Village Team: " + villageCap.getTeam());
-			if((vilCap.getTeam() != null &&  vilCap.getTeam().equals(villageCap.getTeam()))
-					||	vilCap.getTeam() == null || villager.isChild())
+			
+			boolean inHomeVillage = VillagerPlayerDealMethods.isVillagerInHomeVillage(villageCap.getUUID(), vilCap.getHomeVillageID());
+			if((villageCap.getTeam().isEmpty() && inHomeVillage) || vilCap.getTeam().equals(villageCap.getTeam())
+					||	vilCap.getTeam().isEmpty() || villager.isChild())
 			{
 				if(ConfigHandler.debug)
 					Log.info("unjustified attack: costing reputation:" + reputationCost);
 				VillagerPlayerDealMethods.villageBadReputationChange(villager.getEntityWorld(), village, attackingPlayer);
 			}
+			else
 			{
 				village.modifyPlayerReputation(attackingPlayer.getUniqueID(), reputationCost);
 			}
@@ -279,6 +293,9 @@ public class EventHandlerVil {
 	{
 		if(event.getSide() == Side.SERVER && event.getTarget() instanceof EntityVillager && event.getEntityPlayer().isSneaking())
 		{
+			//World world = null;
+			//world.init();
+			//ClientProxy.openGuiForPlayerIfOK(event.getTarget().getEntityId());
 			((IThreadListener) event.getWorld()).addScheduledTask(new VilPlayerDeal(event.getTarget().getEntityId(), (EntityPlayerMP) event.getEntityPlayer(), event.getWorld()));
 			event.setCanceled(true);
 			event.setCancellationResult(EnumActionResult.SUCCESS);
@@ -291,7 +308,7 @@ public class EventHandlerVil {
 	{
 		if(Minecraft.getMinecraft().currentScreen instanceof GuiVillagerArm && !(event.getGui() instanceof GuiVillagerArm))
 		{
-			ClientProxy.close(((GuiVillagerArm) Minecraft.getMinecraft().currentScreen).getVilId());
+			ClientProxy.closeVillagerGUI(((GuiVillagerArm) Minecraft.getMinecraft().currentScreen).getVilId());
 		}
 	}
 
@@ -389,7 +406,7 @@ public class EventHandlerVil {
 		entity.tasks.addTask(6, new VillagerAIFollow(entity, .67D, 6.0F, ConfigHandler.followRangeNormal));
 		entity.tasks.addTask(4, new VillagerAIMoveIndoors(entity));
 		entity.tasks.addTask(4, new VillagerAIDrinkPotion(entity));
-		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, .55D, false));
+		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, .55D, true));
 		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new FriendlyFireVillagerPredicate(entity)));
 		entity.tasks.addTask(1, new VillagerAISwimming(entity));
 		entity.tasks.addTask(1, aiCEat);

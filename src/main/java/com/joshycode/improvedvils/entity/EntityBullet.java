@@ -214,29 +214,4 @@ public class EntityBullet extends EntityThrowable {
                 setDead();
         }
     }
-    /*
-    @SideOnly(Side.CLIENT)
-    @Override
-    public int getBrightnessForRender()
-    {
-    	int light = getAmbientLight();
-            
-        if(light <= 7340032)
-        {
-        	light = 7340032 - light + 7340032;
-        }
-        return light;
-    }
-    
-    public int getAmbientLight()
-    {
-    	BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos(MathHelper.floor(this.posX), 0, MathHelper.floor(this.posZ));
-    	int light = 0;
-    	if (this.world.isBlockLoaded(blockpos$mutableblockpos))
-        {
-            blockpos$mutableblockpos.setY(MathHelper.floor(this.posY + (double)this.getEyeHeight()));
-            light = this.world.getCombinedLight(blockpos$mutableblockpos, 0);
-        }
-    	return light;
-    }*/
 }

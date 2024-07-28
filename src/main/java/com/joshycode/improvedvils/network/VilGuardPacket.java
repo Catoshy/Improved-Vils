@@ -1,9 +1,9 @@
 package com.joshycode.improvedvils.network;
 
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.entity.ai.VillagerAIGuard;
-import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
@@ -74,7 +74,7 @@ public class VilGuardPacket extends BlockPosPacket implements IMessage {
 							}
 						});
 					}
-					VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) e, player);
+					ImprovedVils.proxy.updateGuiForClient((EntityVillager) e, player);
 				}
 			});
 			return null;

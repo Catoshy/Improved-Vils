@@ -1,6 +1,6 @@
 {
     "parent": "item/generated",
     "textures": {
-        "layer0": "improvedvils:items/draft_writ"
+        "layer0": "improvedvils:items/letter_of_command"
     }
 }

@@ -8,17 +8,24 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.capabilities.CapabilityStorage;
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
+import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.entity.ImprovedVilCapability;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
-import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability;
-import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.capabilities.itemstack.ILetterOfCommandCapability;
+import com.joshycode.improvedvils.capabilities.itemstack.LetterOfCommandCapability;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.capabilities.village.VillageCapability;
+import com.joshycode.improvedvils.command.CommandDestroyCommand;
+import com.joshycode.improvedvils.command.CommandTransferCommand;
 import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.gui.VilGuiHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
+import com.joshycode.improvedvils.item.ItemLetterOfCommand;
 import com.joshycode.improvedvils.item.ItemMarshalsBaton;
 import com.joshycode.improvedvils.network.BatonSelectData;
 import com.joshycode.improvedvils.network.BatonSelectData.BatonSelectServerData;
@@ -48,14 +55,19 @@ import com.joshycode.improvedvils.network.VillagerListPacket.StopVillagers;
 
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.util.IThreadListener;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventHandler;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -69,13 +81,17 @@ public class CommonProxy {
 	@ObjectHolder(ImprovedVils.MODID)
 	public static class ItemHolder {
 
-		@ObjectHolder("draft_writ")
-		public static final Item DRAFT_WRIT = null;
+		@ObjectHolder("letter_of_command")
+		public static final ItemLetterOfCommand LETTER = null;
 
 		@ObjectHolder("marshals_baton")
 		public static final ItemMarshalsBaton BATON = null;
 
 	}
+	private static final int DRAFTED = 1;
+	private static final int NULL = 0;
+	private static final int GUARDING = 1;
+	private static final int FOLLOWING = 1;
 
 	public static final double GUARD_MAX_PATH = 8;
 	public static final double GUARD_MAX_PATH_SQ = GUARD_MAX_PATH * GUARD_MAX_PATH;
@@ -150,6 +166,17 @@ public class CommonProxy {
         			}
         		}
         );
+        
+        CapabilityManager.INSTANCE.register(
+        		ILetterOfCommandCapability.class,
+        		new CapabilityStorage(),
+        		new Callable<ILetterOfCommandCapability>() {
+        			@Override
+        			public LetterOfCommandCapability call() throws Exception {
+        				return new LetterOfCommandCapability();
+        			}
+        		}
+        );
     }
 
     public void registerPackets()
@@ -185,9 +212,8 @@ public class CommonProxy {
 	@SubscribeEvent
 	public void registerItems(RegistryEvent.Register<Item> e)
 	{
-		e.getRegistry().registerAll(new  Item().setRegistryName("draft_writ")
-				.setUnlocalizedName(ImprovedVils.MODID + ".draft_writ")
-				.setCreativeTab(CreativeTabs.COMBAT),
+		e.getRegistry().registerAll(new  ItemLetterOfCommand().setRegistryName("letter_of_command")
+				.setUnlocalizedName(ImprovedVils.MODID + ".letter_of_command"),
 
 									new ItemMarshalsBaton().setRegistryName("marshals_baton")
 				.setUnlocalizedName(ImprovedVils.MODID + ".marshals_baton")
@@ -222,9 +248,45 @@ public class CommonProxy {
 	public int getProvisioningUnit() {return -1; }
 	
 	public Provisions getStuff() {return null; }
+
+	public final VilStateUpdate getUpdateGuiForClient(EntityVillager e, EntityPlayer player)
+	{
+		Vec3i vec = null; int guardStateVal = 0, followStateVal = 0, dutyStateVal = 0, enlistedCompany = 0, enlistedPlatoon = 0; boolean hungry = false;
 	
-	//TODO
-	public void syncVillagerToServer(int id) {}
+		if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
+		{
+			guardStateVal += VilMethods.getDuty(e) ? DRAFTED : NULL;
+			hungry = VilMethods.getHungry(e);
+			guardStateVal = hungry ? NULL : guardStateVal;
+	
+			if(guardStateVal == 0)
+			{
+				VilMethods.setFollowing((EntityVillager) e, false);
+				VilMethods.setGuardBlock((EntityVillager) e, null);
+			}
+	
+			followStateVal = guardStateVal;
+			guardStateVal += VilMethods.getGuardBlockPos(e) != null ? GUARDING : NULL;
+			followStateVal += VilMethods.getFollowing(e) ? FOLLOWING : NULL; 
+			
+			dutyStateVal = VilMethods.getDuty(e) ? 2 : 1;
+			//dutyStateVal = InventoryUtil.doesInventoryHaveItem(player.inventory, ItemHolder.BATON) != 0 ? dutyStateVal : NULL;
+			if(guardStateVal == 2)
+				vec = VilMethods.getGuardBlockPos(e);
+			
+		}
+	
+		if(vec != null)
+		{
+			return new VilStateUpdate(guardStateVal, followStateVal, dutyStateVal, hungry, enlistedCompany, enlistedPlatoon, vec);
+		}
+		return new VilStateUpdate(guardStateVal, followStateVal, dutyStateVal, hungry, enlistedCompany, enlistedPlatoon);
+	}
+
+	public final void updateGuiForClient(EntityVillager entity, EntityPlayer playerEntityByUUID)
+	{
+		NetWrapper.NETWORK.sendTo(this.getUpdateGuiForClient(entity, playerEntityByUUID), (EntityPlayerMP) playerEntityByUUID);
+	}
 
 	/**
 	 * Takes a set of unique IDs for entities and searches the loaded world for them, can be intensive- ensure use case is sparing
@@ -232,23 +294,14 @@ public class CommonProxy {
 	 * @param world
 	 * @return a Set of the loaded Entities.
 	 */
-	public static synchronized Set<Entity> getEntitiesByUUID(Set<UUID> ids, World world)
+	public synchronized <T extends Entity> Set<T> getEntitiesByUUID(Class<? extends T> clazz, Set<UUID> ids, World world)
 	{
-		Set<Entity> applicable = new HashSet<Entity>();
-		if(world.getLoadedEntityList() != null && world.getLoadedEntityList().size() != 0)
-		{
-			List<Entity> list = new CopyOnWriteArrayList <> (world.getLoadedEntityList());
-			for (Entity e : list)
-			{
-				if(world.getChunkFromBlockCoords(e.getPosition()).isLoaded())
-				{
-					 if(ids.contains(e.getUniqueID()))
-					 {
-						 applicable.add(e);
-					 }
-				}
-			}
-		}
-		return applicable;
+		List<? extends T> loadedEntities = world.getEntities(clazz, new Predicate<T>() {
+			public boolean apply(Entity arg0) {
+				return world.getChunkFromBlockCoords(arg0.getPosition()).isLoaded() 
+						&& ids.contains(arg0.getUniqueID());
+			}	
+		});
+		return new HashSet<T>(loadedEntities);
 	}
 }

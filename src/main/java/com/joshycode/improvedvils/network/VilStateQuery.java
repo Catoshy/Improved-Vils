@@ -1,7 +1,10 @@
 package com.joshycode.improvedvils.network;
 
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
+import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.handler.CapabilityHandler;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.passive.EntityVillager;
@@ -51,7 +54,7 @@ public class VilStateQuery implements IMessage {
 				{
 					EntityPlayerMP player = ctx.getServerHandler().player;
 					WorldServer world = ctx.getServerHandler().player.getServerWorld();
-					VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) world.getEntityByID(message.villagerId), player);
+					ImprovedVils.proxy.updateGuiForClient((EntityVillager) world.getEntityByID(message.villagerId), player);
 				});
 			}
 			else
@@ -59,7 +62,13 @@ public class VilStateQuery implements IMessage {
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() ->
 				{
 					WorldServer world = ctx.getServerHandler().player.getServerWorld();
-					VillagerPlayerDealMethods.resetInvListeners((EntityVillager) world.getEntityByID(message.villagerId));
+					EntityVillager entity = (EntityVillager) world.getEntityByID(message.villagerId);
+					if(ConfigHandler.debug)
+						Log.info("closing out inv changed listener %s", entity);
+					if(!entity.isDead)
+					{
+						entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setInvListener(false);
+					}
 				});
 			}
 			return null;

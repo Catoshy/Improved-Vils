@@ -5,7 +5,7 @@ import java.util.Set;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignMove;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
@@ -42,18 +42,18 @@ public class VilCommandPacket extends BlockPosPacket implements IMessage {
 			{
 				EntityPlayerMP player = ctx.getServerHandler().player;
 				WorldServer world = ctx.getServerHandler().player.getServerWorld();
-				IMarshalsBatonCapability cap = player.getHeldItemMainhand().getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+				IMarshalsBatonCapability cap = player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 	
 				if(cap != null)
 				{
 					if(world.isAreaLoaded(message.pos, 1))
 					{
-						Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
-						for(Entity e : villagers)
+						Set<EntityVillager> villagers = ImprovedVils.proxy.getEntitiesByUUID(EntityVillager.class, cap.getVillagersSelected(), world);
+						for(EntityVillager e : villagers)
 						{
-							if(VillagerPlayerDealMethods.getPlayerFealty(player, (EntityVillager) e) && !VilMethods.getFollowing((EntityVillager) e) && VilMethods.getGuardBlockPos((EntityVillager) e) == null)
+							if(VillagerPlayerDealMethods.getPlayerFealty(player, e) && !VilMethods.getFollowing(e) && VilMethods.getGuardBlockPos(e) == null)
 							{
-								VilMethods.setCommBlockPos((EntityVillager) e, message.pos);
+								VilMethods.setCommBlockPos(e, message.pos);
 							}
 						}
 					}

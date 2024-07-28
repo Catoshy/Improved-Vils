@@ -1,13 +1,16 @@
 package com.joshycode.improvedvils.entity.ai;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.jline.utils.Log;
 
+import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
+import com.joshycode.improvedvils.util.Pair;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.entity.ai.EntityAIBase;
@@ -64,7 +67,7 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 			float playerRep = vilCap.getPlayerReputation(vilCap.getPlayerId());
 			if(this.fealtyHolding > 0 && vilCap.getPlayerId() != null && playerRep > 0)
 			{
-				this.fealtyHolding = 0; //TODO what does this do?
+				this.fealtyHolding--;
 				return;
 			}
 			setHomeIfSame(vilCap, villageCap);
@@ -73,7 +76,7 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 		{
 			this.fealtyHolding = 5;
 		}
-		VillagerPlayerDealMethods.updateFromVillageReputation(this.villager, this.village);
+		this.updateFromVillageReputation(vilCap, villageCap);
 	}
 
 	private void setHomeIfSame(IImprovedVilCapability vilCap, IVillageCapability villageCap) 
@@ -85,5 +88,30 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 			vilCap.setHomeVillageID(villageCap.getUUID());
 			vilCap.setTeam(villageCap.getTeam());
 		}
+	}
+
+	public void updateFromVillageReputation(IImprovedVilCapability vilCap, IVillageCapability villageCap)
+	{
+		if(!VillagerPlayerDealMethods.isVillagerInHomeVillage(villageCap.getUUID(), vilCap.getHomeVillageID())) return;
+	
+		if(!villageCap.getTeam().equals(vilCap.getTeam()))
+		{
+			VilMethods.setTeam(this.villager, villageCap.getTeam());
+		}
+		for(UUID playerId : vilCap.getKnownPlayers())
+		{
+			int playerReputation = this.village.getPlayerReputation(playerId);
+			if(playerReputation > 5 || playerReputation < 0 || vilCap.getPlayerReputation(playerId) > 15F)
+			{
+				Pair<List<EntityVillager>, long[]> pair = VillagerPlayerDealMethods.getVillagePopulation(this.village, this.villager.getEntityWorld());
+				List<EntityVillager> population = pair.a;
+				long[] removeChunks = pair.b;
+				
+				int updateReputation = VillagerPlayerDealMethods.getVillageReputationFromMean(this.village, playerId, population) ;
+				VillagerPlayerDealMethods.updateVillageReputation(this.villager.getEntityWorld(), this.village, playerId, updateReputation, population);
+				VillagerPlayerDealMethods.putAwayChunks(this.villager.getEntityWorld(), removeChunks);
+			}
+		}
+		VillagerPlayerDealMethods.updateVillageTeamReputation(this.village, this.villager.getEntityWorld().getScoreboard().getTeam(vilCap.getTeam()));
 	}
 }

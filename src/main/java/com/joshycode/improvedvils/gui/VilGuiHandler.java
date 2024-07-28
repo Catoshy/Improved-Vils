@@ -41,7 +41,7 @@ public class VilGuiHandler implements IGuiHandler {
 		else if(ID == CommonProxy.BATON_GUI_ID)
 		{
 			Log.info("received baton request client");
-			gui = new GuiBatonStelling(x);
+			gui = new GuiBaton(x);
 		}
 		return gui;
 	}

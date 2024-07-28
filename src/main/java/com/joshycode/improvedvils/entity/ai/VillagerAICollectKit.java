@@ -1,9 +1,11 @@
 package com.joshycode.improvedvils.entity.ai;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -14,7 +16,6 @@ import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.WeaponBrooksData;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
-import com.joshycode.improvedvils.util.PathUtil;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.block.Block;
@@ -23,19 +24,14 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.EntityAIBase;
-import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.pathfinding.Path;
-import net.minecraft.pathfinding.PathNavigate;
-import net.minecraft.pathfinding.PathNavigateGround;
-import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.potion.PotionHealth;
 import net.minecraft.potion.PotionUtils;
@@ -53,6 +49,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	private InventoryHands villagerKit;
 	private Map<Item, EntityEquipmentSlot> kitToCollect;
 	private Map<Item, Integer> ammoToCollect;
+	private Set<Item> leftOversToPutAway;
 
 	public VillagerAICollectKit(EntityVillager villager, int mostFails)
 	{
@@ -61,6 +58,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 		this.villagerKit = new InventoryHands(villager, "Hands", false);
 		this.ammoToCollect = new HashMap<>();
 		this.kitToCollect = new HashMap<>();
+		this.leftOversToPutAway = new HashSet<>();
 	}
 
 	@Override
@@ -127,6 +125,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 		boolean flag = false;
 		RangeAttackEntry ammunitionHeld = null;
 		WeaponBrooksData heldWeapon = null;
+		//Search for weapon-ammo combo already used by villager. If one is found, flag = true
 		for(WeaponBrooksData weapon : ConfigHandler.configuredGuns.keySet())
 		{
 			if(s.equals(weapon.itemUnlocalizedName))
@@ -149,7 +148,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 				return false;
 			if(InventoryUtil.getItemStacksInInventory(inv, ammunitionHeld.getConsumables()) != null)
 			{
-				this.ammoToCollect.putAll(multiplied);
+				setAmmoToCollect(multiplied);
 				return true;
 			}
 			else
@@ -162,11 +161,22 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 		if(ammunitionHeld != null)
 		{
 			//try to collect 32 rounds of whatever ammo is needed
-			Map<Item, Integer> multiplied = multiplyConsumables(ammunitionHeld);
-			this.ammoToCollect.putAll(multiplied);
+			setAmmoToCollect(multiplyConsumables(ammunitionHeld));
 			return true;
 		}
 		return false;
+	}
+
+	private void setAmmoToCollect(Map<Item, Integer> multiplied) 
+	{
+		for(Map.Entry<Item, Integer> entry : multiplied.entrySet())
+		{
+			if(entry.getValue() < 0 && InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), entry.getKey()) > 0)
+				this.leftOversToPutAway.add(entry.getKey());
+			else if(entry.getValue() == 0 && InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), entry.getKey()) == 0)
+				entry.setValue(1);
+		}
+		this.ammoToCollect.putAll(multiplied);
 	}
 
 	private Map<Item, Integer> multiplyConsumables(RangeAttackEntry ammunitionHeld) 
@@ -301,6 +311,8 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	{
 		this.finished = false;
 		IInventory storeInv = getTileInventory();
+		InventoryBasic vilInv = this.villager.getVillagerInventory();
+		
 		if(storeInv != null)
 		{
 			VillagerPlayerDealMethods.updateArmourWeaponsAndFood(this.villager);
@@ -324,9 +336,33 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 						this.ammoToCollect.remove(stack.getItem());
 					else
 						this.ammoToCollect.put(stack.getItem(), val);
-					stack.grow(this.villager.getVillagerInventory().addItem(intoInv).getCount());
+					stack.grow(vilInv.addItem(intoInv).getCount());
 					VilMethods.setOutOfAmmo(this.villager, false);
 					continue;
+				}
+				for(Item itemToPutInChest : this.leftOversToPutAway)
+				{
+					ItemStack putStack = InventoryUtil.getGreatestStackByItem(vilInv, itemToPutInChest);
+					boolean flag = false;
+					if(putStack == null)
+					{
+						this.leftOversToPutAway.remove(itemToPutInChest);
+						continue;
+					}
+					if(stack.isEmpty())
+					{
+						flag = true;
+						storeInv.setInventorySlotContents(i, putStack.splitStack(Math.min(storeInv.getInventoryStackLimit(), putStack.getMaxStackSize())));
+					}
+					else if(ItemStack.areItemsEqual(stack, putStack) && stack.isStackable())
+					{
+						flag = true;
+						int j = Math.min(stack.getCount() + putStack.getCount(), stack.getMaxStackSize());
+						int growAmount = Math.min(j, storeInv.getInventoryStackLimit());
+						stack.grow(putStack.splitStack(growAmount).getCount());
+					}
+					if(flag)
+						this.leftOversToPutAway.remove(itemToPutInChest);
 				}
 			}		
 			VillagerPlayerDealMethods.checkArmourWeaponsAndFood(this.villager, VilMethods.getPlayerId(this.villager));

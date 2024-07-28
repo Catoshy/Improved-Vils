@@ -10,13 +10,15 @@ import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
+import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.util.InventoryUtil;
 import com.joshycode.improvedvils.util.Pair;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Team;
@@ -163,11 +165,11 @@ public class VilPlayerDeal implements Runnable{
 		int platoonAndEnlistedStanding = -2;
 		int company = 0;
 
-		ItemStack stack = InventoryUtil.get1StackByItem(this.player.inventory, CommonProxy.ItemHolder.BATON);
+		ItemStack stack = InventoryUtil.getOnly1StackByItem(this.player.inventory, CommonProxy.ItemHolder.BATON);
 
 		if(stack != null && VillagerPlayerDealMethods.getPlayerFealty(this.player, this.villager))
 		{
-			IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+			IMarshalsBatonCapability cap = this.player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 			if(cap != null)
 			{
 				Pair<Integer, Integer> p = cap.getVillagerPlace(this.villager.getUniqueID());
@@ -257,8 +259,8 @@ public class VilPlayerDeal implements Runnable{
 			if(ConfigHandler.debug)
 				Log.info("player is  either good, ill, or team member - will be granted either fealty or hatred", this.player);
 
-			VillagerPlayerDealMethods.setPlayerReputationAcrossVillage(this.world, village, this.player);
-			checkAndTryToClaimVillageForTeam();
+			this.setPlayerReputationAcrossVillage();
+			this.checkAndTryToClaimVillageForTeam();
 		}
 		else
 		{
@@ -267,6 +269,25 @@ public class VilPlayerDeal implements Runnable{
 		}
 		if(ConfigHandler.debug)
 			Log.info("setFealtyIfWorthy --- End.");
+	}
+	
+
+	public void setPlayerReputationAcrossVillage()
+	{
+		int reputation = this.village.getPlayerReputation(this.player.getUniqueID());
+		Pair<List<EntityVillager>, long[]> pair = VillagerPlayerDealMethods.getVillagePopulation(this.village, this.world);
+		List<EntityVillager> population = pair.a;
+		long[] removeChunks = pair.b;
+	
+		for(EntityVillager entity : population)
+		{
+			IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
+			if(vilCap.getPlayerReputation(this.player.getUniqueID()) == 0)
+			{
+				vilCap.setPlayerReputation(this.player.getUniqueID(), reputation, reputation);
+			}
+		}
+		VillagerPlayerDealMethods.putAwayChunks(this.world, removeChunks);
 	}
 
 	//TODO
@@ -294,7 +315,9 @@ public class VilPlayerDeal implements Runnable{
 			Log.info("team is good  enough! will be set. reputation is - %s", teamReputation);
 
 		villageCap.setTeam(this.player.getTeam());
-		List<EntityVillager> population = VillagerPlayerDealMethods.getVillagePopulation(village, this.world);
+		Pair<List<EntityVillager>, long[]> pair = VillagerPlayerDealMethods.getVillagePopulation(village, this.world);
+		List<EntityVillager> population = pair.a;
+		long[] removeChunks = pair.b;		
 		for(EntityVillager villager : population)
 		{
 			if(!villager.isChild())
@@ -305,6 +328,7 @@ public class VilPlayerDeal implements Runnable{
 				}
 			}
 		}
+		VillagerPlayerDealMethods.putAwayChunks(this.world, removeChunks);
 	}
 
 	private boolean isVillagerInHomeVillage()
@@ -331,7 +355,7 @@ public class VilPlayerDeal implements Runnable{
 	{
 		if(this.isVillagerInHomeVillage)
 		{
-			return village.getPlayerReputation(this.player.getUniqueID());
+			return this.village.getPlayerReputation(this.player.getUniqueID());
 		}
 		return 0;
 	}

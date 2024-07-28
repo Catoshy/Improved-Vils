@@ -18,10 +18,17 @@ import net.minecraft.world.World;
 public final class ProjectileHelper {
 
 	@Nullable
-	public static Pair<RayTraceResult, String> checkForFirendlyFire(EntityLivingBase entityHost, World world, float inaccuracy)
+	//public static RayTraceResult checkForFirendlyFire(EntityLivingBase entityHost, World world, float inaccuracy)
+	public static Pair<RayTraceResult, String> checkForFirendlyFire(EntityLivingBase entityHost, World world, float inaccuracy, int range)
 	{
 		String debugString = "\nDEBUG FOR FRIENDLY FIRE! \n";
-		Entity entity = checkEntitiesNearby(entityHost, world);
+		Entity entity = checkEntitiesNearby(entityHost, world);/*
+	    if(entity != null)
+	    {
+	    	debugString += "Entity: " + entity + "is too near to shooter. Should not even be able to get shot?!";
+	    	return new Pair<>(new RayTraceResult(entity), debugString);
+	    	//return new RayTraceResult(entity);
+	    }*/
 	    
 		double y = entityHost.posY + entityHost.getEyeHeight();
 		double x = entityHost.posX;
@@ -32,7 +39,6 @@ public final class ProjectileHelper {
 	            * MathHelper.cos(entityHost.rotationPitch / 180.0F * (float) Math.PI);
 	    double motionY = -MathHelper.sin(entityHost.rotationPitch / 180.0F * (float) Math.PI);
 
-	    int range = ConfigHandler.friendlyFireSearchRange;
 	    Vec3d vec1 = new Vec3d(x, y, z);
 	    Vec3d vec2 = new Vec3d(x + (motionX * range), y + (motionY * range), z + (motionZ * range));
 	    RayTraceResult raytraceresult = world.rayTraceBlocks(vec1, vec2, false, true, false);

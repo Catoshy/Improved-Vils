@@ -4,7 +4,7 @@ import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
@@ -54,15 +54,10 @@ public class MarshalKeyEvent implements IMessage {
 					Log.info("running deed for MarshalKeyEvent, player is: ", ctx.getServerHandler().player);
 				
 				EntityPlayer player = ImprovedVils.proxy.getPlayerEntity(ctx);
-				ItemStack stack;
-				if(player.getHeldItemMainhand().getItem() == CommonProxy.ItemHolder.BATON)
-					stack = player.getHeldItemMainhand();
-				else if(player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
-					stack = player.getHeldItemOffhand();
-				else
+				if(player.getHeldItemMainhand().getItem() != CommonProxy.ItemHolder.BATON && player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
 					return;
 				
-				IMarshalsBatonCapability batonCap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+				IMarshalsBatonCapability batonCap = player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 				int selectedPlatoon = batonCap.selectedUnit();
 				
 				if(message.keyPressed == CommonProxy.PLATOON_UP)

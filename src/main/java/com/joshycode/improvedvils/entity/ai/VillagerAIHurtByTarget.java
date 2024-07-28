@@ -13,16 +13,19 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAITarget;
 import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
 
 public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends VillagerAITarget<T> {
 
+	private EntityVillager villager;
 	private final boolean callsForHelp;
 	private int revengeTimerOld;
 
-	public VillagerAIHurtByTarget(EntityCreature creature, boolean callsForHelp)
+	public VillagerAIHurtByTarget(EntityVillager villager, boolean callsForHelp)
 	{
-		super(creature, false, false);
+		super(villager, false, false);
+		this.villager = villager;
 		this.callsForHelp = callsForHelp;
 		this.revengeTimerOld = 0;
 		this.setMutexBits(1);
@@ -86,7 +89,14 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 	{
 		if(!EntityAITarget.isSuitableTarget(this.taskOwner, target, includeInvincibles, this.shouldCheckSight))
 			return false;
-		for(Class<?> c : CommonProxy.TARGETS)
+		if(this.villager.getHeldItemMainhand().isEmpty())
+			return false;
+		String team = VilMethods.getTeam(this.villager);
+		if(target instanceof EntityPlayer /*&& team.equals(target.getTeam().getName())*/)
+			return false;
+		else if(target instanceof EntityVillager && team.equals(VilMethods.getTeam((EntityVillager) target)))
+			return false;
+		/*for(Class<?> c : CommonProxy.TARGETS)
 		{
 			if(ConfigHandler.debug)
 				Log.info("is Suitable Target " + target + " for class %s", c);
@@ -94,8 +104,8 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 			{
 				return true;
 			}
-		}
-		return false;
+		}*/
+		return true;
 	}
 
 	private void setEntityAttackTarget(EntityCreature entitycreature, EntityLivingBase revengeTarget)
