@@ -104,8 +104,6 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		if(this.finished) return;
 		if(object == null)
 		{
-			if(this.theDebugVar)
-				Log.info("null object");
 			this.resetTask();
 			return;
 		}
@@ -124,15 +122,11 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		}
 		else if(this.path != null && this.path.isFinished())
 		{
-			if(this.theDebugVar)
-				Log.info("path finished");
 			if(!this.tryToGetCloser(object)) return;
 		}
 		else if(this.path == null)
 		{
 			this.pathfindingFails++;
-			if(this.theDebugVar)
-				Log.info("path == null or nav noPath");
 			if(!this.tryToGetCloser(object)) return;
 		}
 		if(breakDoors())
@@ -151,7 +145,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		{
 			BlockPos savedPos = VilMethods.getLastDoor((EntityVillager) this.entityHost);
 			if(this.theDebugVar)
-				Log.info("point, pointPos, type, savedPos, villager name; ", point, " ", pointPos, " ", type, " ", savedPos, " ", this.entityHost.getName());
+				Log.info("Set doopoint, pointPos, type, savedPos, villager name; ", point, " ", pointPos, " ", type, " ", savedPos, " ", this.entityHost.getName());
 			if(savedPos != null && !pointPos.equals(savedPos) || //villager treads through door: here checks if either he has a previous saved door pos and sets to pointPos if not same,
 					savedPos == null && !this.passedBackThrough) //or if the door position is intentionally null because he's going back through, hence passedBackThrough would be true.
 			{

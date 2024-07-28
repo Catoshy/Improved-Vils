@@ -189,7 +189,6 @@ public class InventoryUtil {
 			if(amt >= 0) continue;
 			
 			ItemStack stack = getLeastStackByItem(invIn, itemToGive);
-			Log.info("getStackByiTEM FOR CONSUME PLUS IS %s", stack);
 			amt = Math.min(itemToGive.getItemStackLimit(stack), Math.abs(amt));
 			if(stack == null || stack.getCount() + amt > invIn.getInventoryStackLimit() || stack.getCount() + amt > stack.getMaxStackSize())
 			{
