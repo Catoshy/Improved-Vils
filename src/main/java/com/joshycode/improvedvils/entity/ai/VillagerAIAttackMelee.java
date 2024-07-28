@@ -211,7 +211,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
         double d0 = this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
 	    --this.delayCounter;
 
-	    if ((this.longMemory || this.attacker.getEntitySenses().canSee(entitylivingbase)) && this.delayCounter <= 0 && (this.targetX == 0.0D && this.targetY == 0.0D && this.targetZ == 0.0D || entitylivingbase.getDistanceSq(this.targetX, this.targetY, this.targetZ) >= 1.0D || this.attacker.getRNG().nextFloat() < 0.05F))
+	    if ((this.longMemory || this.attacker.getEntitySenses().canSee(entitylivingbase)) && this.delayCounter <= 0 && (this.targetX == 0.0D && this.targetY == 0.0D && this.targetZ == 0.0D || entitylivingbase.getDistanceSq(this.targetX, this.targetY, this.targetZ) >= .5D || this.attacker.getRNG().nextFloat() < 0.05F))
 	    {
 	        this.targetX = entitylivingbase.posX;
 	        this.targetY = entitylivingbase.getEntityBoundingBox().minY;
@@ -469,7 +469,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 
     protected double getAttackReachSqr(EntityLivingBase attackTarget)
     {
-        return this.attacker.width * ConfigHandler.attackReach * this.attacker.width * ConfigHandler.attackReach + attackTarget.width;
+        return (this.attacker.width + ConfigHandler.attackReach) * (this.attacker.width + ConfigHandler.attackReach) + attackTarget.width;
     }
 
     protected int itemUseDuration()

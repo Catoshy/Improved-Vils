@@ -1,8 +1,8 @@
 package com.joshycode.improvedvils.network;
 
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
@@ -59,7 +59,7 @@ public class VilFollowPacket implements IMessage {
 						VilMethods.setFollowState((EntityVillager) e, message.booleanState);
 						VilMethods.setCommBlockPos((EntityVillager) e, null);
 					}
-					VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) e, player);
+					ImprovedVils.proxy.updateGuiForClient((EntityVillager) e, player);
 				}
 			});
 			return null;
@@ -90,7 +90,7 @@ public class VilFollowPacket implements IMessage {
 							VilMethods.setGuardBlock((EntityVillager) e, null);
 							VilMethods.setDuty((EntityVillager) e, message.booleanState);
 						}
-						VillagerPlayerDealMethods.updateGuiForClient((EntityVillager) e, player);
+						ImprovedVils.proxy.updateGuiForClient((EntityVillager) e, player);
 					}
 				});
 				return null;

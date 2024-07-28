@@ -2,7 +2,7 @@ package com.joshycode.improvedvils.item;
 
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
-import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilCommandPacket;
@@ -22,7 +22,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
 
 public class ItemMarshalsBaton extends Item {
-
+	//TODO onItemRightClick is actually fired on both sides, rendering the network packets stuff unneeded. Should change it sometime.
 	public ItemMarshalsBaton() {}
 
 	@Override

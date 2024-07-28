@@ -1,5 +1,6 @@
-package com.joshycode.improvedvils.capabilities.itemstack;
+package com.joshycode.improvedvils.capabilities.entity;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -15,6 +16,7 @@ public interface IMarshalsBatonCapability extends INBTSerializable<NBTTagCompoun
 
 	public boolean addVillager(UUID entityid, int company, int platoon);
 	public boolean removeVillager(UUID entityid);
+	public boolean isSureClearCommand(long l);
 	public Pair<Integer, Integer> getVillagerPlace(UUID uniqueID);
 	public Set<UUID>getVillagersSelected();
 	@Nullable
@@ -24,4 +26,11 @@ public interface IMarshalsBatonCapability extends INBTSerializable<NBTTagCompoun
 	public void setPlatoon(int company, int platoon);
 	public void setPlatoonFoodStore(BlockPos pos);
 	public void setPlatoonKitStore(BlockPos pos);
+	public Map<Integer, Long> getfoodStoreMap();
+	public Map<Integer, Long> getkitStoreMap();
+	public Map<Integer, Set<UUID>> getPlatoonMap();
+	public void attachInfo(Map<Integer, Long> foodStoreMap, Map<Integer, Long> kitStoreMap,
+			Map<Integer, Set<UUID>> platoonMap);
+	public void setSureClearCommand(long worldTime);
+	public void clearCommand();
 }

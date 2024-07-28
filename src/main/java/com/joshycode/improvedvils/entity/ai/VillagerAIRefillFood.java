@@ -77,7 +77,7 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 
 		float totalFoodSaturation = 0;
 		float collectThreshold = ConfigHandler.collectFoodThreshold * .6F;
-		for(ItemStack foodItem : InventoryUtil.getStacksByItem(villager.getVillagerInventory(), ItemFood.class))
+		for(ItemStack foodItem : InventoryUtil.getStacksByItemClass(villager.getVillagerInventory(), ItemFood.class))
 		{
 			totalFoodSaturation += ((ItemFood) foodItem.getItem()).getSaturationModifier(foodItem) * foodItem.getCount();
 		}

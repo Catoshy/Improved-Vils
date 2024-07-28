@@ -1,4 +1,4 @@
-item.improvedvils.draft_writ.name=Draft Writ
+item.improvedvils.letter_of_command.name=Letter of Command
 item.improvedvils.marshals_baton.name=Field Marshal's Baton
 key.marshal.platoon+=Platoon Select Up
 key.marshal.platoon-=Platoon Select Down
@@ -6,3 +6,6 @@ key.marshal.company+=Company Select Up
 key.marshal.company-=Company Select Down
 key.marshal.baton_gui=Open Marshal's Baton Command GUI
 Improvedvils.keybinds=Improved Villagers
+commands.destroyCommand.usage="/destroyCommand", "/clearCommand"
+commands.transferCommand.usage=/transferCommand 'name of regiment' ...or: /giveCommand 'name of regiment'
+ommands.getUnlocalizedName.usage="/getUnlocalizedName" to get the unlocalized name of the item held in the player main hand. Inside quotations only.

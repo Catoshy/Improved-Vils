@@ -5,6 +5,10 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.joshycode.improvedvils.command.CommandDestroyCommand;
+import com.joshycode.improvedvils.command.CommandGetEntityName;
+import com.joshycode.improvedvils.command.CommandGetUnlocalName;
+import com.joshycode.improvedvils.command.CommandTransferCommand;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.EventHandlerVil;
 import com.joshycode.improvedvils.handler.GraveStoneCompHandler;
@@ -20,6 +24,8 @@ import net.minecraftforge.fml.common.event.FMLFingerprintViolationEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @Mod(modid = ImprovedVils.MODID, name = ImprovedVils.MODNAME, version = ImprovedVils.VERSION, certificateFingerprint = ImprovedVils.certificateFingerprint, dependencies = "after:openblocks;")
 public class ImprovedVils {
@@ -56,6 +62,15 @@ public class ImprovedVils {
 	public void postInit(FMLPostInitializationEvent e) throws IOException
 	{
 		proxy.postInit();
+	}
+	
+	
+	@EventHandler
+	public void serverStart(FMLServerStartingEvent event) 
+	{
+		event.registerServerCommand(new CommandGetEntityName());
+		event.registerServerCommand(new CommandDestroyCommand());
+		event.registerServerCommand(new CommandTransferCommand());
 	}
 	
 	@EventHandler

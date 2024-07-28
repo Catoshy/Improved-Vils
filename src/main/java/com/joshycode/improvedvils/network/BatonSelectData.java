@@ -72,14 +72,14 @@ public class BatonSelectData implements IMessage {
 					ItemStack stack;
 					if(player.getHeldItemMainhand().getItem() == CommonProxy.ItemHolder.BATON)
 						stack = player.getHeldItemMainhand();
-					else if(player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
+					else if(player.getHeldItemOffhand().getItem() == CommonProxy.ItemHolder.BATON)
 						stack = player.getHeldItemOffhand();
 					else
 						return;
 					
-					stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null).setPlatoon(message.platoon / 10, message.platoon % 10);
+					player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null).setPlatoon(message.platoon / 10, message.platoon % 10);
 					
-					Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(player, stack);
+					Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(player);
 					Map<Integer, Tuple<Boolean[], Integer>> villagerInfo = BatonDealMethods.getVillagerCapabilityInfoAppendMap(villagerIds.keySet(), player.world);
 					NetWrapper.NETWORK.sendTo(new BatonBefolkPacket(villagerIds, villagerInfo), player);
 				});

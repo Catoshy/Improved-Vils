@@ -4,8 +4,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jline.utils.Log;
-
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.item.Item;
@@ -87,6 +86,7 @@ public class RangeAttackEntry {
 	 * @param bowConsumables Map of items to be consumed each shot and how many. String shall be unlocalized name
 	 * of the item. Int shall be number of items to be consumed.
 	 */
+	@Deprecated //Unused
 	public RangeAttackEntry(RangeAttackType type, Map<String, Integer> bowConsumables, BallisticData data2)
 	{
 		this.type = type;
@@ -110,7 +110,7 @@ public class RangeAttackEntry {
 		Map<Item, Integer> items = new HashMap<>();
 		this.consumables.entrySet().forEach(entry -> {
 			if(ConfigHandler.debug)
-				Log.info("init RangeAttackEntry deserializeItemsFromString ", entry);
+				Log.info("init RangeAttackEntry deserializeItemsFromString %s", entry);
 			ForgeRegistries.ITEMS.getValuesCollection().forEach(item -> {
 				if(item.getUnlocalizedName().equals(entry.getKey()))
 					items.put(item, entry.getValue());

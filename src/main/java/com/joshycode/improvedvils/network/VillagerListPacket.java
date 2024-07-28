@@ -9,10 +9,10 @@ import java.util.UUID;
 import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.CommonProxy.ItemHolder;
+import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.gui.EnlisteeContainer;
-import com.joshycode.improvedvils.gui.GuiBatonStelling;
+import com.joshycode.improvedvils.gui.GuiBaton;
 import com.joshycode.improvedvils.gui.GuiVillagerRollList;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
@@ -130,9 +130,9 @@ public abstract class VillagerListPacket implements IMessage {
 			public IMessage onMessage(BatonBefolkPacket message, MessageContext ctx)
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
-					if(Minecraft.getMinecraft().currentScreen instanceof GuiBatonStelling)
+					if(Minecraft.getMinecraft().currentScreen instanceof GuiBaton)
 					{
-						GuiVillagerRollList guiList = ((GuiBatonStelling) Minecraft.getMinecraft().currentScreen).getRollList();
+						GuiVillagerRollList guiList = ((GuiBaton) Minecraft.getMinecraft().currentScreen).getRollList();
 						Set<EnlisteeContainer> villagers = new HashSet<EnlisteeContainer>();
 						guiList.getRoll().clear();
 												
@@ -166,18 +166,18 @@ public static class BatonBefolkUpdatePacket extends BatonBefolkPacket {
 			public IMessage onMessage(BatonBefolkUpdatePacket message, MessageContext ctx)
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
-					if(Minecraft.getMinecraft().currentScreen instanceof GuiBatonStelling)
+					if(Minecraft.getMinecraft().currentScreen instanceof GuiBaton)
 					{
-						GuiVillagerRollList guiList = ((GuiBatonStelling) Minecraft.getMinecraft().currentScreen).getRollList();
+						GuiVillagerRollList guiList = ((GuiBaton) Minecraft.getMinecraft().currentScreen).getRollList();
 						Set<EnlisteeContainer> villagers = new HashSet<EnlisteeContainer>();
 
 						message.villagerIds.keySet().forEach(entityId -> {
 							
 							EntityVillager villager = (EntityVillager) ImprovedVils.proxy.getWorld(ctx).getEntityByID(entityId);
 							if(villager != null)
-								villagers.add(new EnlisteeContainer(((GuiBatonStelling) Minecraft.getMinecraft().currentScreen).getRollList(), villager, message.villagerInfo.get(entityId).getFirst(), message.villagerInfo.get(entityId).getSecond()));
+								villagers.add(new EnlisteeContainer(((GuiBaton) Minecraft.getMinecraft().currentScreen).getRollList(), villager, message.villagerInfo.get(entityId).getFirst(), message.villagerInfo.get(entityId).getSecond()));
 							else
-								villagers.add(new EnlisteeContainer(((GuiBatonStelling) Minecraft.getMinecraft().currentScreen).getRollList(), message.villagerIds.get(entityId)));
+								villagers.add(new EnlisteeContainer(((GuiBaton) Minecraft.getMinecraft().currentScreen).getRollList(), message.villagerIds.get(entityId)));
 						});
 						guiList.addContainers(villagers);
 					}
@@ -364,15 +364,12 @@ public static class GuardVillagers extends VillagerListPacket {
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
 					
-					EntityPlayerMP player = ctx.getServerHandler().player;
-					ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
+					EntityPlayerMP serverPlayer = ctx.getServerHandler().player;
 					
-					if(stack.getItem() != ItemHolder.BATON)
-						stack = player.getHeldItem(EnumHand.OFF_HAND);
-					if(stack.getItem() != ItemHolder.BATON)
+					if(serverPlayer.getHeldItem(EnumHand.MAIN_HAND).getItem() != ItemHolder.BATON && serverPlayer.getHeldItem(EnumHand.OFF_HAND).getItem() != ItemHolder.BATON)
 						return;
 					
-					IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+					IMarshalsBatonCapability cap = serverPlayer.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 					int earlierPlatoon = cap.selectedUnit();
 					cap.setPlatoon(message.platoon /10, message.platoon % 10);
 					int size = cap.getVillagersSelected().size();
@@ -380,7 +377,7 @@ public static class GuardVillagers extends VillagerListPacket {
 					
 					if(size + message.villagerIds.size() >= 30)
 					{
-						NetWrapper.NETWORK.sendTo(new WarnNoRoom(), player);
+						NetWrapper.NETWORK.sendTo(new WarnNoRoom(), serverPlayer);
 					}
 					else
 					{
@@ -389,9 +386,9 @@ public static class GuardVillagers extends VillagerListPacket {
 							cap.addVillager(id, message.platoon /10, message.platoon % 10);
 						});
 						
-						Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(player, stack);
+						Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(serverPlayer);
 						Map<Integer, Tuple<Boolean[], Integer>> villagerInfo = BatonDealMethods.getVillagerCapabilityInfoAppendMap(villagerIds.keySet(), ImprovedVils.proxy.getWorld(ctx));
-						NetWrapper.NETWORK.sendTo(new BatonBefolkPacket(villagerIds, villagerInfo), player);
+						NetWrapper.NETWORK.sendTo(new BatonBefolkPacket(villagerIds, villagerInfo), serverPlayer);
 					}
 
 				});
@@ -414,22 +411,19 @@ public static class GuardVillagers extends VillagerListPacket {
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
 
 					EntityPlayerMP serverPlayer = ctx.getServerHandler().player;
-					ItemStack stack = serverPlayer.getHeldItem(EnumHand.MAIN_HAND);
 					
-					if(stack.getItem() != ItemHolder.BATON)
-						stack = serverPlayer.getHeldItem(EnumHand.OFF_HAND);
-					if(stack.getItem() != ItemHolder.BATON)
+					if(serverPlayer.getHeldItem(EnumHand.MAIN_HAND).getItem() != ItemHolder.BATON && serverPlayer.getHeldItem(EnumHand.OFF_HAND).getItem() != ItemHolder.BATON)
 						return;
 					
 					for(UUID id : message.villagerIds.values())
-						stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null).removeVillager(id);
+						serverPlayer.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null).removeVillager(id);
 					
 					message.villagerIds.keySet().forEach(id -> {
 						Entity e = ImprovedVils.proxy.getWorld(ctx).getEntityByID(id);
 						if(e != null)
 							e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(null).setKitStore(null);
 					});
-					Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(serverPlayer, stack);
+					Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(serverPlayer);
 					Map<Integer, Tuple<Boolean[], Integer>> villagerInfo = BatonDealMethods.getVillagerCapabilityInfoAppendMap(villagerIds.keySet(), ImprovedVils.proxy.getWorld(ctx));
 					NetWrapper.NETWORK.sendTo(new BatonBefolkPacket(villagerIds, villagerInfo), serverPlayer);
 				});

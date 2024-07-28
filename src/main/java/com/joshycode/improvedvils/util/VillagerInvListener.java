@@ -2,6 +2,8 @@ package com.joshycode.improvedvils.util;
 
 import java.util.UUID;
 
+import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
@@ -42,7 +44,7 @@ public class VillagerInvListener implements IInventoryChangedListener {
 		}
 
 		this.checkTick = this.entity.ticksExisted;
-		VillagerPlayerDealMethods.updateGuiForClient(entity, this.world.getPlayerEntityByUUID(this.playerId));
+		ImprovedVils.proxy.updateGuiForClient(entity, this.world.getPlayerEntityByUUID(this.playerId));
 		VillagerPlayerDealMethods.checkArmourWeaponsAndFood(entity, this.playerId);
 	}
 }

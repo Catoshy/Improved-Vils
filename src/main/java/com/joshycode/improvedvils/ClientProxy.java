@@ -1,6 +1,11 @@
 package com.joshycode.improvedvils;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.Nullable;
 
@@ -9,7 +14,8 @@ import org.lwjgl.input.Keyboard;
 
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
-import com.joshycode.improvedvils.capabilities.itemstack.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.command.CommandGetUnlocalName;
 import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.gui.GuiVillagerArm;
 import com.joshycode.improvedvils.handler.ConfigHandler;
@@ -17,7 +23,6 @@ import com.joshycode.improvedvils.network.MarshalKeyEvent;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilGuiQuery;
 import com.joshycode.improvedvils.network.VilStateQuery;
-import com.joshycode.improvedvils.network.VilTeamSync;
 import com.joshycode.improvedvils.renderer.LayerHeldItemNonBiped;
 import com.joshycode.improvedvils.renderer.ModelBipedVillager;
 import com.joshycode.improvedvils.renderer.RenderBullet;
@@ -33,11 +38,13 @@ import net.minecraft.client.renderer.entity.RenderLiving;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.layers.LayerBipedArmor;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.IThreadListener;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
+import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.fml.client.CustomModLoadingErrorDisplayException;
@@ -86,6 +93,8 @@ public class ClientProxy extends CommonProxy {
 		{
 			ClientRegistry.registerKeyBinding(bind);
 		}
+		
+		ClientCommandHandler.instance.registerCommand(new CommandGetUnlocalName());
 	}
 
 	@Override
@@ -162,8 +171,8 @@ public class ClientProxy extends CommonProxy {
 	@SubscribeEvent
 	public void onModelRegisEvent(ModelRegistryEvent e)
 	{
-		ModelLoader.setCustomModelResourceLocation(CommonProxy.ItemHolder.DRAFT_WRIT, 0,
-				new ModelResourceLocation(CommonProxy.ItemHolder.DRAFT_WRIT.getRegistryName(), "inventory"));
+		ModelLoader.setCustomModelResourceLocation(CommonProxy.ItemHolder.LETTER, 0,
+				new ModelResourceLocation(CommonProxy.ItemHolder.LETTER.getRegistryName(), "inventory"));
 
 		ModelLoader.setCustomModelResourceLocation(CommonProxy.ItemHolder.BATON, 0,
 				new ModelResourceLocation(CommonProxy.ItemHolder.BATON.getRegistryName(), "inventory"));
@@ -222,6 +231,26 @@ public class ClientProxy extends CommonProxy {
 		this.selectedPlatoon = platoon;
 	}
 	
+	@SuppressWarnings("unchecked")
+	@Override
+	public synchronized <T extends Entity> Set<T> getEntitiesByUUID(Class<? extends T> clazz, Set<UUID> ids, World world)
+	{
+		Set<T> applicable = new HashSet<T>();
+		if(world.getLoadedEntityList() != null && world.getLoadedEntityList().size() != 0)
+		{
+			List<Entity> list = new CopyOnWriteArrayList<Entity>(world.getLoadedEntityList());
+			for (Entity e : list)
+			{
+				if(clazz.isAssignableFrom(e.getClass()) && world.getChunkFromBlockCoords(e.getPosition()).isLoaded() && ids.contains(e.getUniqueID()))
+				{
+					applicable.add((T) e);
+				}
+			}
+		}
+		return applicable;
+	}
+
+	
 	@Override
 	public int timeAgoSinceHudInfo() 
 	{
@@ -272,7 +301,7 @@ public class ClientProxy extends CommonProxy {
 		return ctx.side.isClient() ? Minecraft.getMinecraft().player : super.getPlayerEntity(ctx);
 	}
 	
-	public static void close(int vilId)
+	public static void closeVillagerGUI(int vilId)
 	{
 		NetWrapper.NETWORK.sendToServer(new VilStateQuery(vilId, true));
 	}

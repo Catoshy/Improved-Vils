@@ -7,6 +7,9 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.handler.ConfigHandler;
+
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemFood;
@@ -18,7 +21,7 @@ public class InventoryUtil {
 	/**
 	 * @param invIn
 	 * @param items
-	 * @return number of items of that type found in inventory
+	 * @return number of itemstacks of that type found in inventory
 	 */
 	public static int doesInventoryHaveItem(IInventory invIn, Item item)
 	{
@@ -33,23 +36,58 @@ public class InventoryUtil {
 		}
 		return r;
 	}
-
-	public static ItemStack getStackByItem(IInventory invIn, Item item)
+	
+	public static int findEmptySlot(IInventory invIn)
 	{
-		for(int i = 0; i < invIn.getSizeInventory(); i++)
+		int i = -1;
+		for(int ii = 0; ii < invIn.getSizeInventory(); ii++)
 		{
-			ItemStack stack = invIn.getStackInSlot(i);
-			String stackItem = stack.getUnlocalizedName();
-			if(stackItem.equals(item.getUnlocalizedName()))
+			ItemStack stack = invIn.getStackInSlot(ii);
+			if(stack.isEmpty())
 			{
-				return stack;
+				i = ii;
+				break;
 			}
 		}
-		return null;
+		return i;
 	}
 
 	@Nullable
-	public static ItemStack get1StackByItem(IInventory invIn, Item item)
+	public static ItemStack getLeastStackByItem(IInventory invIn, Item item)
+	{
+		int size = invIn.getInventoryStackLimit() + 1;
+		ItemStack stack = null;
+		for(int i = 0; i < invIn.getSizeInventory(); i++)
+		{
+			ItemStack stack1 = invIn.getStackInSlot(i);
+			if(stack1.getItem().equals(item) && stack1.getCount() < size)
+			{
+				stack = stack1;
+				size = stack.getCount();
+			}
+		}
+		return stack;
+	}
+	
+	@Nullable
+	public static ItemStack getGreatestStackByItem(IInventory invIn, Item item)
+	{
+		int size = 0;
+		ItemStack rStack = null;
+		for(int i = 0; i < invIn.getSizeInventory(); i++)
+		{
+			ItemStack stack = invIn.getStackInSlot(i);
+			if(stack.getItem().equals(item) && stack.getCount() > size)
+			{
+				rStack = stack;
+				size = rStack.getCount();
+			}
+		}
+		return rStack;
+	}
+
+	@Nullable
+	public static ItemStack getOnly1StackByItem(IInventory invIn, Item item)
 	{
 		ItemStack rStack = null;
 		for(int i = 0; i < invIn.getSizeInventory(); i++)
@@ -119,36 +157,77 @@ public class InventoryUtil {
 		return null;
 	}
 
-	public static void consumeItems(IInventory invIn, Map<Item, Integer> consumables, Map<Item, Integer> howMuchOfEach)
+	public static Set<ItemStack> consumeItems(IInventory invIn, Map<Item, Integer> consumablesInInventory, Map<Item, Integer> howMuchOfEach)
 	{
-		for(Item itemToCons : consumables.keySet())
+		Set<ItemStack> leftOverItems = new HashSet<ItemStack>();
+		for(Item itemToCons : consumablesInInventory.keySet())
 		{
-			ItemStack stack = invIn.getStackInSlot(consumables.get(itemToCons));
-			Item item = stack.getItem();
-			int amt = howMuchOfEach.get(item);
-
-			if(amt > stack.getCount())
+			ItemStack stack = invIn.getStackInSlot(consumablesInInventory.get(itemToCons));
+			int amt = howMuchOfEach.get(itemToCons);
+			
+			int i = 0;
+			while(amt > 0 && i < 5)
 			{
-				amt -= stack.getCount();
-				invIn.setInventorySlotContents(consumables.get(itemToCons), ItemStack.EMPTY);
-				howMuchOfEach.put(item, amt);
+				if(amt > stack.getCount())
+				{
+					amt -= stack.getCount();
+					stack = getLeastStackByItem(invIn, itemToCons);
+				}
+				else
+				{
+					invIn.decrStackSize(consumablesInInventory.get(itemToCons), amt);
+					amt = 0;
+				}
+				if(stack == null)
+					continue;
+				i++;
+			}
+		}
+		for(Item itemToGive : howMuchOfEach.keySet())
+		{
+			int amt = howMuchOfEach.get(itemToGive);
+			if(amt >= 0) continue;
+			
+			ItemStack stack = getLeastStackByItem(invIn, itemToGive);
+			Log.info("getStackByiTEM FOR CONSUME PLUS IS %s", stack);
+			amt = Math.min(itemToGive.getItemStackLimit(stack), Math.abs(amt));
+			if(stack == null || stack.getCount() + amt > invIn.getInventoryStackLimit() || stack.getCount() + amt > stack.getMaxStackSize())
+			{
+				int emptySlot = findEmptySlot(invIn);
+				ItemStack leftOver = new ItemStack(itemToGive, amt);
+				if(emptySlot == -1)
+					leftOverItems.add(leftOver);
+				else
+					invIn.setInventorySlotContents(emptySlot, new ItemStack(itemToGive, amt));
 			}
 			else
 			{
-				invIn.decrStackSize(consumables.get(itemToCons), amt);
+				stack.grow(amt);
 			}
 		}
+		
+		return leftOverItems;
 	}
+	
+	
 
 	@Nullable
 	public static Map<Item, Integer> getItemStacksInInventory(IInventory invIn, Map<Item, Integer> items)
 	{
+		Set<Item> toUse = new HashSet<>();
+		for(Map.Entry<Item, Integer> e : items.entrySet())
+		{
+			if(e.getValue() >= 0)
+			{
+				toUse.add(e.getKey());
+			}
+		}		
 		Map<Item, Integer> consInVilInv = new HashMap<Item, Integer>();
 		Map<Item, Integer> toBeConsumed = new HashMap<Item, Integer>();
 		for(int i = 0; i < invIn.getSizeInventory(); i++)
 		{
 			ItemStack stack = invIn.getStackInSlot(i);
-			if(items.keySet().contains(stack.getItem()))
+			if(toUse.contains(stack.getItem()))
 			{
 				int val = 0;
 
@@ -159,7 +238,7 @@ public class InventoryUtil {
 				toBeConsumed.put(stack.getItem(), i);
 			}
 		}
-		for(Item i : items.keySet())
+		for(Item i : toUse)
 		{
 			if(consInVilInv.get(i) != null)
 			{
@@ -175,7 +254,7 @@ public class InventoryUtil {
 		return toBeConsumed;
 	}
 
-	public static Set<ItemStack> getStacksByItem(IInventory invIn, Class<?> class1)
+	public static Set<ItemStack> getStacksByItemClass(IInventory invIn, Class<?> class1)
 	{
 		Set<ItemStack> stacks = new HashSet<ItemStack>();
 		for(int i = 0; i < invIn.getSizeInventory(); i++)
@@ -191,7 +270,7 @@ public class InventoryUtil {
 
 	public static float getFoodSaturation(IInventory inventory)
 	{
-		Set<ItemStack> food = getStacksByItem(inventory, ItemFood.class);
+		Set<ItemStack> food = getStacksByItemClass(inventory, ItemFood.class);
 		float runningTotal = 0;
 		for(ItemStack foodItem  : food)
 		{

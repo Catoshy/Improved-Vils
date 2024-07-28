@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.gui.EnlisteeContainer;
@@ -25,17 +26,20 @@ import net.minecraft.world.World;
 
 public class BatonDealMethods {
 
-	public static Map<Integer, UUID> getEntityIDsFromBatonPlatoon(EntityPlayerMP player, ItemStack stack) 
+	public static Map<Integer, UUID> getEntityIDsFromBatonPlatoon(EntityPlayerMP player) 
 	{
 		Map<UUID, Integer> map = new HashMap<UUID, Integer>(); //Map of entity unique ID to its in world ID (if it exists)
-		Set<UUID> vilIDs = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null).getVillagersSelected();
-		Set<Entity> foundEntities = CommonProxy.getEntitiesByUUID(vilIDs, player.world);
+		Set<UUID> vilIDs = player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null).getVillagersSelected();
+		Set<EntityVillager> foundEntities = ImprovedVils.proxy.getEntitiesByUUID(EntityVillager.class, vilIDs, player.world);
+		
+		//if(ConfigHandler.debug)
+		//	Log.info("BatonDealMethods, getEntityIDsFromBatonPlatoon, vilIDs ... % s", vilIDs);
 		
 		int i = -1;
 		for(UUID entityID : vilIDs) //UUIDs mapped to impossible entity-ID by default
 			map.put(entityID, i--);
 		foundEntities.forEach(t -> {map.replace(t.getUniqueID(), t.getEntityId());}); //put true entity-ID in map if already there
-			
+		
 		Map<Integer, UUID> swapped = map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey)); //swap the map keys <-> values
 		
 		return swapped;

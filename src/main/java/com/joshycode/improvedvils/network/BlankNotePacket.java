@@ -5,7 +5,9 @@ import java.util.UUID;
 
 import com.joshycode.improvedvils.CommonProxy.ItemHolder;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.gui.GuiBatonStelling;
+import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.gui.GuiBaton;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.VillagerListPacket.BatonBefolkPacket;
 import com.joshycode.improvedvils.util.BatonDealMethods;
 
@@ -30,18 +32,17 @@ public abstract class BlankNotePacket implements IMessage {
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
 					
-					EntityPlayerMP player = ctx.getServerHandler().player;
-					ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
-					
-					if(stack.getItem() != ItemHolder.BATON)
-						stack = player.getHeldItem(EnumHand.OFF_HAND);
-					if(stack.getItem() != ItemHolder.BATON)
+					EntityPlayerMP serverPlayer = ctx.getServerHandler().player;
+					if(serverPlayer.getHeldItem(EnumHand.MAIN_HAND).getItem() != ItemHolder.BATON && serverPlayer.getHeldItem(EnumHand.OFF_HAND).getItem() != ItemHolder.BATON)
 						return;
 					
-					Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(player, stack);
-					Map<Integer, Tuple<Boolean[], Integer>> villagerInfo = BatonDealMethods.getVillagerCapabilityInfoAppendMap(villagerIds.keySet(), player.world);
+					Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(serverPlayer);
+					Map<Integer, Tuple<Boolean[], Integer>> villagerInfo = BatonDealMethods.getVillagerCapabilityInfoAppendMap(villagerIds.keySet(), serverPlayer.world);
 					
-					NetWrapper.NETWORK.sendTo(new BatonBefolkPacket(villagerIds, villagerInfo), player);
+					if(ConfigHandler.debug)
+						Log.info("BatonBefolkQuery, BlankNotePacket ids are... %s", villagerIds);
+					
+					NetWrapper.NETWORK.sendTo(new BatonBefolkPacket(villagerIds, villagerInfo), serverPlayer);
 				});
 				return null;
 			}
@@ -56,9 +57,9 @@ public abstract class BlankNotePacket implements IMessage {
 			public IMessage onMessage(WarnNoRoom message, MessageContext ctx) 
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
-					if(Minecraft.getMinecraft().currentScreen instanceof GuiBatonStelling)
+					if(Minecraft.getMinecraft().currentScreen instanceof GuiBaton)
 					{
-						((GuiBatonStelling) Minecraft.getMinecraft().currentScreen).tooManyToMove();
+						((GuiBaton) Minecraft.getMinecraft().currentScreen).tooManyToMove();
 					}
 				});
 				return null;

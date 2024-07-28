@@ -1,4 +1,4 @@
-package com.joshycode.improvedvils.capabilities.itemstack;
+package com.joshycode.improvedvils.capabilities.entity;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -17,6 +17,10 @@ import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.Pair;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagInt;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagLong;
+import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.math.BlockPos;
 
 public class MarshalsBatonCapability implements IMarshalsBatonCapability {
@@ -25,18 +29,28 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	public static final String BATON_NBT_KEY_P = "improved-vils:marshalsbatonplatoon";
 	private static final String BATON_NBT_KEY_B = "improved-vils:marshalsbatonfoodstores";
 	private static final String BATON_NBT_KEY_K = "improved-vils:marshalsbatonkitstores";
-	private static final Set<UUID> emptySet = new HashSet<UUID>();
 
 	private Map<Integer, Set<UUID>> platoons;
 	private Map<Integer, Long> foodStorePos;
 	private Map<Integer, Long> kitStorePos;
 	private int selectedUnit;
+	private long isSureClearCommand;
 
 	public MarshalsBatonCapability()
 	{
-		platoons = this.generateEmptyPlatoonMap();
-		foodStorePos = new HashMap<>();
-		kitStorePos = new HashMap<>();
+		if(ConfigHandler.debug)
+			Log.info("Gen new MarshalsBatonCapability!!!", null);
+		this.platoons = this.generateEmptyPlatoonMap();
+		this.foodStorePos = new HashMap<>();
+		this.kitStorePos = new HashMap<>();
+		this.isSureClearCommand = 0;
+	}
+	
+	public void clearCommand()
+	{
+		this.platoons = this.generateEmptyPlatoonMap();
+		this.foodStorePos = new HashMap<>();
+		this.kitStorePos = new HashMap<>();
 	}
 
 	private Map<Integer, Set<UUID>> generateEmptyPlatoonMap() 
@@ -44,7 +58,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 		Map<Integer, Set<UUID>> map = new HashMap<Integer, Set<UUID>>();
 		for(int i = 0; i < 50; i++)
 		{
-			map.put(i, emptySet);
+			map.put(i, new HashSet<UUID>());
 		}
 		return map;
 	}
@@ -52,20 +66,15 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	@Override
 	public NBTTagCompound serializeNBT()
 	{
+		if(ConfigHandler.debug)
+			Log.info("Marshal's Baton Cap, serializeNBT %s", this.platoons);
 		final NBTTagCompound nbt = new NBTTagCompound();
+		ByteArrayOutputStream baplatoon = new ByteArrayOutputStream();
+		ByteArrayOutputStream bastores = new ByteArrayOutputStream();
+		ObjectOutputStream oos;
 
-		 //ByteArrayOutputStream bacompany = new ByteArrayOutputStream();
-		 ByteArrayOutputStream baplatoon = new ByteArrayOutputStream();
-		 ByteArrayOutputStream bastores = new ByteArrayOutputStream();
-		 ObjectOutputStream oos;
-
-	     try
-	     {
-			/*oos = new ObjectOutputStream(bacompany);
-			oos.writeObject(this.companys);
-			oos.close();
-		    nbt.setByteArray(BATON_NBT_KEY_C, bacompany.toByteArray());*/
-
+	    try
+	    {    	 
 		    oos = new ObjectOutputStream(baplatoon);
 		    oos.writeObject(this.platoons);
 			oos.close();
@@ -83,6 +92,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 		    oos.close();
 		    nbt.setByteArray(BATON_NBT_KEY_K, bastores.toByteArray());
 		} catch (IOException e) { e.printStackTrace(); }
+	     
 		return nbt;
 	}
 
@@ -96,11 +106,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_P)));
 			this.platoons = (Map<Integer, Set<UUID>>) ois.readObject();
 			ois.close();
-			
-			/*ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_C)));
-			this.companys = (Multimap<Integer, Integer>) ois.readObject();
-			ois.close();*/
-			
+
 			ois = new ObjectInputStream(new ByteArrayInputStream(nbt.getByteArray(BATON_NBT_KEY_B)));
 			this.foodStorePos = (Map<Integer, Long>) ois.readObject();
 			ois.close();
@@ -162,13 +168,15 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	}
 
 	@Override
-	public boolean removeVillager(UUID entityid) {
-		boolean flag = false;
+	public boolean removeVillager(UUID entityid) 
+	{
+		if(ConfigHandler.debug)
+			Log.info("removing villager from Baton!!!! %s", entityid);
 		for(Set<UUID> platoon : this.platoons.values())
 		{
-			flag |= platoon.remove(entityid);
+			if(platoon.remove(entityid)) return true;
 		}
-		return flag;
+		return false;
 	}
 
 	@Override
@@ -240,5 +248,35 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	public enum Provisions
 	{
 		KIT, PROVISIONS;
+	}
+
+	@Override
+	public Map<Integer, Long> getfoodStoreMap() { return this.foodStorePos; }
+
+	@Override
+	public Map<Integer, Long> getkitStoreMap() { return this.kitStorePos; }
+
+	@Override
+	public Map<Integer, Set<UUID>> getPlatoonMap() { return this.platoons; }
+
+	@Override
+	public void attachInfo(Map<Integer, Long> foodStoreMap, Map<Integer, Long> kitStoreMap,
+			Map<Integer, Set<UUID>> platoonMap) 
+	{
+		this.foodStorePos = foodStoreMap;
+		this.kitStorePos = kitStoreMap;
+		this.platoons = platoonMap;
+	}
+
+	@Override
+	public boolean isSureClearCommand(long worldTime) 
+	{
+		return (worldTime - this.isSureClearCommand) < 800;
+	}
+
+	@Override
+	public void setSureClearCommand(long worldTime) 
+	{
+		this.isSureClearCommand = worldTime;
 	}
 }

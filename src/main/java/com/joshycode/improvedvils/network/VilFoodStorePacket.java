@@ -5,12 +5,13 @@ import java.util.Set;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
@@ -53,7 +54,7 @@ public class VilFoodStorePacket extends BlockPosPacket implements IMessage {
 			{
 				EntityPlayerMP player = ctx.getServerHandler().player;
 				WorldServer world = ctx.getServerHandler().player.getServerWorld();
-				IMarshalsBatonCapability cap = player.getHeldItemMainhand().getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
+				IMarshalsBatonCapability cap = player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 				if(world.getBlockState(message.pos).getBlock().hasTileEntity(world.getBlockState(message.pos)))
 				{
 					if(cap != null &&  world.getTileEntity(message.pos) != null)
@@ -63,8 +64,8 @@ public class VilFoodStorePacket extends BlockPosPacket implements IMessage {
 						int prevSelectedUnit = cap.selectedUnit();
 						cap.setPlatoon(message.provisioningUnit / 10, message.provisioningUnit % 10);
 						cap.setPlatoonFoodStore(message.pos);
-						Set<Entity> villagers = CommonProxy.getEntitiesByUUID(cap.getVillagersSelected(), world);
-						for(Entity e : villagers)
+						Set<EntityVillager> villagers = ImprovedVils.proxy.getEntitiesByUUID(EntityVillager.class, cap.getVillagersSelected(), world);
+						for(EntityVillager e : villagers)
 						{
 							e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(message.pos);
 						}

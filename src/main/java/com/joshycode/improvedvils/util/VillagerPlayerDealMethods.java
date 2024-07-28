@@ -11,58 +11,35 @@ import javax.annotation.Nullable;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
-import com.joshycode.improvedvils.capabilities.itemstack.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.network.NetWrapper;
-import com.joshycode.improvedvils.network.VilEnlistPacket;
-import com.joshycode.improvedvils.network.VilStateUpdate;
 import com.mojang.authlib.GameProfile;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.EnumAction;
-import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.server.management.PlayerChunkMap;
 
 public class VillagerPlayerDealMethods {
 
-	private static final int DRAFTED = 1;
-	private static final int NULL = 0;
-	private static final int GUARDING = 1;
-	private static final int FOLLOWING = 1;
 	public static final int EVIL = -15;
 	public static final int HATED_THRESHOLD = -10;
 	public static final int GOOD_THRESHOLD = 5;
 	public static final int BAD_THRESHOLD = -5;
 	public static final int UNBEARABLE_THRESHOLD = -7;
 
-	public static void setPlayerReputationAcrossVillage(World world, Village village, EntityPlayer player)
-	{
-		int reputation = village.getPlayerReputation(player.getUniqueID());
-		List<EntityVillager> population = getVillagePopulation(village, world);
-
-		for(EntityVillager entity : population)
-		{
-			IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-			if(vilCap.getPlayerReputation(player.getUniqueID()) == 0)
-			{
-				vilCap.setPlayerReputation(player.getUniqueID(), reputation, reputation);
-			}
-		}
-	}
 	/**
 	 * Does not check for villager in home village!
 	 * @param entityIn villager in question
@@ -106,30 +83,6 @@ public class VillagerPlayerDealMethods {
 		vilCap.setPlayerReputation(player, playerReputation, referenceReputation);
 	}
 
-	public static void updateFromVillageReputation(EntityVillager villager, Village village)
-	{
-		IImprovedVilCapability vilCap = villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
-		if(!isVillagerInHomeVillage(villageCap.getUUID(), vilCap.getHomeVillageID())) return;
-
-		if(!villageCap.getTeam().equals(vilCap.getTeam()))
-		{
-			VilMethods.setTeam(villager, villageCap.getTeam());
-		}
-		for(UUID playerId : vilCap.getKnownPlayers())
-		{
-			int playerReputation = village.getPlayerReputation(playerId);
-			if(playerReputation > 5 || playerReputation < 0 || vilCap.getPlayerReputation(playerId) > 15F)
-			{
-				List<EntityVillager> population = getVillagePopulation(village, villager.getWorld());
-				int updateReputation = getVillageReputationFromMean(village, playerId, population) ;
-				updateVillageReputation(villager.getEntityWorld(), village, playerId, updateReputation, population);
-				
-			}
-		}
-		updateVillageTeamReputation(village, villager.getEntityWorld().getScoreboard().getTeam(vilCap.getTeam()));
-	}
-
 	public static void updateVillageReputation(World world, Village village, UUID player, int updateReputation, List<EntityVillager> population)
 	{
 		for(EntityVillager entity : population)
@@ -146,7 +99,7 @@ public class VillagerPlayerDealMethods {
 		}
 	}
 	
-	private static int getVillageReputationFromMean(Village village, UUID player, List<EntityVillager> population) 
+	public static int getVillageReputationFromMean(Village village, UUID player, List<EntityVillager> population) 
 	{
 		double sumReputation = 0;
 		int nowtimeReputation = village.getPlayerReputation(player);
@@ -179,7 +132,7 @@ public class VillagerPlayerDealMethods {
 		{
 			@SuppressWarnings("deprecation")
 			int reputation = village.getPlayerReputation(playerUsername);
-			if(reputation < VillagerPlayerDealMethods.EVIL)
+			if(reputation < EVIL)
 			{
 				evilPlayer = true;
 				break;
@@ -190,25 +143,29 @@ public class VillagerPlayerDealMethods {
 		int teamReputation = (int) (sum / denom);
 		if(evilPlayer)
 		{	
-			return VillagerPlayerDealMethods.HATED_THRESHOLD;
+			return HATED_THRESHOLD;
 		}
 		villageCap.setTeamReputation(attackingPlayerTeam, teamReputation);
 		return teamReputation;
 	}
 
-	public static List<EntityVillager> getVillagePopulation(Village village, World world)
+	public static Pair<List<EntityVillager>, long[]> getVillagePopulation(Village village, World world)
 	{
 		BlockPos villageCenter = village.getCenter();
 		AxisAlignedBB villageArea = new AxisAlignedBB(
 				new BlockPos(villageCenter.getX() - village.getVillageRadius(), villageCenter.getY() - village.getVillageRadius(), villageCenter.getZ() - village.getVillageRadius()),
 				new BlockPos(villageCenter.getX() + village.getVillageRadius(), villageCenter.getY() + village.getVillageRadius(), villageCenter.getZ() + village.getVillageRadius()));
 		int i = 0;
+		long[] loadedChunks = new long[32];
+		out:
 		for(int x = ((int)villageArea.minX)  << 4; x < ((int)villageArea.maxX << 4); x++)
 			for(int z = ((int)villageArea.minZ)  << 4; z < ((int)villageArea.maxZ << 4); z++)
 			{
-				if(i++ > 32)
-					break;
+				if(i >= 32)
+					break out;
+				loadedChunks[i] = x << 32 | z & 0xFFFFFFFF;
 				world.getChunkProvider().provideChunk(x, z);
+				i++;
 			}
 		
 		List<EntityVillager> list = world.getEntitiesWithinAABB(EntityVillager.class, villageArea);
@@ -221,7 +178,28 @@ public class VillagerPlayerDealMethods {
 			}
 		}
 		list.removeAll(set);
-		return list;
+		return new Pair<List<EntityVillager>, long[]>(list, loadedChunks);
+	}
+	
+	public static void putAwayChunks(World world, long[] removeChunks) {
+		if(!world.isRemote)
+		{
+			PlayerChunkMap chunkHandler =((WorldServer) world).getPlayerChunkMap();
+			for(long l : removeChunks)
+			{
+				int x = (int)l >> 32;
+				int z = (int)l;
+				if(!chunkHandler.contains(x, z))
+				{
+					Chunk chunk = ((WorldServer) world).getChunkProvider().getLoadedChunk(x, z);
+					if(chunk == null) continue;
+						
+					((WorldServer) world).getChunkProvider().queueUnload(chunk);
+					if(ConfigHandler.debug)
+						Log.info("Chunk queued for unload: %s", chunk);
+				}
+			}
+		}
 	}
 
 	public static boolean getPlayerFealty(EntityPlayer player, EntityVillager entityIn)
@@ -278,70 +256,11 @@ public class VillagerPlayerDealMethods {
 		return 0;
 	}
 
-	@Nullable
-	private static Team getVillagerTeam(EntityVillager entityIn)
-	{
-		IImprovedVilCapability vilCap = entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		if(vilCap.getTeam() != null)
-		{
-			String s = vilCap.getTeam();
-			return entityIn.getEntityWorld().getScoreboard().getTeam(s);
-		}
-		return null;
-	}
-
 	public static boolean isVillagerInHomeVillage(UUID villageID, @Nullable UUID vilsHomeVillageID)
 	{
 		return villageID.equals(vilsHomeVillageID);
 	}
 
-	public static VilStateUpdate getUpdateGuiForClient(EntityVillager e, EntityPlayer player)
-	{
-		Vec3i vec = null; int guardStateVal = 0, followStateVal = 0, dutyStateVal = 0, enlistedCompany = 0, enlistedPlatoon = 0; boolean hungry = false;
-
-		if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
-		{
-			guardStateVal += VilMethods.getDuty(e) ? DRAFTED : NULL;
-			hungry = VilMethods.getHungry(e);
-			guardStateVal = hungry ? NULL : guardStateVal;
-
-			if(guardStateVal == 0)
-			{
-				VilMethods.setFollowing((EntityVillager) e, false);
-				VilMethods.setGuardBlock((EntityVillager) e, null);
-			}
-
-			followStateVal = guardStateVal;
-			guardStateVal += VilMethods.getGuardBlockPos(e) != null ? GUARDING : NULL;
-			followStateVal += VilMethods.getFollowing(e) ? FOLLOWING : NULL; 
-			
-			dutyStateVal = VilMethods.getDuty(e) ? 2 : 1;
-			//dutyStateVal = InventoryUtil.doesInventoryHaveItem(player.inventory, ItemHolder.BATON) != 0 ? dutyStateVal : NULL;
-			if(guardStateVal == 2)
-				vec = VilMethods.getGuardBlockPos(e);
-			
-		}
-
-		if(vec != null)
-		{
-			return new VilStateUpdate(guardStateVal, followStateVal, dutyStateVal, hungry, enlistedCompany, enlistedPlatoon, vec);
-		}
-		return new VilStateUpdate(guardStateVal, followStateVal, dutyStateVal, hungry, enlistedCompany, enlistedPlatoon);
-	}
-
-	public static void resetInvListeners(EntityVillager entity)
-	{
-		if(ConfigHandler.debug)
-			Log.info("closing out inv changed listener %s", entity);
-		if(entity.isDead) return;
-		entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setInvListener(false);
-	}
-
-	public static void updateGuiForClient(EntityVillager entity, EntityPlayer playerEntityByUUID)
-	{
-		NetWrapper.NETWORK.sendTo(getUpdateGuiForClient(entity, playerEntityByUUID), (EntityPlayerMP) playerEntityByUUID);
-	}
-	
 	public static void villageBadReputationChange(World entityWorld, Village village, EntityPlayer attackingPlayer)
 	{
 		int villageReputation = village.getPlayerReputation(attackingPlayer.getUniqueID());
@@ -364,8 +283,10 @@ public class VillagerPlayerDealMethods {
 	{
 		if(ConfigHandler.debug)
 			Log.info("villageReputationChange, villageReputation is %s", villageReputation);
-		List<EntityVillager> population = getVillagePopulation(village, entityWorld);
 		
+		Pair<List<EntityVillager>, long[]> pair = getVillagePopulation(village, entityWorld);
+		List<EntityVillager> population = pair.a;
+		long[] removeChunks = pair.b;		
 		if(villageReputation < 0 || villageReputation > 5)
 		{
 			updateVillageReputation(entityWorld, village, player.getUniqueID(), villageReputation, population);
@@ -392,20 +313,7 @@ public class VillagerPlayerDealMethods {
 					villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setMutinous(false);
 			}
 		}
-	}
-
-	public static void childGrown(EntityVillager entity)
-	{
-		if(entity.getEntityWorld().isRemote) return;
-		
-		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		Village village = entity.getEntityWorld().getVillageCollection().getNearestVillage(new BlockPos(entity), 0);
-		if(vilCap.getHomeVillageID() != null || village == null) return;
-		
-		IVillageCapability villageCap =  village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);
-		vilCap.setHomeVillageID(villageCap.getUUID());
-		if(/*vilCap.getTeam() != null &&*/ entity.getEntityWorld().getScoreboard().getTeam(villageCap.getTeam()) != null)
-			VilMethods.setTeam(entity, villageCap.getTeam());
+		putAwayChunks(entityWorld, removeChunks);
 	}
 
 	public static void updateArmourWeaponsAndFood(EntityVillager entity)
@@ -494,36 +402,5 @@ public class VillagerPlayerDealMethods {
 	public static void scheduleMutiny(Village village, EntityPlayer player, World world) 
 	{
 		// TODO Auto-generated method stub	
-	}
-
-	public static VilEnlistPacket updateEnlistInfoForStack(ItemStack stack, boolean isEnlisted, int company, int platoon, Entity entity, IImprovedVilCapability vilCap)
-	{
-		if(stack != null)
-		{
-		 	IMarshalsBatonCapability cap = stack.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
-		 	if(cap != null)
-		 	{
-		 		if(isEnlisted)
-		 		{
-		 			BlockPos foodStore = cap.getPlatoonFoodStore(company, platoon);
-		 			if(vilCap != null && foodStore != null)
-		 				vilCap.setFoodStore(foodStore);
-		 			
-		 			BlockPos kitStore = cap.getPlatoonKitStore(company, platoon);
-		 			if(vilCap != null && kitStore != null)
-		 				vilCap.setKitStore(kitStore);
-		 			
-		 			cap.addVillager(entity.getUniqueID(), company, platoon);
-		 			return new VilEnlistPacket(0, company, platoon, true);
-		 		}
-		 		else
-		 		{
-		 			vilCap.setFoodStore(null).setKitStore(null);
-		 			cap.removeVillager(entity.getUniqueID());
-		 			return new VilEnlistPacket(0, 0, 0, false);
-		 		}
-		 	}
-		}
-		return null;
 	}
 }
