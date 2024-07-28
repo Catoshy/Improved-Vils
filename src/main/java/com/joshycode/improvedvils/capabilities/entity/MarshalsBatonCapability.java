@@ -38,8 +38,6 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 
 	public MarshalsBatonCapability()
 	{
-		if(ConfigHandler.debug)
-			Log.info("Gen new MarshalsBatonCapability!!!", null);
 		this.platoons = this.generateEmptyPlatoonMap();
 		this.foodStorePos = new HashMap<>();
 		this.kitStorePos = new HashMap<>();
@@ -66,8 +64,6 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	@Override
 	public NBTTagCompound serializeNBT()
 	{
-		if(ConfigHandler.debug)
-			Log.info("Marshal's Baton Cap, serializeNBT %s", this.platoons);
 		final NBTTagCompound nbt = new NBTTagCompound();
 		ByteArrayOutputStream baplatoon = new ByteArrayOutputStream();
 		ByteArrayOutputStream bastores = new ByteArrayOutputStream();
@@ -170,8 +166,6 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	@Override
 	public boolean removeVillager(UUID entityid) 
 	{
-		if(ConfigHandler.debug)
-			Log.info("removing villager from Baton!!!! %s", entityid);
 		for(Set<UUID> platoon : this.platoons.values())
 		{
 			if(platoon.remove(entityid)) return true;
@@ -187,7 +181,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 				if(id.equals(uniqueID))
 				{
 					if(ConfigHandler.debug)
-						Log.info("an Id found in baton: %s", uniqueID);
+						Log.info("an ID found in baton: %s", uniqueID);
 					return new Pair<Integer, Integer>(p / 10, p);
 				}
 		return null;

@@ -78,9 +78,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	private int burstCount; //shots left in current burst.
 	private int friendlyFireAvoidTicks;
 	
-	//HEAD DIRECTION DEBUG TODO
-	private ArrayList<Float> headFacing;
-	
 	//Friendly-fire debug TODO
 	private String debugString = "";
 
@@ -92,8 +89,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		this.attackTimeVariance = attackTimeVariance;
 		this.attackRangeBow = attackRangeBow;
 		this.burstCount = 0;
-		//HEAD DIRECTION DEBUG TODO
-		this.headFacing = new ArrayList<>();
 		setMutexBits(3);
 	}
 
@@ -226,9 +221,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		float f;
 		this.entityHost.getLookHelper().setLookPositionWithEntity(this.attackTarget, 30.0F, 55.0F);
 
-		//HEAD DIRECTION DEBUG TODO
-		this.recordHeadFacing();
-		
 		if(--this.rangedAttackTime <= 0)
 		{
 			if(d0 > this.attackRange_2 || !targetInSight || this.checkForConflict() || this.notLookingAtTarget() || !this.attackTarget.isEntityAlive())
@@ -272,30 +264,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		}
 	}
 
-	//HEAD DIRECTION DEBUG TODO
-	private void recordHeadFacing() 
-	{
-		this.headFacing.add(this.entityHost.getRotationYawHead());
-		if(this.headFacing.size() > 5)
-			this.headFacing.remove(5);
-	}
-	
-	//HEAD DIRECTION DEBUG TODO
-	private boolean shiftInLastFive()
-	{
-		if(this.headFacing.size() < 5)
-			return false;
-		float sumDifference = 0;
-		float prevFacing = this.headFacing.get(4);
-		for(int i = 3; i >= 0; i--)
-		{
-			float facing = this.headFacing.get(i);
-			sumDifference += MathHelper.wrapDegrees(facing - prevFacing);
-			prevFacing = facing;
-		}
-		return Math.abs(sumDifference) > 30;
-	}
-
 	private void attackEntityWithRangedAttackGun(EntityLivingBase target, float distanceFactor)
 	{
 		EnumDifficulty difficulty = this.entityHost.world.getDifficulty();
@@ -333,18 +301,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		this.entityHost.getEntityWorld().spawnEntity(bullet);
 		NetWrapper.NETWORK.sendToAllAround(new GunFiredPacket(this.entityHost.getEntityId(), this.getParticleData()), new TargetPoint(this.entityHost.dimension, this.entityHost.posX, this.entityHost.posY, this.entityHost.posZ, 124));
 		this.entityHost.playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 2.0F, .05F);
-		if(this.shiftInLastFive() && ConfigHandler.debug)
-		{
-			Log.info("HEAD DIRECTION DEBUG\n" +
-					"Attack Target: " + this.attackTarget + "\n" +
-					"Target Alive: " + this.attackTarget.isEntityAlive() + "\n" +
-					"Target Pos: " + this.attackTarget.getPosition() + "\n" +
-					"Head Yaws: " + this.headFacing.get(4) + "\n" +
-					"4: " + this.headFacing.get(3) + "\n" +
-					"3: " + this.headFacing.get(2) + "\n" +
-					"2: " + this.headFacing.get(1) + "\n" +
-					"1: " + this.headFacing.get(0) + "\n");
-		}
     }
 
 	//TODO DEBUG

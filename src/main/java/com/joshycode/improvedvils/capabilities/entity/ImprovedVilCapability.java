@@ -9,8 +9,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.lang3.tuple.MutablePair;
 
 import com.joshycode.improvedvils.Log;
@@ -56,8 +54,6 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	@Override
 	public NBTTagCompound serializeNBT()
 	{
-		if(ConfigHandler.debug)
-			Log.info("ImrpovedVil serializeNBT", null);
 		final NBTTagCompound nbt = new NBTTagCompound();
 
 		nbt.setBoolean(VILPLAYER_NBT_KEY + "b", isHungry); /*b for boolean!*/
@@ -123,8 +119,6 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	@Override
 	public void deserializeNBT(NBTTagCompound nbt)
 	{
-		if(ConfigHandler.debug)
-			Log.info("ImrpovedVil unserializeNBT", null);
 		this.isHungry = nbt.getBoolean(VILPLAYER_NBT_KEY + "b");
 		this.isReturning = nbt.getBoolean(VILPLAYER_NBT_KEY + "br");
 		this.isRefilling = nbt.getBoolean(VILPLAYER_NBT_KEY + "brf");
