@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.jline.utils.Log;
-
 import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;

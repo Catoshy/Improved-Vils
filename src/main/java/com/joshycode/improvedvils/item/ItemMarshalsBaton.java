@@ -1,7 +1,6 @@
 package com.joshycode.improvedvils.item;
 
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.gui.GuiBatonTroopCommand;

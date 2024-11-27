@@ -10,8 +10,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import org.jline.utils.Log;
-
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.joshycode.improvedvils.CommonProxy;

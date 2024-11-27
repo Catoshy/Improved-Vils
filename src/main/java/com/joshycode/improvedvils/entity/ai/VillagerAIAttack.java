@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.jline.utils.Log;
-
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.VilAttributes;
