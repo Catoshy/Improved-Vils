@@ -21,8 +21,8 @@ import com.joshycode.improvedvils.handler.VillagerPredicate;
 import com.joshycode.improvedvils.network.GunFiredPacket;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.util.InventoryUtil;
-import com.joshycode.improvedvils.util.Pair;
 import com.joshycode.improvedvils.util.LookHelper;
+import com.joshycode.improvedvils.util.Pair;
 
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;

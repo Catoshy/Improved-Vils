@@ -15,7 +15,6 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
-import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
@@ -36,10 +35,7 @@ public abstract class VillagerAIAttack extends EntityAIBase {
 	private static boolean attackEntityAsVillager(EntityVillager attacker, EntityLivingBase entityIn, boolean unBlocksome) 
 	{
 		float f = (float)attacker.getEntityAttribute(VilAttributes.VIL_DAMAGE).getAttributeValue();
-	    int i = 0;
-	    
-	    Log.info("attack val \'f\' starts at ... ", f);
-	
+	    int i = 0;	
 	    ItemStack itemstack = attacker.getHeldItemMainhand();
 	
 	    List<AttributeModifier> l = new ArrayList<AttributeModifier>(itemstack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()));
@@ -58,8 +54,6 @@ public abstract class VillagerAIAttack extends EntityAIBase {
 	    
 	    f += EnchantmentHelper.getModifierForCreature(attacker.getHeldItemMainhand(), entityIn.getCreatureAttribute());
 	    i += EnchantmentHelper.getKnockbackModifier(attacker);
-	    
-	    Log.info("attack val \'f\' ends at ... ", f);
 	    
 	    DamageSource attack = unBlocksome ? DamageSource.causeMobDamage(attacker).setDamageBypassesArmor() : DamageSource.causeMobDamage(attacker);
 	    

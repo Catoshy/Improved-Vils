@@ -31,7 +31,6 @@ import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.pathfinding.Path;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.potion.PotionHealth;
 import net.minecraft.potion.PotionUtils;

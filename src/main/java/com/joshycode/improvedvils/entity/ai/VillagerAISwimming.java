@@ -6,12 +6,10 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.ai.EntityAISwimming;
-import net.minecraft.entity.ai.EntityMoveHelper;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
 
 public class VillagerAISwimming extends EntityAISwimming {
 

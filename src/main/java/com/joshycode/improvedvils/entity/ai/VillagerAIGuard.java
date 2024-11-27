@@ -7,7 +7,6 @@ import org.jline.utils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.pathfinding.Path;
 import net.minecraft.util.math.BlockPos;
 
 public class VillagerAIGuard extends EntityAIGoFar{

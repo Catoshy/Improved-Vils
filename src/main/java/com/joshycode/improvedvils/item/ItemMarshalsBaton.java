@@ -94,7 +94,6 @@ public class ItemMarshalsBaton extends Item {
 		RayTraceResult lookingAt = entity.rayTrace(6.0, 1.0F);
 		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK)
 		{
-			Log.info("Set kit store!");
 			BlockPos pos = lookingAt.getBlockPos();
 			NetWrapper.NETWORK.sendToServer(new VilKitStorePacket(pos, provisioningUnit));
 		}

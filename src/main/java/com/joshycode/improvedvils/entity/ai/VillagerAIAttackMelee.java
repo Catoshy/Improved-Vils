@@ -3,8 +3,8 @@ package com.joshycode.improvedvils.entity.ai;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
+
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.WeaponBrooksData;
@@ -15,7 +15,6 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
-import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -40,7 +39,6 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	private double targetY;
 	private double targetZ;
 	private int delayCounter;
-	private int failedPathFindingPenalty;
 	int attackTick;
 	private boolean runAway;
 	private boolean brookingRangedWeapon;
@@ -236,31 +234,26 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	{
 		if(!this.attacker.getHeldItemMainhand().getItem().equals(prevHeldItem))
 		{
-			Log.info("not prev held item", null);
 			return false;
 		}
 		BlockPos pos = VilMethods.getGuardBlockPos(this.attacker);
 		if(pos != null && this.attacker.getDistanceSq(pos) > CommonProxy.MAX_GUARD_DIST - 31)
 		{
-			Log.info("Guard block problems", null);
 			return false;
 		}
 		if(!areAttackCommands()  || VilMethods.isOutsideHomeDist( this.attacker)
 				|| VilMethods.getMovingIndoors(this.attacker))
 		{
-			Log.info("something something commands", null);
     		return false;
     	}
 		EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
 
         if (entitylivingbase == null || !entitylivingbase.isEntityAlive())
         {
-			Log.info("Target null", null);
             return false;
         }
     	if(this.brookingRangedWeapon && (!(this.attacker.getDistanceSq(this.attacker.getAttackTarget()) < 8 || VilMethods.outOfAmmo(this.attacker))))
     	{
-			Log.info("weapons.", null);
 			return false;
     	}
         /*if (canPenalize)

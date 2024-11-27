@@ -5,7 +5,6 @@ import java.util.Set;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
-import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 

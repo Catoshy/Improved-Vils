@@ -112,7 +112,6 @@ public class VillagerAIAttackNearestTarget extends VillagerAITarget {
 	@Override
 	public void startExecuting()
     {
-		Log.info("Setting attack target: ", this.targetEntity);
 		this.taskOwner.setAttackTarget(this.targetEntity);
         super.startExecuting();
     }
@@ -129,9 +128,7 @@ public class VillagerAIAttackNearestTarget extends VillagerAITarget {
 	public void updateTask()
 	{
 		if(this.taskOwner.getRNG().nextInt(3) != 0) return;
-		
-		Log.info("Setting attack target onUpdate: ", this.targetEntity);
-		
+				
 		EntityLivingBase targetEntity = this.taskOwner.getAttackTarget();
 		this.shouldExecute();
 		

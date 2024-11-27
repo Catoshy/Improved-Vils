@@ -23,9 +23,7 @@ import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
-import net.minecraft.pathfinding.Path;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 
@@ -122,20 +120,11 @@ public class VillagerAIBayonetCharge extends EntityAIGoFar {
 				this.chargeCounter = 0;
 				IAttributeInstance attribute = this.entityHost.getAttributeMap().getAttributeInstance(VilAttributes.VIL_DAMAGE);
 				if(attribute.hasModifier(CHARGE_BOOST_III))
-				{
-					Log.info("taking down from charge3");
 					attribute.removeModifier(CHARGE_BOOST_III);
-				}
 				else if(attribute.hasModifier(CHARGE_BOOST_II))
-				{
-					Log.info("taking down from charge2");
 					attribute.removeModifier(CHARGE_BOOST_II);
-				}
 				else if(attribute.hasModifier(CHARGE_BOOST_I))
-				{
-					Log.info("taking down from charge1");
 					attribute.removeModifier(CHARGE_BOOST_I);
-				}
 				else
 				{
 					this.failedCharge = true;

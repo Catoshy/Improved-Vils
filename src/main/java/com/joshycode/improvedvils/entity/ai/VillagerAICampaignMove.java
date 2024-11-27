@@ -4,11 +4,9 @@ import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
-import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.block.BlockLilyPad;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.pathfinding.Path;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
