@@ -47,13 +47,15 @@ public abstract class VillagerPredicate<T extends Entity> implements Predicate<T
         }
 	}
 	
-	public static class EnemyVillagerAttackPredicate<T extends EntityVillager> extends VillagerPredicate<T> {
+	public static class EnemyVillagerAttackPredicate<T extends Entity> extends VillagerPredicate<T> {
 	
 		protected EnemyVillagerAttackPredicate(EntityVillager taskOwner) { super(taskOwner); }
 		
 		@Override
 		public boolean apply(T potentialEnemyVil)
         {
+			if(!(potentialEnemyVil instanceof EntityVillager)) return false;
+			
 			IImprovedVilCapability taskOwnerCapability =  this.taskOwner.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 			IImprovedVilCapability potentCapability = potentialEnemyVil.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 			return !potentCapability.getTeam().isEmpty() && !taskOwnerCapability.getTeam().isEmpty() && !taskOwnerCapability.getTeam().equals(potentCapability.getTeam());

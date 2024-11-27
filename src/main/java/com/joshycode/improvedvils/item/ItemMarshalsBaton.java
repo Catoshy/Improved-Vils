@@ -3,6 +3,8 @@ package com.joshycode.improvedvils.item;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
+import com.joshycode.improvedvils.gui.GuiBatonTroopCommand;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilCommandPacket;
@@ -63,12 +65,17 @@ public class ItemMarshalsBaton extends Item {
 
 	private void tryCommandVillagerMovement(Entity entity)
 	{
+		if(ImprovedVils.proxy.getCommand() == TroopCommands.NONE)
+		{
+			Minecraft.getMinecraft().displayGuiScreen(new GuiBatonTroopCommand());
+			return;
+		}
 		double d0 = ConfigHandler.commandDist;
 		RayTraceResult lookingAt = entity.rayTrace(d0, 1.0F);
 		if (lookingAt != null && lookingAt.typeOfHit == RayTraceResult.Type.BLOCK)
 		{
 			BlockPos pos = lookingAt.getBlockPos();
-			NetWrapper.NETWORK.sendToServer(new VilCommandPacket(pos));
+			NetWrapper.NETWORK.sendToServer(new VilCommandPacket(pos, ImprovedVils.proxy.getCommand()));
 		}
 	}
 

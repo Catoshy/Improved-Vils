@@ -13,7 +13,6 @@ import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
-import com.joshycode.improvedvils.util.PathUtil;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.block.Block;
@@ -21,15 +20,12 @@ import net.minecraft.block.BlockChest;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.EntityAIBase;
-import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
 import net.minecraft.pathfinding.Path;
-import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.EntitySelectors;
@@ -128,11 +124,11 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 	{
 		EntityVillager villager = (EntityVillager) this.entityHost;
 		int revengeTime = villager.ticksExisted - villager.getRevengeTimer();
-		if((revengeTime < 20 && revengeTime >= 0) || this.pathfindingFails > this.mostPathfindingFails)
+		if(revengeTime < 20 && revengeTime >= 0)
 			return false;
 		if((VilMethods.getGuardBlockPos(villager) != null && this.finished) || (villager.getNavigator().noPath() && this.finished))
 			return false;
-		return true;
+		return super.shouldContinueExecuting();
 	}
 	
 	private void refillInventory()
@@ -235,9 +231,6 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 	
 	@Override
 	protected boolean breakDoors() { return true; }
-	
-	@Override
-	protected double hostSpeed() { return .7D; }
 	
 	@Override
 	protected void arrivedAtObjective() 

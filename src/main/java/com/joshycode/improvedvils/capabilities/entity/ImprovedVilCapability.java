@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.tuple.MutablePair;
 
 import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -34,6 +35,7 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	private BlockPos guardObj;
 	private boolean isReturning;
 	private BlockPos commObj;
+	private TroopCommands faringKind;
 	private BlockPos foodStorePos;
 	private BlockPos kitStorePos;
 	private BlockPos lastDoor;
@@ -78,6 +80,11 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 			nbt.setLong(VILPLAYER_NBT_KEY + "bc", Long.MAX_VALUE);
 		else
 			nbt.setLong(VILPLAYER_NBT_KEY + "bc", this.commObj.toLong());
+		
+		if(this.faringKind == null)
+			nbt.setInteger(VILPLAYER_NBT_KEY + "bfk", 0);
+		else
+			nbt.setInteger(VILPLAYER_NBT_KEY + "bfk", this.faringKind.getID());
 
 		if(this.foodStorePos == null)
 			nbt.setLong(VILPLAYER_NBT_KEY + "bs", Long.MAX_VALUE);
@@ -144,6 +151,9 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 			this.commObj = null;
 		else
 			this.commObj = BlockPos.fromLong(lc);
+		
+		int fk = nbt.getInteger(VILPLAYER_NBT_KEY + "bfk");
+		this.faringKind = TroopCommands.getCommand(fk);
 
 		long lf = nbt.getLong(VILPLAYER_NBT_KEY + "bs");
 		if(lf == Long.MAX_VALUE)
@@ -224,6 +234,12 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 
 	@Override
 	public BlockPos getCommBlockPos() { return this.commObj; }
+	
+	@Override
+	public IImprovedVilCapability setTroopFaring(TroopCommands c) { this.faringKind = c; return this;}
+
+	@Override
+	public TroopCommands getTroopFaring() { return this.faringKind; }
 
 	@Override
 	public boolean isMovingIndoors() { return this.movingIndoors; }

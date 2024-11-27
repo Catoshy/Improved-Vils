@@ -2,15 +2,14 @@ package com.joshycode.improvedvils.network;
 
 import java.util.Set;
 
-import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.BlockPos;
@@ -73,8 +72,19 @@ public class VilFoodStorePacket extends BlockPosPacket implements IMessage {
 					}
 				}
 			});
+			return new VilFoodStorePacket(BlockPos.ORIGIN, -1);
+		}
+	}
+	
+	public static class ClientHandler implements IMessageHandler<VilFoodStorePacket, IMessage>
+	{
+
+		@Override
+		public IMessage onMessage(VilFoodStorePacket message, MessageContext ctx) 
+		{
+			ImprovedVils.proxy.setProvisioningPlatoon(-1, null);
 			return null;
 		}
-
+		
 	}
 }

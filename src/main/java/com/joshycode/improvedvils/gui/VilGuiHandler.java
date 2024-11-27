@@ -6,6 +6,7 @@ import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.entity.EntityVillagerContainer;
 import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.VillagerInvListener;
 
 import net.minecraft.entity.passive.EntityVillager;
@@ -40,8 +41,9 @@ public class VilGuiHandler implements IGuiHandler {
 		}
 		else if(ID == CommonProxy.BATON_GUI_ID)
 		{
-			Log.info("received baton request client");
-			gui = new GuiBaton(x);
+			if(ConfigHandler.debug)
+				Log.info("received baton request client");
+			gui = new GuiBatonTroopSettings(x);
 		}
 		return gui;
 	}

@@ -2,77 +2,71 @@ package com.joshycode.improvedvils.entity.ai;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.jline.utils.Log;
+
 import com.google.common.base.Predicate;
+import com.google.common.collect.Lists;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAITarget;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.init.Items;
 import net.minecraft.pathfinding.PathNavigateGround;
 import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 
-public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends VillagerAITarget<T> {
+public class VillagerAIAttackNearestTarget extends VillagerAITarget {
 
-	protected final Class<T> targetClass;
-    protected final EntityAINearestAttackableTarget.Sorter sorter;
-    protected final Predicate <? super T > targetEntitySelector;
-    protected final int targetDistance;
-    protected T targetEntity;
+	protected final Set<Targeter> targeters;
+    private final Comparator<Entity> sorterOther;
+    private final VillagerAIAttackNearestTarget.Sorter sorterGuard;
+    protected EntityLivingBase targetEntity;
 
-    public VillagerAIAttackNearestTarget(EntityCreature creature, Class<T> classTarget, boolean checkSight, int targetDistance)
+    public VillagerAIAttackNearestTarget(EntityVillager villager, Map<Class<? extends EntityLivingBase>, Predicate<? super EntityLivingBase>> targetsAndFilters, boolean checkSight, int targetDistance)
     {
-        this(creature, classTarget, checkSight, targetDistance, (Predicate<T>)null);
-    }
-
-    public VillagerAIAttackNearestTarget(EntityCreature creature, Class<T> classTarget, boolean checkSight, int targetDistance, @Nullable final Predicate <? super T > targetSelector)
-    {
-        super(creature, checkSight,  false);
-        this.targetClass = classTarget;
-        this.targetDistance = targetDistance;
-        this.sorter = new EntityAINearestAttackableTarget.Sorter(creature);
+        super(villager, checkSight,  false, targetDistance);
+        this.targeters = new HashSet<Targeter>();
+		for(Entry<Class<? extends EntityLivingBase>, Predicate<? super EntityLivingBase>> targetAndFilter : targetsAndFilters.entrySet())
+		{
+			this.targeters.add(new Targeter(villager, targetAndFilter.getKey(), checkSight, targetAndFilter.getValue()));
+		}
+        this.sorterOther = new EntityAINearestAttackableTarget.Sorter(this.taskOwner);
+        this.sorterGuard = new VillagerAIAttackNearestTarget.Sorter(this.taskOwner, VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
         this.setMutexBits(1);
-        this.targetEntitySelector = new Predicate<T>()
-        {
-            @Override
-			public boolean apply(@Nullable T p_apply_1_)
-            {
-                if (p_apply_1_ == null)
-                {
-                    return false;
-                }
-                else if (targetSelector != null && !targetSelector.apply(p_apply_1_))
-                {
-                    return false;
-                }
-                else
-                {													
-                    return !EntitySelectors.NOT_SPECTATING.apply(p_apply_1_) ? false : EntityAITarget.isSuitableTarget(creature, p_apply_1_, false, checkSight);
-                }
-            }
-        };
     }
 
 	@Override
 	public boolean shouldExecute()
 	{
-		if(!super.shouldExecute())
+		if(!super.shouldExecute() || this.taskOwner.getHeldItemMainhand().isEmpty())
 			return false;
 		if(this.taskOwner.getRevengeTarget() != null && this.taskOwner.ticksExisted - this.taskOwner.getRevengeTimer() < 100 && !this.taskOwner.getRevengeTarget().isDead)
 			return false;
 		
-		List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.targetDistance), this.targetEntitySelector);
-        T targetEntity;
+		List<EntityLivingBase> list = Lists.newArrayList();
+		for(Targeter t : this.targeters)
+				list.addAll(this.taskOwner.world.<EntityLivingBase>getEntitiesWithinAABB(t.targetClass, this.getTargetableArea(this.targetDistance), t.targetEntitySelector));
+        
+		Comparator<Entity> sorter;
+		
+        if(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null)
+        	sorter = this.sorterGuard.setPos(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
+        else
+        	sorter = this.sorterOther;
+		
+		EntityLivingBase targetEntity;
 
         if (list.isEmpty())
         {
@@ -80,14 +74,13 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
         }
         else
         {
-            Collections.sort(list, this.sorter);
+            Collections.sort(list, sorter);
             targetEntity = list.get(0);
         }
-		if(this.taskOwner.getHeldItemMainhand().isEmpty())
-		{
-			return false;
-		}
-
+        
+        if(targetEntity == null)
+        	return false;
+        
 		if(isVillagerInside())
 		{
 			PathNavigateGround pathNav = ((PathNavigateGround) this.taskOwner.getNavigator());
@@ -95,8 +88,8 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 
 			if(pathNav.getPathToEntityLiving(targetEntity) != null)
 			{
-				pathNav.setBreakDoors(true);
 				this.targetEntity = targetEntity;
+				pathNav.setBreakDoors(true);
 				return true;
 			}
 		}
@@ -119,60 +112,93 @@ public class VillagerAIAttackNearestTarget<T extends EntityLivingBase> extends V
 	@Override
 	public void startExecuting()
     {
-        this.taskOwner.setAttackTarget(this.targetEntity);
+		Log.info("Setting attack target: ", this.targetEntity);
+		this.taskOwner.setAttackTarget(this.targetEntity);
         super.startExecuting();
     }
+	
+	@Override
+	public boolean shouldContinueExecuting()
+	{
+		if(!super.shouldExecute())
+			return false;
+		return super.shouldContinueExecuting();
+	}
+	
+	@Override
+	public void updateTask()
+	{
+		if(this.taskOwner.getRNG().nextInt(3) != 0) return;
+		
+		Log.info("Setting attack target onUpdate: ", this.targetEntity);
+		
+		EntityLivingBase targetEntity = this.taskOwner.getAttackTarget();
+		this.shouldExecute();
+		
+        if(this.targetEntity != targetEntity && this.targetEntity != null)
+        	this.taskOwner.setAttackTarget(this.targetEntity);
+	}
 
 	private AxisAlignedBB getTargetableArea(double targetDistance)
 	{
 		return this.taskOwner.getEntityBoundingBox().grow(targetDistance, 4.0D, targetDistance);
 	}
 
-	@Override
-	public boolean shouldContinueExecuting()
-	{
-		if(!super.shouldExecute())
-			return false;
-
-		return super.shouldContinueExecuting();
-	}
-
-	@Override
-	public void updateTask()
-	{
-		EntityLivingBase target = this.taskOwner.getAttackTarget();
-
-		if(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner) != null && target != null)
+	public static class Targeter {
+		protected final Class<? extends EntityLivingBase> targetClass; //This field is a "producer" in that it is furnished through methods as a variable to be checked.
+		protected final Predicate <? super EntityLivingBase> targetEntitySelector; //This field is a "consumer" in that it is passed through until it gets to the Chunk class where it is fed entities of type T.
+		
+		public Targeter(EntityVillager villager, Class<? extends EntityLivingBase> class1, boolean checkSight, @Nullable final Predicate<? super EntityLivingBase> predicate)
 		{
-			double dist = target.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner));
-			if(dist > CommonProxy.MAX_GUARD_DIST - 31)
+			this.targetClass = class1;
+			this.targetEntitySelector = new Predicate<EntityLivingBase>()
 			{
-    			List<T> list = this.taskOwner.world.<T>getEntitiesWithinAABB(this.targetClass, this.getTargetableArea(this.getTargetDistance()), this.targetEntitySelector);
-    			Collections.sort(list, new VillagerAIAttackNearestTarget.Sorter(taskOwner, VilMethods.getGuardBlockPos((EntityVillager) this.taskOwner)));
-    			T targetEntity = list.size() > 0 ? list.get(0) : null;
-
-    			if(targetEntity != null && !targetEntity.equals(this.target))
-    			{
-    				this.target = targetEntity;
-    				this.taskOwner.setAttackTarget(this.target);
-    			}
-    		}
-    	}
+			    @Override
+				public boolean apply(@Nullable EntityLivingBase p_apply_1_)
+			    {
+			        if (p_apply_1_ == null)
+			        {
+			            return false;
+			        }
+			        else if (predicate != null && !predicate.apply(p_apply_1_))
+			        {
+			            return false;
+			        }
+			        else
+			        {													
+			            return !EntitySelectors.NOT_SPECTATING.apply(p_apply_1_) ? false : EntityAITarget.isSuitableTarget(villager, p_apply_1_, false, checkSight);
+			        }
+			    }
+			};
+		}
 	}
 	
 	public static class Sorter implements Comparator<Entity> {
         private final Entity entity;
-        private final BlockPos pos;
+        private BlockPos pos;
 
         public Sorter(Entity entityIn, BlockPos gPos)
         {
             this.entity = entityIn;
             this.pos = gPos;
         }
+        
+        public Sorter setPos(BlockPos pos) 
+        { 
+        	this.pos = pos; 
+        	return this;
+        }
 
         @Override
 		public int compare(Entity p_compare_1_, Entity p_compare_2_)
         {
+        	if(p_compare_1_ == null && p_compare_2_ == null)
+        	return 0;
+        	else if(p_compare_1_ == null)
+        	return 1;
+        	else if(p_compare_2_ == null)
+        	return -1;
+        	
         	boolean flag1 = p_compare_1_.getDistanceSq(this.pos) > CommonProxy.MAX_GUARD_DIST - 31;
         	boolean flag2 = p_compare_2_.getDistanceSq(this.pos) > CommonProxy.MAX_GUARD_DIST - 31;
 

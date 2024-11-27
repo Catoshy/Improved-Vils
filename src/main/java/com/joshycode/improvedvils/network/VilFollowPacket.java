@@ -1,6 +1,5 @@
 package com.joshycode.improvedvils.network;
 
-import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 
@@ -56,7 +55,7 @@ public class VilFollowPacket implements IMessage {
 					if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 					{
 						VilMethods.setGuardBlock((EntityVillager) e, null);
-						VilMethods.setFollowState((EntityVillager) e, message.booleanState);
+						VilMethods.setFollowing((EntityVillager) e, message.booleanState);
 						VilMethods.setCommBlockPos((EntityVillager) e, null);
 					}
 					ImprovedVils.proxy.updateGuiForClient((EntityVillager) e, player);
@@ -86,7 +85,7 @@ public class VilFollowPacket implements IMessage {
 					{
 						if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 						{
-							VilMethods.setFollowState((EntityVillager) e, false);
+							VilMethods.setFollowing((EntityVillager) e, false);
 							VilMethods.setGuardBlock((EntityVillager) e, null);
 							VilMethods.setDuty((EntityVillager) e, message.booleanState);
 						}

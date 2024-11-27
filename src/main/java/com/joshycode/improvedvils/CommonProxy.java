@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.capabilities.CapabilityStorage;
@@ -16,12 +15,11 @@ import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.entity.ImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.capabilities.itemstack.ILetterOfCommandCapability;
 import com.joshycode.improvedvils.capabilities.itemstack.LetterOfCommandCapability;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.capabilities.village.VillageCapability;
-import com.joshycode.improvedvils.command.CommandDestroyCommand;
-import com.joshycode.improvedvils.command.CommandTransferCommand;
 import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.gui.VilGuiHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
@@ -55,6 +53,7 @@ import com.joshycode.improvedvils.network.VillagerListPacket.StopVillagers;
 
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -66,8 +65,6 @@ import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -97,6 +94,7 @@ public class CommonProxy {
 	public static final double GUARD_MAX_PATH_SQ = GUARD_MAX_PATH * GUARD_MAX_PATH;
 	public static final int MAX_GUARD_DIST = 256;
 	public static final int GUARD_IGNORE_LIMIT = 4096;
+	public static final int BATON_GUI2_ID = 102;
 	public static final int BATON_GUI_ID = 101;
 	public static final int VIL_GUI_ID = 100;
 	public static final int PLATOON_UP = 0;
@@ -105,10 +103,8 @@ public class CommonProxy {
 	public static final int COMPANY_DOWN = 3;
 	public static final int BATON_GUI = 4;
 
-	@SuppressWarnings("rawtypes")
-	public static final HashSet<Class> TARGETS = new HashSet<>();
-	@SuppressWarnings("rawtypes")
-	public static final HashSet<Class> RANGE_BLACKLIST = new HashSet<>();
+	public static final HashSet<Class<? extends EntityLivingBase>> TARGETS = new HashSet<>();
+	public static final HashSet<Class<? extends EntityLivingBase>> RANGE_BLACKLIST = new HashSet<>();
 
 	public void preInit() throws IOException
 	{
@@ -181,32 +177,35 @@ public class CommonProxy {
 
     public void registerPackets()
     {
-    	NetWrapper.NETWORK.registerMessage(VilEnlistPacket.ServerHandler.class, VilEnlistPacket.class, 0, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilEnlistPacket.ClientHandler.class, VilEnlistPacket.class, 1, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(VilCommandPacket.Handler.class, VilCommandPacket.class, 2, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilGuardPacket.ServerHandler.class, VilGuardPacket.class, 3, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilStateQuery.Handler.class, VilStateQuery.class, 4, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilStateUpdate.ClientHandler.class, VilStateUpdate.class, 5, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(VilFollowPacket.Handler.class, VilFollowPacket.class, 6, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilFollowPacket.VilDutyPacket.Handler.class, VilFollowPacket.VilDutyPacket.class, 7, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilFoodStorePacket.Handler.class, VilFoodStorePacket.class, 8, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilKitStorePacket.Handler.class, VilKitStorePacket.class, 9, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(VilGuiQuery.Handler.class, VilGuiQuery.class, 10, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(MarshalKeyEvent.Handler.class, MarshalKeyEvent.class, 11, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(BatonSelectData.Handler.class, BatonSelectData.class, 12, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(BatonSelectServerData.Handler.class, BatonSelectServerData.class, 13, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(GunFiredPacket.Handler.class, GunFiredPacket.class, 14, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(OpenClientGui.Handler.class, OpenClientGui.class, 15, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(BatonBefolkPacket.Handler.class, BatonBefolkPacket.class, 16, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(BatonBefolkUpdatePacket.Handler.class, BatonBefolkUpdatePacket.class, 17, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(BlankNotePacket.BatonBefolkQuery.Handler.class, BlankNotePacket.BatonBefolkQuery.class, 18, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(FollowVillagers.Handler.class, FollowVillagers.class, 19, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(GuardVillagers.Handler.class, GuardVillagers.class, 20, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(MoveVillagersPlatoon.Handler.class, MoveVillagersPlatoon.class, 21, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(SetVillagersDuty.Handler.class, SetVillagersDuty.class, 22, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(StopVillagers.Handler.class, StopVillagers.class, 23, Side.SERVER);
-    	NetWrapper.NETWORK.registerMessage(WarnNoRoom.Handler.class, WarnNoRoom.class, 24, Side.CLIENT);
-    	NetWrapper.NETWORK.registerMessage(DismissVillagers.Handler.class, DismissVillagers.class, 25, Side.SERVER);
+    	int netID = 0;
+    	NetWrapper.NETWORK.registerMessage(VilEnlistPacket.ServerHandler.class, VilEnlistPacket.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilEnlistPacket.ClientHandler.class, VilEnlistPacket.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(VilCommandPacket.Handler.class, VilCommandPacket.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilCommandPacket.ClientHandler.class, VilCommandPacket.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(VilGuardPacket.ServerHandler.class, VilGuardPacket.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilStateQuery.Handler.class, VilStateQuery.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilStateUpdate.ClientHandler.class, VilStateUpdate.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(VilFollowPacket.Handler.class, VilFollowPacket.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilFollowPacket.VilDutyPacket.Handler.class, VilFollowPacket.VilDutyPacket.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilFoodStorePacket.Handler.class, VilFoodStorePacket.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilKitStorePacket.Handler.class, VilKitStorePacket.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(VilFoodStorePacket.ClientHandler.class, VilFoodStorePacket.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(VilGuiQuery.Handler.class, VilGuiQuery.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(MarshalKeyEvent.Handler.class, MarshalKeyEvent.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(BatonSelectData.Handler.class, BatonSelectData.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(BatonSelectServerData.Handler.class, BatonSelectServerData.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(GunFiredPacket.Handler.class, GunFiredPacket.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(OpenClientGui.Handler.class, OpenClientGui.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(BatonBefolkPacket.Handler.class, BatonBefolkPacket.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(BatonBefolkUpdatePacket.Handler.class, BatonBefolkUpdatePacket.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(BlankNotePacket.BatonBefolkQuery.Handler.class, BlankNotePacket.BatonBefolkQuery.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(FollowVillagers.Handler.class, FollowVillagers.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(GuardVillagers.Handler.class, GuardVillagers.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(MoveVillagersPlatoon.Handler.class, MoveVillagersPlatoon.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(SetVillagersDuty.Handler.class, SetVillagersDuty.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(StopVillagers.Handler.class, StopVillagers.class, netID++, Side.SERVER);
+    	NetWrapper.NETWORK.registerMessage(WarnNoRoom.Handler.class, WarnNoRoom.class, netID++, Side.CLIENT);
+    	NetWrapper.NETWORK.registerMessage(DismissVillagers.Handler.class, DismissVillagers.class, netID++, Side.SERVER);
     }
 
 	@SubscribeEvent
@@ -248,6 +247,10 @@ public class CommonProxy {
 	public int getProvisioningUnit() {return -1; }
 	
 	public Provisions getStuff() {return null; }
+	
+	public TroopCommands getCommand() {return null; }
+	
+	public void setTroopCommand(TroopCommands c) {}
 
 	public final VilStateUpdate getUpdateGuiForClient(EntityVillager e, EntityPlayer player)
 	{
@@ -304,4 +307,8 @@ public class CommonProxy {
 		});
 		return new HashSet<T>(loadedEntities);
 	}
+
+	public void marshalKeyEvent(int i) {}
+
+	public void closeVillagerGUI(int vilId) {}
 }

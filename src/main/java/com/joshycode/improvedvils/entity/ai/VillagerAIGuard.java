@@ -7,6 +7,7 @@ import org.jline.utils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.pathfinding.Path;
 import net.minecraft.util.math.BlockPos;
 
 public class VillagerAIGuard extends EntityAIGoFar{
@@ -67,7 +68,7 @@ public class VillagerAIGuard extends EntityAIGoFar{
 	{
 		if(VilMethods.getGuardBlockPos(this.villager) == null || this.setFailed || this.finished)
 			return false;
-		if(this.pathfindingFails > this.mostPathfindingFails)
+		if(!super.shouldContinueExecuting())
 		{
 			
 				Log.info("failing out guard %s", VilMethods.getLastDoor(this.villager));
@@ -108,8 +109,6 @@ public class VillagerAIGuard extends EntityAIGoFar{
 	}
 	
 	protected boolean breakDoors() { return true; }
-	
-	protected double hostSpeed() { return .7D; }
 	
 	protected void arrivedAtObjective() 
 	{

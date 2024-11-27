@@ -21,7 +21,7 @@ public class VillagerAIFollow extends EntityAIBase {
     private final Predicate<EntityPlayer> followPredicate;
     private EntityPlayer followingPlayer;
     private final double speedModifier;
-    private final PathNavigate navigation;
+    private final PathNavigate navigator;
     private int timeToRecalcPath;
     private final float stopDistance;
 	private final float startDistance;
@@ -34,7 +34,7 @@ public class VillagerAIFollow extends EntityAIBase {
         this.villager = entityIn;
         this.followPredicate = new VilFollowPredicate<>(entityIn);
         this.speedModifier = speedIn;
-        this.navigation = entityIn.getNavigator();
+        this.navigator = entityIn.getNavigator();
         this.stopDistance = stopDist;
 		this.startDistance = startDist;
         this.areaSize = entityIn.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.FOLLOW_RANGE).getBaseValue();
@@ -71,7 +71,7 @@ public class VillagerAIFollow extends EntityAIBase {
 	@Override
 	public boolean shouldContinueExecuting()
     {
-        return this.followingPlayer != null && !this.weaponsAndDistance(this.followingPlayer) && !this.navigation.noPath() && this.villager.getDistanceSq(this.followingPlayer) > this.stopDistance * this.stopDistance && !VilMethods.getHungry(this.villager);
+        return this.followingPlayer != null && !this.weaponsAndDistance(this.followingPlayer) && !this.navigator.noPath() && this.villager.getDistanceSq(this.followingPlayer) > this.stopDistance * this.stopDistance && !VilMethods.getHungry(this.villager);
     }
 
     @Override
@@ -79,7 +79,7 @@ public class VillagerAIFollow extends EntityAIBase {
     {
         this.timeToRecalcPath = 0;
         this.oldWaterCost = this.villager.getPathPriority(PathNodeType.WATER);
-        ((PathNavigateGround) this.navigation).setBreakDoors(true);
+        ((PathNavigateGround) this.navigator).setBreakDoors(true);
         this.villager.setPathPriority(PathNodeType.WATER, 0.0F);
     }
 
@@ -87,8 +87,8 @@ public class VillagerAIFollow extends EntityAIBase {
 	public void resetTask()
     {
         this.followingPlayer = null;
-        this.navigation.clearPath();
-        ((PathNavigateGround) this.navigation).setBreakDoors(false);
+        this.navigator.clearPath();
+        ((PathNavigateGround) this.navigator).setBreakDoors(false);
         this.villager.setPathPriority(PathNodeType.WATER, this.oldWaterCost);
     }
 
@@ -109,18 +109,18 @@ public class VillagerAIFollow extends EntityAIBase {
 
                 if (d3 > this.stopDistance * this.stopDistance)
                 {
-                    this.navigation.tryMoveToEntityLiving(this.followingPlayer, this.speedModifier);
+                    this.navigator.tryMoveToEntityLiving(this.followingPlayer, this.speedModifier);
                 }
                 else
                 {
-                    this.navigation.clearPath();
+                    this.navigator.clearPath();
                     Vec3d lookVector = this.followingPlayer.getLookVec();
 
                     if (d3 <= this.stopDistance || lookVector.x == this.villager.posX && lookVector.y == this.villager.posY && lookVector.z == this.villager.posZ)
                     {
                         double d4 = this.followingPlayer.posX - this.villager.posX;
                         double d5 = this.followingPlayer.posZ - this.villager.posZ;
-                        this.navigation.tryMoveToXYZ(this.villager.posX - d4, this.villager.posY, this.villager.posZ - d5, this.speedModifier);
+                        this.navigator.tryMoveToXYZ(this.villager.posX - d4, this.villager.posY, this.villager.posZ - d5, this.speedModifier);
                     }
                 }
             }

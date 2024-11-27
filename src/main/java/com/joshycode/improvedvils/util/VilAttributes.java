@@ -10,7 +10,7 @@ import net.minecraft.entity.passive.EntityVillager;
 
 public class VilAttributes {
 
-	public static final IAttribute VIL_DAMAGE = new RangedAttribute(null, "iv.vil_damage", 1.0D, 0.0D, 1.0D);
+	public static final IAttribute VIL_DAMAGE = new RangedAttribute(null, "iv.vil_damage", 1.0D, 0.0D, 9.0D);
 
 	public static void apply(EntityVillager e)
 	{

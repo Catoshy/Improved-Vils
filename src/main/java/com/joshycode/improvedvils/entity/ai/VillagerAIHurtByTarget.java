@@ -2,31 +2,26 @@ package com.joshycode.improvedvils.entity.ai;
 
 import javax.annotation.Nullable;
 
-import org.jline.utils.Log;
-
-import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAITarget;
-import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
 
-public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends VillagerAITarget<T> {
+public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends VillagerAITarget {
+	//TODO check for setting revenge target. I do not think that this class does that though it ought.
 
 	private EntityVillager villager;
-	private final boolean callsForHelp;
 	private int revengeTimerOld;
 
-	public VillagerAIHurtByTarget(EntityVillager villager, boolean callsForHelp)
+	public VillagerAIHurtByTarget(EntityVillager villager)
 	{
-		super(villager, false, false);
+		super(villager, false, false, (int) villager.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).getAttributeValue());
 		this.villager = villager;
-		this.callsForHelp = callsForHelp;
 		this.revengeTimerOld = 0;
 		this.setMutexBits(1);
 	}
@@ -49,12 +44,7 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
         this.target = this.taskOwner.getAttackTarget();
         this.revengeTimerOld = this.taskOwner.getRevengeTimer();
         this.unseenMemoryTicks = 300;
-
-        if (this.callsForHelp)
-        {
-            this.alertOthers();
-        }
-
+        this.alertOthers();
         super.startExecuting();
 	 }
 
@@ -64,19 +54,11 @@ public class VillagerAIHurtByTarget<T extends EntityLivingBase> extends Villager
 
         for (EntityCreature entitycreature : this.taskOwner.world.getEntitiesWithinAABB(this.taskOwner.getClass(), (new AxisAlignedBB(this.taskOwner.posX, this.taskOwner.posY, this.taskOwner.posZ, this.taskOwner.posX + 1.0D, this.taskOwner.posY + 1.0D, this.taskOwner.posZ + 1.0D)).grow(d0, 10.0D, d0)))
         {
-            if (this.taskOwner != entitycreature && entitycreature.getAttackTarget() == null && (!(this.taskOwner instanceof EntityTameable) || ((EntityTameable)this.taskOwner).getOwner() == ((EntityTameable)entitycreature).getOwner()) && !entitycreature.isOnSameTeam(this.taskOwner.getRevengeTarget()))
+            if (this.taskOwner != entitycreature && entitycreature.getAttackTarget() == null && !entitycreature.isOnSameTeam(this.taskOwner.getRevengeTarget()))
             {
-                boolean flag = true;
-
-                if(entitycreature instanceof EntityVillager)
-                {
-                	flag = false;
-                	if(VilMethods.getGuardBlockPos((EntityVillager) entitycreature) != null && entitycreature.getDistanceSq(VilMethods.getGuardBlockPos((EntityVillager) entitycreature)) > CommonProxy.MAX_GUARD_DIST - 31)
-                	{
-                		 flag = true;
-                	}
-                }
-                if(!flag)
+                boolean flag = entitycreature instanceof EntityVillager 
+                		&& VilMethods.getTeam((EntityVillager) entitycreature).equals(VilMethods.getTeam(this.villager));
+                if(flag)
                 {
                     this.setEntityAttackTarget(entitycreature, this.taskOwner.getRevengeTarget());
                 }

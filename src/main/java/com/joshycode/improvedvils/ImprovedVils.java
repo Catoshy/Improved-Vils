@@ -7,7 +7,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.joshycode.improvedvils.command.CommandDestroyCommand;
 import com.joshycode.improvedvils.command.CommandGetEntityName;
-import com.joshycode.improvedvils.command.CommandGetUnlocalName;
 import com.joshycode.improvedvils.command.CommandTransferCommand;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.EventHandlerVil;
@@ -25,14 +24,13 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @Mod(modid = ImprovedVils.MODID, name = ImprovedVils.MODNAME, version = ImprovedVils.VERSION, certificateFingerprint = ImprovedVils.certificateFingerprint, dependencies = "after:openblocks;")
 public class ImprovedVils {
 
 	public static final String MODID = "improvedvils";
 	public static final String MODNAME = "Improved Villagers";
-	public static final String VERSION = "1.0.4b1";
+	public static final String VERSION = "1.0.5";
 	public static final String certificateFingerprint = "e34b86ab6155979713e5a093503cb0140ecb7134";
 	public static final Logger logger = LogManager.getLogger(ImprovedVils.MODID);
 

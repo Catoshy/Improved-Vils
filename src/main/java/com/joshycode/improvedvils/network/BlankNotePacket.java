@@ -6,7 +6,7 @@ import java.util.UUID;
 import com.joshycode.improvedvils.CommonProxy.ItemHolder;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
-import com.joshycode.improvedvils.gui.GuiBaton;
+import com.joshycode.improvedvils.gui.GuiBatonTroopSettings;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.VillagerListPacket.BatonBefolkPacket;
 import com.joshycode.improvedvils.util.BatonDealMethods;
@@ -14,7 +14,6 @@ import com.joshycode.improvedvils.util.BatonDealMethods;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.Tuple;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -57,9 +56,9 @@ public abstract class BlankNotePacket implements IMessage {
 			public IMessage onMessage(WarnNoRoom message, MessageContext ctx) 
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
-					if(Minecraft.getMinecraft().currentScreen instanceof GuiBaton)
+					if(Minecraft.getMinecraft().currentScreen instanceof GuiBatonTroopSettings)
 					{
-						((GuiBaton) Minecraft.getMinecraft().currentScreen).tooManyToMove();
+						((GuiBatonTroopSettings) Minecraft.getMinecraft().currentScreen).tooManyToMove();
 					}
 				});
 				return null;

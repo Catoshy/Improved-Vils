@@ -1,6 +1,5 @@
 package com.joshycode.improvedvils.network;
 
-import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.entity.ai.VillagerAIGuard;
@@ -61,7 +60,7 @@ public class VilGuardPacket extends BlockPosPacket implements IMessage {
 				{
 					if(player.getUniqueID().equals(VilMethods.getPlayerId((EntityVillager) e)))
 					{
-						VilMethods.setFollowState((EntityVillager) e, false);
+						VilMethods.setFollowing((EntityVillager) e, false);
 						VilMethods.setCommBlockPos((EntityVillager) e, null);
 						if(message.guardState)
 							VilMethods.setGuardBlock((EntityVillager) e, e.getPosition());

@@ -4,15 +4,14 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 
-import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 public class VilMethods {
 
@@ -24,6 +23,15 @@ public class VilMethods {
 			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getGuardBlockPos();
 		} catch (NullPointerException ex) {}
 		return null;
+	}
+	
+	public static boolean setGuardBlock(EntityVillager entity, BlockPos pos)
+	{
+		try
+		{
+			entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(pos);
+			return true;
+		} catch (NullPointerException e) {return false; }
 	}
 
 	@Nullable
@@ -38,11 +46,31 @@ public class VilMethods {
 	}
 
 	@Nullable
+	public static Vec3d guardBlockAsVec(EntityVillager e)
+	{
+		try
+		{
+			BlockPos pos = getGuardBlockPos(e);
+			return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
+
+		} catch (NullPointerException ex) {}
+		return null;
+	}
+
+	@Nullable
 	public static BlockPos getCommBlockPos(EntityVillager e)
 	{
 		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getCommBlockPos();
 	}
 
+	public static void setCommBlockPos(EntityVillager e, BlockPos pos)
+	{
+		try
+		{
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setCommBlock(pos);
+		} catch (NullPointerException ex) {}
+	}
+	
 	@Nullable
 	public static Vec3d commPosAsVec(EntityVillager e)
 	{
@@ -50,6 +78,62 @@ public class VilMethods {
 		if(pos == null) return null;
 		
 		return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
+	}
+
+	public static BlockPos getFoodStorePos(EntityVillager e) 
+	{
+		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getFoodStorePos();
+	}
+
+	public static void setFoodStore(EntityVillager e, @Nullable BlockPos pos) 
+	{
+		e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(pos);
+	}
+
+	public static BlockPos getKitStorePos(EntityVillager e) 
+	{
+		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getKitStorePos();
+	}
+	
+	public static void setKitStore(EntityVillager e, @Nullable BlockPos pos)
+	{
+		e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setKitStore(pos);
+	}
+	
+	public static BlockPos getLastDoor(EntityVillager villager) 
+	{
+		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getLastDoor();
+	}
+	
+	public static void setLastDoor(EntityVillager villager, BlockPos lastDoor) 
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setLastDoor(lastDoor);
+	}
+
+	public static TroopCommands getTroopFaring(EntityVillager e) 
+	{
+		try
+		{
+			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getTroopFaring();
+		} catch (NullPointerException ex) {}
+		return TroopCommands.NONE;
+	}
+	
+	public static boolean isDrinking(EntityVillager e)
+	{
+		try
+		{
+			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isDrinking();
+		} catch(NullPointerException ex) {}
+		return false;
+	}
+	
+	public static void setTroopFaring(EntityVillager e, TroopCommands c)
+	{
+		try
+		{
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setTroopFaring(c);
+		} catch (NullPointerException ex) {}
 	}
 
 	public static boolean isReturning(EntityVillager e)
@@ -60,12 +144,12 @@ public class VilMethods {
 	    } catch (NullPointerException ex) {}
 	    return false;
 	}
-
-	public static void setCommBlockPos(EntityVillager e, BlockPos pos)
+	
+	public static void setReturning(EntityVillager e, boolean b)
 	{
 		try
 		{
-			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setCommBlock(pos);
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setReturning(b);
 		} catch (NullPointerException ex) {}
 	}
 
@@ -78,31 +162,20 @@ public class VilMethods {
 		return true;
 	}
 
-	public static void setReturning(EntityVillager e, boolean b)
+	public static boolean getFollowing(EntityVillager e)
 	{
 		try
 		{
-			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setReturning(b);
+			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isFollowing();
 		} catch (NullPointerException ex) {}
+		return false;
 	}
-
-	@Nullable
-	public static Vec3d guardBlockAsVec(EntityVillager e)
+	
+	public static void setFollowing(EntityVillager e, boolean b)
 	{
 		try
 		{
-			BlockPos pos = getGuardBlockPos(e);
-			return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
-
-		} catch (NullPointerException ex) {}
-		return null;
-	}
-
-	public static void setMovingIndoors(EntityVillager e, boolean b)
-	{
-		try
-		{
-			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setMovingIndoors(b);
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(b);
 		} catch (NullPointerException ex) {}
 	}
 
@@ -114,35 +187,38 @@ public class VilMethods {
 		} catch (NullPointerException ex) {}
 		return false;
 	}
-
-	public static void setFollowing(EntityVillager e, boolean b)
+	
+	public static void setMovingIndoors(EntityVillager e, boolean b)
 	{
 		try
 		{
-			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(b);
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setMovingIndoors(b);
 		} catch (NullPointerException ex) {}
 	}
+	
+	public static boolean getDuty(EntityVillager villager) 
+	{
+		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getActiveDuty();
+	}
 
-	public static boolean getFollowing(EntityVillager e)
+	public static void setDuty(EntityVillager villager, boolean duty) 
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setActiveDuty(duty);
+	}
+
+	public static boolean isRefillingFood(EntityVillager e) 
 	{
 		try
 		{
-			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isFollowing();
-		} catch (NullPointerException ex) {}
-		return false;
+			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getRefillingFood();
+		} catch (NullPointerException ex) {return false; }
 	}
 
-	@Nullable
-	public static UUID getPlayerId(EntityVillager e)
+	public static void setRefilling(EntityVillager e, boolean b) 
 	{
-		try
-		{
-			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getPlayerId();
-		} catch (NullPointerException ex) {}
-
-		return UUID.randomUUID();
+			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setRefilling(b);
 	}
-
+	
 	public static boolean isOutsideHomeDist(EntityVillager attacker)
 	{
 		if(!attacker.isWithinHomeDistanceCurrentPosition()) //not at home?
@@ -159,85 +235,6 @@ public class VilMethods {
 		}
 	}
 
-	public static boolean setGuardBlock(EntityVillager entity, BlockPos pos)
-	{
-		try
-		{
-			entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setGuardBlockPos(pos);
-			return true;
-		} catch (NullPointerException e) {return false; }
-	}
-
-	public static boolean setFollowState(EntityVillager e, boolean followState)
-	{
-		try
-		{
-			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(followState);
-			return true;
-		} catch (NullPointerException ex) {return false; }
-	}
-
-	public static BlockPos getFoodStorePos(EntityVillager e) 
-	{
-		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getFoodStorePos();
-	}
-
-	public static void setFoodStore(EntityVillager e, @Nullable BlockPos pos) 
-	{
-		e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(pos);
-	}
-	
-	public static BlockPos getKitStorePos(EntityVillager e) 
-	{
-		return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getKitStorePos();
-	}
-	
-	public static void setKitStore(EntityVillager e, @Nullable BlockPos pos)
-	{
-		e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setKitStore(pos);
-	}
-
-	public static boolean isRefillingFood(EntityVillager e) {
-		try
-		{
-			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getRefillingFood();
-		} catch (NullPointerException ex) {return false; }
-	}
-
-	public static boolean setRefilling(EntityVillager e, boolean b) {
-		try
-		{
-			e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setRefilling(b);
-			return true;
-		} catch (NullPointerException ex) {return false; }
-	}
-
-	public static UUID getHomeVillageId(EntityVillager entityIn)
-	{
-		return entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHomeVillageID();
-	}
-
-	public static void setPlayerId(EntityPlayer player, EntityVillager entityIn)
-	{
-		entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerId(player.getUniqueID());
-	}
-
-	public static void setTeam(EntityVillager villager, String team)
-	{
-		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setTeam(team);
-	}
-
-	public static void setPlayerReputation(EntityVillager villager, UUID uniqueID, float f, int i)
-	{
-		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerReputation(uniqueID, f, i);
-	}
-
-	@Nullable
-	public static String getTeam(EntityVillager villager)
-	{
-		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getTeam();
-	}
-
 	public static boolean outOfAmmo(EntityVillager villager) 
 	{
 		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getOutOfAmmo();
@@ -248,29 +245,45 @@ public class VilMethods {
 		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setIsOutAmmo(noAmmo);
 	}
 
-	public static boolean getDuty(EntityVillager villager) 
+	@Nullable
+	public static UUID getPlayerId(EntityVillager e)
 	{
-		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getActiveDuty();
+		try
+		{
+			return e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getPlayerId();
+		} catch (NullPointerException ex) {}
+
+		return UUID.randomUUID();
 	}
 
-	public static void setDuty(EntityVillager villager, boolean duty) 
+	public static void setPlayerId(EntityPlayer player, EntityVillager entityIn)
 	{
-		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setActiveDuty(duty);
+		entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerId(player.getUniqueID());
+	}
+
+	public static UUID getHomeVillageId(EntityVillager entityIn)
+	{
+		return entityIn.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getHomeVillageID();
+	}
+
+	@Nullable
+	public static String getTeam(EntityVillager villager)
+	{
+		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getTeam();
+	}
+	
+	public static void setTeam(EntityVillager villager, String team)
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setTeam(team);
+	}
+
+	public static void setPlayerReputation(EntityVillager villager, UUID uniqueID, float f, int i)
+	{
+		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setPlayerReputation(uniqueID, f, i);
 	}
 
 	public static Vec3d asVec3D(BlockPos pos) 
 	{
 		return new Vec3d(pos.getX(), pos.getY(), pos.getZ());
-	}
-
-	public static void setLastDoor(EntityVillager villager, BlockPos lastDoor) 
-	{
-		villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setLastDoor(lastDoor);
-
-	}
-
-	public static BlockPos getLastDoor(EntityVillager villager) 
-	{
-		return villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getLastDoor();
 	}
 }

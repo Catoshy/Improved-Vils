@@ -9,10 +9,11 @@ import java.util.UUID;
 import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.CommonProxy.ItemHolder;
-import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.ImprovedVils;
+import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.gui.EnlisteeContainer;
-import com.joshycode.improvedvils.gui.GuiBaton;
+import com.joshycode.improvedvils.gui.GuiBatonTroopSettings;
 import com.joshycode.improvedvils.gui.GuiVillagerRollList;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
@@ -26,7 +27,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.Tuple;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -130,9 +130,9 @@ public abstract class VillagerListPacket implements IMessage {
 			public IMessage onMessage(BatonBefolkPacket message, MessageContext ctx)
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
-					if(Minecraft.getMinecraft().currentScreen instanceof GuiBaton)
+					if(Minecraft.getMinecraft().currentScreen instanceof GuiBatonTroopSettings)
 					{
-						GuiVillagerRollList guiList = ((GuiBaton) Minecraft.getMinecraft().currentScreen).getRollList();
+						GuiVillagerRollList guiList = ((GuiBatonTroopSettings) Minecraft.getMinecraft().currentScreen).getRollList();
 						Set<EnlisteeContainer> villagers = new HashSet<EnlisteeContainer>();
 						guiList.getRoll().clear();
 												
@@ -166,18 +166,18 @@ public static class BatonBefolkUpdatePacket extends BatonBefolkPacket {
 			public IMessage onMessage(BatonBefolkUpdatePacket message, MessageContext ctx)
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
-					if(Minecraft.getMinecraft().currentScreen instanceof GuiBaton)
+					if(Minecraft.getMinecraft().currentScreen instanceof GuiBatonTroopSettings)
 					{
-						GuiVillagerRollList guiList = ((GuiBaton) Minecraft.getMinecraft().currentScreen).getRollList();
+						GuiVillagerRollList guiList = ((GuiBatonTroopSettings) Minecraft.getMinecraft().currentScreen).getRollList();
 						Set<EnlisteeContainer> villagers = new HashSet<EnlisteeContainer>();
 
 						message.villagerIds.keySet().forEach(entityId -> {
 							
 							EntityVillager villager = (EntityVillager) ImprovedVils.proxy.getWorld(ctx).getEntityByID(entityId);
 							if(villager != null)
-								villagers.add(new EnlisteeContainer(((GuiBaton) Minecraft.getMinecraft().currentScreen).getRollList(), villager, message.villagerInfo.get(entityId).getFirst(), message.villagerInfo.get(entityId).getSecond()));
+								villagers.add(new EnlisteeContainer(((GuiBatonTroopSettings) Minecraft.getMinecraft().currentScreen).getRollList(), villager, message.villagerInfo.get(entityId).getFirst(), message.villagerInfo.get(entityId).getSecond()));
 							else
-								villagers.add(new EnlisteeContainer(((GuiBaton) Minecraft.getMinecraft().currentScreen).getRollList(), message.villagerIds.get(entityId)));
+								villagers.add(new EnlisteeContainer(((GuiBatonTroopSettings) Minecraft.getMinecraft().currentScreen).getRollList(), message.villagerIds.get(entityId)));
 						});
 						guiList.addContainers(villagers);
 					}
@@ -267,7 +267,7 @@ public static class GuardVillagers extends VillagerListPacket {
 						EntityVillager villager = (EntityVillager) ImprovedVils.proxy.getWorld(ctx).getEntityByID(entityId);
 						EntityPlayer player = ImprovedVils.proxy.getPlayerEntity(ctx);
 						if(villager != null && VillagerPlayerDealMethods.getPlayerFealty(player, villager))
-							villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(false).setGuardBlockPos(null);
+							villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFollowing(false).setGuardBlockPos(null).setCommBlock(null).setTroopFaring(TroopCommands.NONE);
 					});
 					NetWrapper.NETWORK.sendTo(new BatonBefolkUpdatePacket(message.villagerIds, BatonDealMethods.getVillagerCapabilityInfoAppendMap(message.villagerIds.keySet(), ImprovedVils.proxy.getWorld(ctx))),
 							(EntityPlayerMP) ImprovedVils.proxy.getPlayerEntity(ctx));	

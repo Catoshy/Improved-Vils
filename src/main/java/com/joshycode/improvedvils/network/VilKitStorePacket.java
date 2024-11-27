@@ -10,10 +10,8 @@ import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -83,7 +81,7 @@ public class VilKitStorePacket extends BlockPosPacket implements IMessage {
 					}
 				}
 			});
-			return null;
+			return new VilFoodStorePacket(BlockPos.ORIGIN, -1);
 		}
 	}
 	

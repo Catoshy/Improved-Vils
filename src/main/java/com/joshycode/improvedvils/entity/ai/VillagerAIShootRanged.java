@@ -1,19 +1,17 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.RangeAttackType;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.WeaponBrooksData;
@@ -24,18 +22,16 @@ import com.joshycode.improvedvils.network.GunFiredPacket;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.util.InventoryUtil;
 import com.joshycode.improvedvils.util.Pair;
-import com.joshycode.improvedvils.util.ProjectileHelper;
+import com.joshycode.improvedvils.util.LookHelper;
 
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIBase;
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
-import net.minecraft.entity.projectile.EntityTippedArrow;
 import net.minecraft.init.Enchantments;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
@@ -49,7 +45,6 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.EnumDifficulty;
 import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
@@ -95,7 +90,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 	@Override
 	public boolean shouldExecute()
 	{
-		if(VilMethods.getCommBlockPos(this.entityHost) != null
+		if(!areAttackCommands() 
 				|| VilMethods.isOutsideHomeDist(this.entityHost) 
 				|| VilMethods.isReturning(this.entityHost) 
 				|| VilMethods.isRefillingFood(this.entityHost)
@@ -117,6 +112,11 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		this.setAttackRange();
 		this.attackTarget = entitylivingbase;
 		return true;
+	}
+	
+	private boolean areAttackCommands() 
+	{
+		return VilMethods.getCommBlockPos(this.entityHost) == null || VilMethods.getTroopFaring(this.entityHost) == TroopCommands.FORWARD_ATTACK;
 	}
 
 	private boolean checkIfMelee(EntityLivingBase entitylivingbase) 
@@ -451,7 +451,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		//RayTraceResult lineOfSight = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy);
 		//Friendly-fire debug
     	//TODO DEBUG
-		Pair<RayTraceResult, String> pair = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy, ConfigHandler.friendlyFireSearchRange);
+		Pair<RayTraceResult, String> pair = LookHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy, ConfigHandler.friendlyFireSearchRange);
 		RayTraceResult lineOfSight = pair.a;
 		this.debugString = pair.b;
 		if(lineOfSight != null && lineOfSight.typeOfHit == RayTraceResult.Type.ENTITY && this.friendlyFirePredicate.apply(lineOfSight.entityHit))

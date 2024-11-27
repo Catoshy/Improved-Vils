@@ -14,6 +14,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.passive.EntityVillager;
@@ -32,16 +33,18 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 	protected final EntityCreature entityHost;
 	protected int pathfindingFails;
 	protected final int mostPathfindingFails;
+	protected final boolean countFails;
 	protected PathNavigate navigator;
 	protected boolean finished;
 	protected boolean theDebugVar;
+	protected int idleTicks;
+	private BlockPos earlierObj;
 	private boolean lastDoorSeen;
 	private boolean passedBackThrough;
 	private boolean pathingToLastDoor;
-	private Path path;
+	protected Path path;
 	private float distanceToObj;
 	private float prevPathDistance;
-	private int idleTicks;
 	private int ppathIndex;
 	private int imHereDistanceSq;
 	
@@ -54,6 +57,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		this.idleTicks = 0;
 		this.ppathIndex = 0;
 		this.imHereDistanceSq = imHereDistanceSq;
+		this.countFails = mostFails >= 0;
 		this.mostPathfindingFails = mostFails;
 		this.entityHost = entityHost;
 		this.navigator = entityHost.getNavigator();
@@ -65,6 +69,11 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		this.setMutexBits(3);
 	}
 
+	public EntityAIGoFar(EntityCreature villager, int imHereDistanceSq) 
+	{
+		this(villager, imHereDistanceSq, -1);
+	}
+
 	@Override
 	public void startExecuting()
 	{
@@ -73,7 +82,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		if(breakDoors())
 			this.lastDoorSeen = VilMethods.getLastDoor((EntityVillager) this.entityHost) != null; //Cap (VilMethod) BlockPos var is for permanence across AIs
 		((PathNavigateGround) this.navigator).setBreakDoors(this.breakDoors());
-		if(generatePath())
+		if(generatePath())//TODO
 		{
 			PathPoint pp = this.path.getFinalPathPoint();
 			if(pp != null)
@@ -88,7 +97,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 	@Override
 	public void updateTask()
 	{
-		if(!this.entityHost.world.getEntitiesInAABBexcluding(entityHost, this.entityHost.getEntityBoundingBox().grow(2D), 
+		if(!this.entityHost.world.getEntitiesInAABBexcluding(entityHost, this.entityHost.getEntityBoundingBox().grow(4D), 
 				new Predicate<Entity>() {
 
 					@Override
@@ -108,6 +117,11 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 				Log.info("null object");
 			this.resetTask();
 			return;
+		}
+		else if(!object.equals(this.earlierObj))
+		{
+			this.earlierObj = object;
+			if(!this.tryToGetCloser(object)) return;
 		}
 		if(!this.entityHost.isOnLadder() && this.idleTicks >  20
 				|| this.idleTicks > 60)
@@ -139,24 +153,29 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 			setDoorReference();
 		checkIdle();
 	}
+	
+	public boolean shouldContinueExecuting()
+	{
+		return this.pathfindingFails < this.mostPathfindingFails;
+	}
 
 	private void setDoorReference()
 	{
 		int i = this.path.getCurrentPathIndex();
 		PathPoint point = this.path.getPathPointFromIndex(i);
 		//BlockPos pointPos = new BlockPos(point.x, point.y, point.z);
-		BlockPos pointPos = this.entityHost.getPosition();
+		BlockPos entityPos = this.entityHost.getPosition();
 		PathNodeType type = this.navigator.getNodeProcessor().getPathNodeType(this.entityHost.getEntityWorld(), point.x, point.y, point.z);
 		if(type == PathNodeType.DOOR_OPEN || type == PathNodeType.DOOR_WOOD_CLOSED)
 		{
 			BlockPos savedPos = VilMethods.getLastDoor((EntityVillager) this.entityHost);
 			if(this.theDebugVar)
-				Log.info("point, pointPos, type, savedPos, villager name; ", point, " ", pointPos, " ", type, " ", savedPos, " ", this.entityHost.getName());
-			if(savedPos != null && !pointPos.equals(savedPos) || //villager treads through door: here checks if either he has a previous saved door pos and sets to pointPos if not same,
+				Log.info("point, pointPos, type, savedPos, villager name; ", point, " ", entityPos, " ", type, " ", savedPos, " ", this.entityHost.getName());
+			if(savedPos != null && !entityPos.equals(savedPos) || //villager treads through door: here checks if either he has a previous saved door pos and sets to entityPos if not same,
 					savedPos == null && !this.passedBackThrough) //or if the door position is intentionally null because he's going back through, hence passedBackThrough would be true.
 			{
 				this.lastDoorSeen = true;
-				VilMethods.setLastDoor((EntityVillager) this.entityHost, pointPos);
+				VilMethods.setLastDoor((EntityVillager) this.entityHost, entityPos);
 			}
 			else if(!this.lastDoorSeen && !this.passedBackThrough) //if lastDoorSeen is true, then villager is still going through the door so he would not actually be turning around
 			{													   //to pass through. if passedBackThrough is true, then the following has already been done.
@@ -305,24 +324,33 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 				}
 				this.distanceToObj = newDistanceToObj;
 			}
-			this.navigator.setPath(this.path, .7D);
+			this.tweakPath(this.path);
+			this.navigator.setPath(this.path, this.hostSpeed());
 			return true;
 		}
 		this.navigator.setPath(null, 0);
 		return false;
 	}
-	
+
 	@Nullable
 	protected Vec3d getRandomPosition()
     {
         return RandomPositionGenerator.findRandomTarget(this.entityHost, 8, 6);
     }
-    
+	
+	protected void tweakPath(Path path) {}
+	
 	protected BlockPos getObjectiveBlock() { return null; }
 	
 	protected boolean breakDoors() { return false; }
 	
-	protected double hostSpeed() { return .7D; }
+	@Override
+	public boolean isInterruptible() { return false; }
+	
+	protected double hostSpeed() 
+	{ 
+		return this.entityHost.getAttributeMap().getAttributeInstance(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue() + .1D;
+	}
 	
 	protected void resetObjective() {}
 	

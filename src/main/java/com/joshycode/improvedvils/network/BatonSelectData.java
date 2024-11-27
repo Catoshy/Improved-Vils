@@ -5,15 +5,12 @@ import java.util.UUID;
 
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
-import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.VillagerListPacket.BatonBefolkPacket;
 import com.joshycode.improvedvils.util.BatonDealMethods;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.Tuple;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -69,12 +66,8 @@ public class BatonSelectData implements IMessage {
 			{
 				ImprovedVils.proxy.getListener(ctx).addScheduledTask(() -> {
 					EntityPlayerMP player = (EntityPlayerMP) ImprovedVils.proxy.getPlayerEntity(ctx);
-					ItemStack stack;
-					if(player.getHeldItemMainhand().getItem() == CommonProxy.ItemHolder.BATON)
-						stack = player.getHeldItemMainhand();
-					else if(player.getHeldItemOffhand().getItem() == CommonProxy.ItemHolder.BATON)
-						stack = player.getHeldItemOffhand();
-					else
+					
+					if(player.getHeldItemMainhand().getItem() != CommonProxy.ItemHolder.BATON && player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
 						return;
 					
 					player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null).setPlatoon(message.platoon / 10, message.platoon % 10);

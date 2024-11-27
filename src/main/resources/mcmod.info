@@ -2,7 +2,7 @@
   "modid": "improvedvils",
   "name": "Improved Villagers",
   "description": "Improved usefulness and attack capabilities for villagers. ",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "mcversion": "${mcversion}",
   "url": "https://github.com/Catoshy/Improved-Vils",
   "updateJSON": "",

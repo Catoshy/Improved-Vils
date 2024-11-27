@@ -17,10 +17,6 @@ import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.Pair;
 
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagInt;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagLong;
-import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.math.BlockPos;
 
 public class MarshalsBatonCapability implements IMarshalsBatonCapability {
@@ -242,6 +238,32 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	public enum Provisions
 	{
 		KIT, PROVISIONS;
+	}
+	
+	public enum TroopCommands
+	{
+		NONE(0), FORWARD(1), FORWARD_ATTACK(2), CHARGE(3);
+		
+		private final int id;
+		private TroopCommands(int ID)
+		{
+			this.id = ID;
+		}
+		
+		public int getID()
+		{
+			return this.id;
+		}
+		
+		public static TroopCommands getCommand(int ID)
+		{
+			for(TroopCommands command : TroopCommands.values())
+			{
+				if(command.getID() == ID)
+					return command;
+			}
+			return NONE;
+		}
 	}
 
 	@Override

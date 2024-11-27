@@ -1,34 +1,49 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import javax.annotation.Nullable;
-
 import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.capabilities.VilMethods;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
+import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.block.BlockLilyPad;
-import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.pathfinding.Path;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public class VillagerAICampaignMove extends EntityAIGoFar {
+	
+	private TroopCommands order;
 
 	public VillagerAICampaignMove(EntityVillager entityHost, int pathFailMax)
 	{
 		super(entityHost, 4, pathFailMax);
+		this.order = TroopCommands.NONE;
 	}
 
 	@Override
 	public boolean shouldExecute()
 	{
 		EntityVillager villager = (EntityVillager) this.entityHost;
-		if((VilMethods.getCommBlockPos(villager) == null) || (VilMethods.getGuardBlockPos(villager) != null) || villager.isMating() || VilMethods.getFollowing(villager))
+		this.order = VilMethods.getTroopFaring(villager);
+		if(!isRightCommands(villager) || 
+				(VilMethods.getGuardBlockPos(villager) != null) || 
+				villager.isMating() || 
+				VilMethods.getFollowing(villager) ||
+				VilMethods.getHungry(villager) ||
+				!VilMethods.getDuty(villager))
+		{
 			return false;
-		if(!VilMethods.getHungry(villager) && VilMethods.getDuty(villager)) {
-			return true;
 		}
-		return false;
+		return true;
+	}
+
+	private boolean isRightCommands(EntityVillager villager) 
+	{
+		return VilMethods.getCommBlockPos(villager) != null 
+				&& 
+				(this.order == TroopCommands.FORWARD || this.order == TroopCommands.FORWARD_ATTACK);
 	}
 
 	@Override
@@ -49,13 +64,14 @@ public class VillagerAICampaignMove extends EntityAIGoFar {
 	{
 		if(this.finished && (this.navigator.noPath() || this.navigator.getPath().isFinished()))
 			return false;
+		if(this.order == TroopCommands.FORWARD_ATTACK && this.entityHost.getAttackTarget() != null)
+		{
+			return false;
+		}
 		EntityVillager villager = (EntityVillager) this.entityHost;
 		if(VilMethods.getGuardBlockPos(villager) == null && VilMethods.getCommBlockPos(villager) != null)
 		{
-			if(this.pathfindingFails < this.mostPathfindingFails)
-			{
-				return true;
-			}
+			return super.shouldContinueExecuting();
 		}
 		if(this.theDebugVar)
 			Log.info("we failed the test");
@@ -69,12 +85,10 @@ public class VillagerAICampaignMove extends EntityAIGoFar {
 	protected boolean breakDoors() { return false; }
 	
 	@Override
-	protected double hostSpeed() { return .7D; }
-	
-	@Override
 	protected void resetObjective() 
 	{
 		VilMethods.setCommBlockPos((EntityVillager) this.entityHost, null);
+		VilMethods.setTroopFaring((EntityVillager) this.entityHost, TroopCommands.NONE);
 	}
 	
 	@Override

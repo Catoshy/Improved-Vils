@@ -27,7 +27,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class GuiBaton extends GuiScreen {
+public class GuiBatonTroopSettings extends GuiScreen {
 
     private static final int STOP = 110;
 	private static final int GUARD_NOW = 109;
@@ -77,7 +77,7 @@ public class GuiBaton extends GuiScreen {
 	private boolean initialized;
 	private boolean resetSear;
 	
-	public GuiBaton(int selectedPlatoon) 
+	public GuiBatonTroopSettings(int selectedPlatoon) 
 	{
 		int remainder = selectedPlatoon % 10;
 		this.company = selectedPlatoon / 10;
@@ -95,7 +95,6 @@ public class GuiBaton extends GuiScreen {
 	@Override
 	public void initGui()
 	{
-		super.initGui();
 		if(!this.initialized)
 	    {
 			this.initialized = true;
@@ -333,10 +332,10 @@ public class GuiBaton extends GuiScreen {
     @SideOnly(Side.CLIENT)
     protected class ChangeButtons implements Runnable 
     {
-		private GuiBaton gui;
+		private GuiBatonTroopSettings gui;
     	private int taskCode;
     	
-    	public ChangeButtons(GuiBaton gui, int taskCode) 
+    	public ChangeButtons(GuiBatonTroopSettings gui, int taskCode) 
     	{
 			super();
 			this.gui = gui;
@@ -536,6 +535,8 @@ public class GuiBaton extends GuiScreen {
 	{
 		this.movePickedButtons.addAll(new ArrayList<GuiButton>()
 		{
+			private static final long serialVersionUID = 6175675334694733658L;
+
 			{
 				add(new GuiButton(MOVE_COMPANY_LESS, guiLeft + 158, guiTop + 136, 6, 12, "<"));
 				add(new GuiButton(MOVE_COMPANY_MORE, guiLeft + 176, guiTop + 136, 6, 12, ">"));

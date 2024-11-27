@@ -6,7 +6,6 @@ import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class PathUtil {
@@ -73,8 +72,11 @@ public class PathUtil {
 		return null;
 	}
 	
-	public static Vec3d findNavigableBlockInDirection(BlockPos start, BlockPos dest, EntityLiving entity, float unstraightAngleDeg, boolean flipFacing)
+	public static Vec3d findNavigableBlockInDirection(BlockPos start, BlockPos dest, EntityLiving entity, float offsetAngleDeg, boolean flipFacing)
 	{
+		if(start.getDistance(dest.getX(), dest.getY(), dest.getZ()) <= 8)
+				return new Vec3d(dest);
+		
 		int entX = start.getX();
 		int entY = start.getY();
 		int entZ = start.getZ();
@@ -85,10 +87,10 @@ public class PathUtil {
 
 		if(Math.abs(dX) > Math.abs(dZ))
 		{
-			if(unstraightAngleDeg != 0)
+			if(offsetAngleDeg != 0)
 			{
-				unstraightAngleDeg *= (-1 + Math.round(entity.getRNG().nextFloat()) * 2) * (Math.PI / 180); //Random sign -/+ and convert to radians
-				double tangentAng = Math.atan(dZ / dX) + unstraightAngleDeg;
+				offsetAngleDeg *= (-1 + Math.round(entity.getRNG().nextFloat()) * 2) * (Math.PI / 180); //Random sign -/+ and convert to radians
+				double tangentAng = Math.atan(dZ / dX) + offsetAngleDeg;
 				dZ = Math.round((float) (Math.tan(tangentAng) * dX));
 			}
 			if(flipFacing)
@@ -127,10 +129,10 @@ public class PathUtil {
 		}
 		else
 		{
-			if(unstraightAngleDeg != 0)
+			if(offsetAngleDeg != 0)
 			{
-				unstraightAngleDeg *= (-1 + Math.round(entity.getRNG().nextFloat()) * 2) * (Math.PI / 180); //Random sign -/+ and convert to radians
-				double tangentAng = Math.atan(dX / dZ) + unstraightAngleDeg;
+				offsetAngleDeg *= (-1 + Math.round(entity.getRNG().nextFloat()) * 2) * (Math.PI / 180); //Random sign -/+ and convert to radians
+				double tangentAng = Math.atan(dX / dZ) + offsetAngleDeg;
 				dX = Math.round((float) (Math.tan(tangentAng) * dZ));
 			}
 			if(flipFacing)
@@ -169,5 +171,4 @@ public class PathUtil {
 		}
 		return null;
 	}
-
 }

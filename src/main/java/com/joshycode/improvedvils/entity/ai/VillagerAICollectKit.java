@@ -10,7 +10,6 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import com.joshycode.improvedvils.CommonProxy;
-import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.WeaponBrooksData;
@@ -32,6 +31,7 @@ import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.pathfinding.Path;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.potion.PotionHealth;
 import net.minecraft.potion.PotionUtils;
@@ -300,11 +300,11 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	public boolean shouldContinueExecuting()
 	{
 		int revengeTime = this.villager.ticksExisted - this.villager.getRevengeTimer();
-		if((revengeTime < 20 && revengeTime >= 0) || this.pathfindingFails > this.mostPathfindingFails)
+		if(revengeTime < 20 && revengeTime >= 0)
 			return false;
 		if((VilMethods.getGuardBlockPos(villager) != null && this.finished) || (this.villager.getNavigator().noPath() && this.finished))
 			return false;
-		return true;
+		return super.shouldContinueExecuting();
 	}
 
 	private void refillInventory()
@@ -424,9 +424,6 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	{ 
 		return true; 
 	}
-	
-	@Override
-	protected double hostSpeed() { return .7D; }
 	
 	@Override
 	protected void resetObjective() 

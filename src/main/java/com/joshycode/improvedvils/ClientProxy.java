@@ -15,13 +15,13 @@ import org.lwjgl.input.Keyboard;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.command.CommandGetUnlocalName;
 import com.joshycode.improvedvils.entity.EntityBullet;
 import com.joshycode.improvedvils.gui.GuiVillagerArm;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.MarshalKeyEvent;
 import com.joshycode.improvedvils.network.NetWrapper;
-import com.joshycode.improvedvils.network.VilGuiQuery;
 import com.joshycode.improvedvils.network.VilStateQuery;
 import com.joshycode.improvedvils.renderer.LayerHeldItemNonBiped;
 import com.joshycode.improvedvils.renderer.ModelBipedVillager;
@@ -62,6 +62,7 @@ public class ClientProxy extends CommonProxy {
 	private int selectedPlatoon;
 	private int provisioningPlatoon;
 	private Provisions provisions;
+	private TroopCommands troopCommand;
 	
 	@Override
 	public void preInit() throws IOException
@@ -82,6 +83,7 @@ public class ClientProxy extends CommonProxy {
 		this.hudUpdateTime = -24000;
 		this.selectedPlatoon = 0;
 		this.provisioningPlatoon = -1;
+		this.troopCommand = TroopCommands.NONE;
 		keyBindings = new KeyBinding[5];
 		keyBindings[0] = new KeyBinding("key.marshal.platoon+", Keyboard.KEY_UP, "Improvedvils.keybinds");
 		keyBindings[1] = new KeyBinding("key.marshal.platoon-", Keyboard.KEY_DOWN, "Improvedvils.keybinds");
@@ -267,6 +269,7 @@ public class ClientProxy extends CommonProxy {
 	@Override
 	public void setProvisioningPlatoon(int platoon, Provisions kit) 
 	{
+		this.troopCommand = TroopCommands.NONE;
 		this.provisions = kit;
 		this.provisioningPlatoon = platoon;
 	}
@@ -281,6 +284,18 @@ public class ClientProxy extends CommonProxy {
 	public Provisions getStuff() 
 	{
 		return this.provisions;
+	}
+	
+	public void setTroopCommand(TroopCommands c)
+	{
+		this.provisioningPlatoon = -1;
+		this.troopCommand = c;
+	}
+	
+	@Override
+	public TroopCommands getCommand()
+	{
+		return this.troopCommand;
 	}
 
 	@Override
@@ -301,18 +316,14 @@ public class ClientProxy extends CommonProxy {
 		return ctx.side.isClient() ? Minecraft.getMinecraft().player : super.getPlayerEntity(ctx);
 	}
 	
-	public static void closeVillagerGUI(int vilId)
+	public void closeVillagerGUI(int vilId)
 	{
 		NetWrapper.NETWORK.sendToServer(new VilStateQuery(vilId, true));
 	}
 
-	public static void openGuiForPlayerIfOK(int entityId)
+	public void marshalKeyEvent(int i) 
 	{
-		NetWrapper.NETWORK.sendToServer(new VilGuiQuery(entityId));
-	}
-
-	public static void marshalKeyEvent(int i) 
-	{
+		this.provisioningPlatoon = -1;
 		NetWrapper.NETWORK.sendToServer(new MarshalKeyEvent(i));
 	}
 }

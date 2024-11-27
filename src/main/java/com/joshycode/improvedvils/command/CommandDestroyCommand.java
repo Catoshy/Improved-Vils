@@ -1,7 +1,6 @@
 package com.joshycode.improvedvils.command;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
@@ -10,7 +9,6 @@ import com.joshycode.improvedvils.handler.CapabilityHandler;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;

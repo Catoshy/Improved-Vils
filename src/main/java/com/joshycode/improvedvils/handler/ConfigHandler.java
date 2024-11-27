@@ -25,6 +25,7 @@ import com.joshycode.improvedvils.entity.ai.RangeAttackEntry;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.WeaponBrooksData;
 import com.joshycode.improvedvils.util.GenFileStrings;
 
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.monster.EntityEnderman;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.EntitySlime;
@@ -60,7 +61,7 @@ public class ConfigHandler {
 	public static float collectFoodThreshold;
 	public static float movementSpeed;
 	public static boolean openBlocksLoaded = false;
-	public static boolean debug = false;
+	public static boolean debug;
 	public static boolean renderItemsAndArmour;
 	public static int friendlyFireSearchRange;
 	public static int targetDistance;
@@ -117,10 +118,26 @@ public class ConfigHandler {
 				CommonProxy.TARGETS.add(EntityMob.class);
 			}
 			for(String s : attackableMobs)
-				CommonProxy.TARGETS.add(ForgeRegistries.ENTITIES.getValue(new ResourceLocation(s)).getEntityClass());
+			{
+				Class<? extends EntityLivingBase> clazz;
+				try
+				{
+					clazz = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(s)).getEntityClass().asSubclass(EntityLivingBase.class);
+				}
+				catch(ClassCastException e) {continue;}
+				CommonProxy.TARGETS.add(clazz);
+			}
 			
 			for(String s : rangeAttackBlacklist)
-				CommonProxy.RANGE_BLACKLIST.add(ForgeRegistries.ENTITIES.getValue(new ResourceLocation(s)).getEntityClass());
+			{
+				Class<? extends EntityLivingBase> clazz;
+				try
+				{
+					clazz = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(s)).getEntityClass().asSubclass(EntityLivingBase.class);
+				}
+				catch(ClassCastException e) {continue;}
+				CommonProxy.RANGE_BLACKLIST.add(clazz);
+			}
 			
 			for(ModContainer s : Loader.instance().getModList())
 			{

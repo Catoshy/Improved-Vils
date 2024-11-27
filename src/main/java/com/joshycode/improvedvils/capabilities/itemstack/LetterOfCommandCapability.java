@@ -70,6 +70,7 @@ public class LetterOfCommandCapability implements ILetterOfCommandCapability {
 		return nbt;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void deserializeNBT(NBTTagCompound nbt) 
 	{

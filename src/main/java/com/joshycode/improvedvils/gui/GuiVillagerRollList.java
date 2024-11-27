@@ -15,12 +15,12 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 
 public class GuiVillagerRollList extends GuiListExtended {
 
-	private GuiBaton fatherGui;
+	private GuiBatonTroopSettings fatherGui;
 	private ArrayList<EnlisteeContainer> roll;
 	private Set<Integer> selectedEnlistees;
 	private int lastSelected;
 
-	public GuiVillagerRollList(GuiBaton father, ArrayList<EnlisteeContainer> roll, int listWidth, int listHeight, int slotHeight) 
+	public GuiVillagerRollList(GuiBatonTroopSettings father, ArrayList<EnlisteeContainer> roll, int listWidth, int listHeight, int slotHeight) 
 	{
 		super(father.mc, listWidth, listHeight, 0, 0, slotHeight);
 		this.selectedEnlistees = new HashSet<>();
@@ -223,7 +223,7 @@ public class GuiVillagerRollList extends GuiListExtended {
 		return this.roll.get(index);
 	}
 
-	public GuiBaton getFatherGui() 
+	public GuiBatonTroopSettings getFatherGui() 
 	{
 		return this.fatherGui;
 	}

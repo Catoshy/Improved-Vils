@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
+
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -20,6 +22,8 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public IImprovedVilCapability setCommBlock(BlockPos posIn);
 	@Nullable
 	public BlockPos getCommBlockPos();
+	public IImprovedVilCapability setTroopFaring(TroopCommands c);
+	public TroopCommands getTroopFaring();
 	@Nullable
 	public BlockPos getFoodStorePos();
 	public IImprovedVilCapability setFoodStore(BlockPos pos);

@@ -1,20 +1,16 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
-
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.entity.ai.RangeAttackEntry.WeaponBrooksData;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
-import com.joshycode.improvedvils.util.VilAttributes;
+import com.joshycode.improvedvils.util.PathUtil;
 
-import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIBase;
@@ -22,34 +18,30 @@ import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.pathfinding.Path;
+import net.minecraft.pathfinding.PathNavigate;
 import net.minecraft.pathfinding.PathPoint;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class VillagerAIAttackMelee extends EntityAIBase {
 
-	Random rand;
-	Path path;
 	private Item prevHeldItem;
-	private EntityVillager attacker;
-	
-	@Nullable
-	double speedToTarget;
-	private int delayCounter;
+	private Path path;
+	private PathNavigate navigator;
+	EntityVillager attacker;
+	private double speedToTarget;
+	private double modifier;
 	private boolean canPenalize = false;
 	private boolean longMemory;
 	private double targetX;
 	private double targetY;
 	private double targetZ;
+	private int delayCounter;
 	private int failedPathFindingPenalty;
-	private int attackTick;
+	int attackTick;
 	private boolean runAway;
 	private boolean brookingRangedWeapon;
 
@@ -57,35 +49,26 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	{
 		this.attacker = villager;
         this.longMemory = useLongMemory;
-        this.setMutexBits(3);
 		this.attacker = villager;
-		this.rand = new Random();
 		this.speedToTarget = speedIn;
+		this.navigator = villager.getNavigator();
+		this.modifier = 0;
+        this.setMutexBits(3);
 	}
 
 	@Override
 	public boolean shouldExecute()
 	{
-		EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
+		EntityLivingBase entityTarget = this.attacker.getAttackTarget();
 		
-        if (entitylivingbase == null)
-        {
+        if (entityTarget == null || !entityTarget.isEntityAlive() || isDoingSomethingMoreImportant())
             return false;
-        }
-        else if (!entitylivingbase.isEntityAlive())
-        {
-            return false;
-        }
-        if(isDoingSomethingMoreImportant())
-        {
-    		return false;
-        }
-        	
+
         if (canPenalize )
         {
             if (--this.delayCounter <= 0)
             {
-                this.path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
+                this.path = this.getPathToTarget(entityTarget);
                 this.delayCounter = 4 + this.attacker.getRNG().nextInt(7);
                 return this.path != null;
             }
@@ -94,21 +77,21 @@ public class VillagerAIAttackMelee extends EntityAIBase {
                 return true;
             }
         }
-        this.path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
-
-        if (this.path != null)
+        this.path = this.getPathToTarget(entityTarget);
+        if (this.path != null)//TODO
         {
+        	this.navigator.setPath(this.path, this.hostSpeed());
             return true;
         }
         else
         {
-            return this.getAttackReachSqr(entitylivingbase) >= this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
+            return VillagerAIAttack.getAttackReachSqr(this.attacker, entityTarget) >= this.attacker.getDistanceSq(entityTarget.posX, entityTarget.getEntityBoundingBox().minY, entityTarget.posZ);
         }
     }
 
 	private boolean isDoingSomethingMoreImportant()
 	{
-		if((VilMethods.getCommBlockPos(this.attacker) != null) || VilMethods.isOutsideHomeDist(this.attacker) || VilMethods.isReturning(this.attacker) || VilMethods.isRefillingFood(this.attacker))
+		if(!areAttackCommands() || VilMethods.isOutsideHomeDist(this.attacker) || VilMethods.isReturning(this.attacker) || VilMethods.isRefillingFood(this.attacker))
 			return true;
 		if(VilMethods.getMovingIndoors(this.attacker))
 			return true;
@@ -117,7 +100,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 		if(VilMethods.getFollowing(this.attacker) && isDistanceTooGreat())
 			return true;
 		ItemStack stack = this.attacker.getHeldItemMainhand();
-		String s= stack.getUnlocalizedName();
+		String s = stack.getUnlocalizedName();
 		for(WeaponBrooksData g : ConfigHandler.configuredGuns.keySet())
 		{
 			if(s.equals(g.itemUnlocalizedName))
@@ -135,40 +118,30 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 		this.prevHeldItem = stack.getItem();
 		return false;
 	}
-
-    @Override
-	public void startExecuting()
-    {
-        this.attacker.getNavigator().setPath(this.path, this.speedToTarget);
-        this.delayCounter = 0;
-    }
+	
+	private boolean areAttackCommands() 
+	{
+		return VilMethods.getCommBlockPos(this.attacker) == null || VilMethods.getTroopFaring(this.attacker) == TroopCommands.FORWARD_ATTACK;
+	}
 
 	@Override
 	public void updateTask()
     {
-		Path path = this.attacker.getNavigator().getPath();
-		EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
-		double modifier = 0.0d;
-	    AttributeModifier mod = this.attacker.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getModifier(VillagerAIDrinkPotion.MODIFIER_UUID);
-
-	    if(mod != null)
-	    {
-	    	modifier = mod.getAmount();
-	    }
-	    boolean flag = false;
-	    if(this.attackTick > .6 * this.getCooldown() && this.attackTick != 0)
+		EntityLivingBase entityTarget = this.attacker.getAttackTarget();
+		boolean flag = false;
+	    if(this.attackTick > .6 * VillagerAIAttack.getCooldown(this.attacker) && this.attackTick != 0)
 	    {
 	    	this.runAway = true;
-			modifier += .3d;
+	    	this.modifier = .3d;
 		    if(VilMethods.getGuardBlockPos(this.attacker) != null)
 		    {
-				path = this.attacker.getNavigator().getPathToPos(VilMethods.getGuardBlockPos(this.attacker));
+				this.path = this.navigator.getPathToPos(VilMethods.getGuardBlockPos(this.attacker));
 		    }
 		    else
 		    {
-				Vec3d vec = RandomPositionGenerator.findRandomTargetBlockAwayFrom(attacker, 8, 6, entitylivingbase.getPositionVector());
+				Vec3d vec = RandomPositionGenerator.findRandomTargetBlockAwayFrom(attacker, 8, 6, entityTarget.getPositionVector());
 				if(vec != null)
-					path = this.attacker.getNavigator().getPathToXYZ(vec.x, vec.y, vec.z);
+					this.path = this.navigator.getPathToXYZ(vec.x, vec.y, vec.z);
 		    }
 	    }
 	    else
@@ -176,48 +149,51 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	    	if(this.runAway)
 	    	{
 	    		this.attacker.getNavigator().clearPath();
+	    		this.modifier = 0d;
 	    		this.runAway = false;
 	    	}
 
-	    	if(this.attacker.getDistanceSq(entitylivingbase) < getAttackReachSqr(entitylivingbase) * .75)
+	    	if(this.attacker.getDistanceSq(entityTarget) < VillagerAIAttack.getAttackReachSqr(this.attacker, entityTarget) * .75)
 	    	{
-	    		if(this.attacker.getDistanceSq(entitylivingbase) < ConfigHandler.attackReach)
+	    		if(this.attacker.getDistanceSq(entityTarget) < ConfigHandler.attackReach)
 	    		{
 	    			flag = true;
-	    			Vec3d vec = RandomPositionGenerator.findRandomTargetBlockAwayFrom(attacker, 16, 8, entitylivingbase.getPositionVector());
+	    			Vec3d vec = RandomPositionGenerator.findRandomTargetBlockAwayFrom(attacker, 16, 8, entityTarget.getPositionVector());
 
 	    			if(vec != null)
-	    				path = this.attacker.getNavigator().getPathToXYZ(vec.x, vec.y, vec.z);
+	    				this.path = this.navigator.getPathToXYZ(vec.x, vec.y, vec.z);
 	    		}
 	    		else
 	    		{
-	    			path = null;
+	    			this.path = null;
 	    		}
 	    	}
 	    	else
 	    	{
-	    		path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
+	    		this.path = this.getPathToTarget(entityTarget);
 	    	}
 	    }
-	    if(path != null && !flag)
+	    
+	    if(VilMethods.getGuardBlockPos(this.attacker) != null && !flag)
 	    {
-	    	if(VilMethods.getGuardBlockPos(this.attacker) != null)
-	    	{
-	    		this.truncatePath(path, VilMethods.getGuardBlockPos(this.attacker));
-	    	}
+	    	this.truncatePath(VilMethods.getGuardBlockPos(this.attacker));
 	    }
-
-        this.attacker.getLookHelper().setLookPositionWithEntity(entitylivingbase, 30.0F, 30.0F);
-        double d0 = this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
+	    
+	    if(this.path != null)
+        	this.navigator.setPath(this.path, this.hostSpeed());
+	    
+        this.attacker.getLookHelper().setLookPositionWithEntity(entityTarget, 30.0F, 30.0F);
+        double d0 = this.attacker.getDistanceSq(entityTarget.posX, entityTarget.getEntityBoundingBox().minY, entityTarget.posZ);
 	    --this.delayCounter;
 
-	    if ((this.longMemory || this.attacker.getEntitySenses().canSee(entitylivingbase)) && this.delayCounter <= 0 && (this.targetX == 0.0D && this.targetY == 0.0D && this.targetZ == 0.0D || entitylivingbase.getDistanceSq(this.targetX, this.targetY, this.targetZ) >= .5D || this.attacker.getRNG().nextFloat() < 0.05F))
+	    if ((this.longMemory || this.attacker.getEntitySenses().canSee(entityTarget)) && this.delayCounter <= 0 && (this.targetX == 0.0D && this.targetY == 0.0D && this.targetZ == 0.0D || entityTarget.getDistanceSq(this.targetX, this.targetY, this.targetZ) >= .5D || this.attacker.getRNG().nextFloat() < 0.05F))
 	    {
-	        this.targetX = entitylivingbase.posX;
-	        this.targetY = entitylivingbase.getEntityBoundingBox().minY;
-	        this.targetZ = entitylivingbase.posZ;
+	        this.targetX = entityTarget.posX;
+	        this.targetY = entityTarget.getEntityBoundingBox().minY;
+	        this.targetZ = entityTarget.posZ;
 	        this.delayCounter = 4 + this.attacker.getRNG().nextInt(7);
 
+	        /*
 	        if (this.canPenalize)
 	        {
 	            this.delayCounter += failedPathFindingPenalty;
@@ -233,7 +209,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	            {
 	                failedPathFindingPenalty += 10;
 	            }
-	        }
+	        }*/
 
 	        if (d0 > 1024.0D)
 	        {
@@ -244,14 +220,15 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	            this.delayCounter += 5;
 	        }
 
-	        if (path == null)
+	        if (this.attacker.getNavigator().getPath() == null)
 	        {
 	            this.delayCounter += 15;
 	        }
 	    }
-	    this.attacker.getNavigator().setPath(path, this.speedToTarget + modifier);
 	    this.attackTick = Math.max(this.attackTick - 1, 0);
-	    this.checkAndPerformAttack(entitylivingbase, d0);
+	    if(VillagerAIAttack.checkAndPerformAttack(this.attacker, entityTarget, this.attackTick, d0, false))
+	    	this.attackTick = VillagerAIAttack.getCooldown(this.attacker);
+	    super.updateTask();
     }
 
 	@Override
@@ -259,29 +236,34 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 	{
 		if(!this.attacker.getHeldItemMainhand().getItem().equals(prevHeldItem))
 		{
+			Log.info("not prev held item", null);
 			return false;
 		}
 		BlockPos pos = VilMethods.getGuardBlockPos(this.attacker);
 		if(pos != null && this.attacker.getDistanceSq(pos) > CommonProxy.MAX_GUARD_DIST - 31)
 		{
+			Log.info("Guard block problems", null);
 			return false;
 		}
-		if(VilMethods.getCommBlockPos(this.attacker) != null || VilMethods.isOutsideHomeDist( this.attacker)
+		if(!areAttackCommands()  || VilMethods.isOutsideHomeDist( this.attacker)
 				|| VilMethods.getMovingIndoors(this.attacker))
 		{
+			Log.info("something something commands", null);
     		return false;
     	}
 		EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
 
         if (entitylivingbase == null || !entitylivingbase.isEntityAlive())
         {
+			Log.info("Target null", null);
             return false;
         }
     	if(this.brookingRangedWeapon && (!(this.attacker.getDistanceSq(this.attacker.getAttackTarget()) < 8 || VilMethods.outOfAmmo(this.attacker))))
     	{
+			Log.info("weapons.", null);
 			return false;
     	}
-        if (canPenalize)
+        /*if (canPenalize)
         {
             if (--this.delayCounter <= 0)
             {
@@ -296,128 +278,31 @@ public class VillagerAIAttackMelee extends EntityAIBase {
             }
         }
         Path path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
-
+        
         if (path != null)
         {
             return true;
         }
         else
         {
-            return this.getAttackReachSqr(entitylivingbase) >= this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
-        }
+            return VillagerAIAttack.getAttackReachSqr(this.attacker, entitylivingbase) >= this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
+        }*/ 
+    	return true;
 	}
 
-	private boolean attackEntityAsVillager(EntityLivingBase entityIn)
+	private void truncatePath(BlockPos pos)
 	{
-		float f = (float)this.attacker.getEntityAttribute(VilAttributes.VIL_DAMAGE).getAttributeValue();
-        int i = 0;
-
-        ItemStack itemstack = this.attacker.getHeldItemMainhand();
-
-        List<AttributeModifier> l = new ArrayList<AttributeModifier>(itemstack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()));
-        
-        if(!l.isEmpty())
-        {
-	        float f1 = (float) l.get(0).getAmount();
-	
-	    	if(f1 >= 1.5F)
-	    		f1 *= ConfigHandler.villagerDeBuffMelee;
-	
-	    	f += f1;
-        }
-        
-        f += EnchantmentHelper.getModifierForCreature(this.attacker.getHeldItemMainhand(), entityIn.getCreatureAttribute());
-        i += EnchantmentHelper.getKnockbackModifier(this.attacker);
-
-        boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this.attacker), f);
-
-        if(!itemstack.isEmpty())
-        {
-        	EntityPlayer playerEnt = null;
-        	UUID player = getPlayerId();
-
-    		if(player != null)
-    		{
-    			playerEnt = this.attacker.world.getPlayerEntityByUUID(player);
-    		}
-        	if(playerEnt != null)
-        	{
-        		itemstack.hitEntity(entityIn, playerEnt);
-        	}
-        	else
-        	{
-        		itemstack.getItem().hitEntity(itemstack, entityIn, this.attacker);
-        	}
-        }
-        if (flag)
-        {
-            if (i > 0 && entityIn instanceof EntityLivingBase)
-            {
-                entityIn.knockBack(this.attacker, i * 0.5F, MathHelper.sin(this.attacker.rotationYaw * 0.017453292F), (-MathHelper.cos(this.attacker.rotationYaw * 0.017453292F)));
-                this.attacker.motionX *= 0.6D;
-                this.attacker.motionZ *= 0.6D;
-            }
-
-            int j = EnchantmentHelper.getFireAspectModifier(this.attacker);
-
-            if (j > 0)
-            {
-                entityIn.setFire(j * 4);
-            }
-
-            if (entityIn instanceof EntityPlayer)
-            {
-                EntityPlayer entityplayer = (EntityPlayer)entityIn;
-                ItemStack itemstack1 = entityplayer.isHandActive() ? entityplayer.getActiveItemStack() : ItemStack.EMPTY;
-
-                if (!itemstack.isEmpty() && !itemstack1.isEmpty() && itemstack.getItem().canDisableShield(itemstack, itemstack1, entityplayer, this.attacker) && itemstack1.getItem().isShield(itemstack1, entityplayer))
-                {
-                    float f2 = 0.25F + EnchantmentHelper.getEfficiencyModifier(this.attacker) * 0.05F;
-                    if (this.rand.nextFloat() < f2)
-                    {
-                        entityplayer.getCooldownTracker().setCooldown(itemstack1.getItem(), 100);
-                        this.attacker.world.setEntityState(entityplayer, (byte)30);
-                    }
-                }
-            }
-            EnchantmentHelper.applyThornEnchantments(entityIn, this.attacker);
-        }
-
-        return flag;
-	}
-
-	protected void checkAndPerformAttack(EntityLivingBase p_190102_1_, double p_190102_2_)
-    {
-        double d0 = this.getAttackReachSqr(p_190102_1_);
-
-        if (p_190102_2_ <= d0 && this.attackTick <= 0 && !isDrinking())
-        {
-            this.attackTick = this.getCooldown();
-            this.attacker.setActiveHand(EnumHand.MAIN_HAND);
-            attackEntityAsVillager(p_190102_1_);
-        }
-    }
-
-	private int getCooldown()
-	{
-		int eAttr = (int) (this.attacker.getEntityAttribute(SharedMonsterAttributes.ATTACK_SPEED).getAttributeValue() * 20.0D);
-		return (int) (eAttr * ConfigHandler.meleeAttackCooldown);
-	}
-
-	private void truncatePath(Path p, BlockPos pos)
-	{
-		for(int i = 0; i < p.getCurrentPathLength(); i++)
+		if(this.path == null) return;
+		for(int i = 0; i < this.path.getCurrentPathLength(); i++)
 		{
-			if(p.getPathPointFromIndex(i).distanceToSquared(new PathPoint(pos.getX(), pos.getY(), pos.getZ())) >
+			if(this.path.getPathPointFromIndex(i).distanceToSquared(new PathPoint(pos.getX(), pos.getY(), pos.getZ())) >
 					CommonProxy.MAX_GUARD_DIST - 31 /* 2 x 2*/)
 			{
-				p.setCurrentPathLength(i - 1);
-				return;
+				this.path.setCurrentPathLength(i - 1);
 			}
-			if(i < p.getCurrentPathLength() -1 && p.getPathPointFromIndex(i).y - p.getPathPointFromIndex(i + 1).y >= 2) //go not where you cannot return
+			if(i < this.path.getCurrentPathLength() -1 && this.path.getPathPointFromIndex(i).y - this.path.getPathPointFromIndex(i + 1).y >= 2) //go not where you cannot return
 			{
-				p.setCurrentPathLength(i - 1);
-				return;
+				this.path.setCurrentPathLength(i - 1);
 			}
 		}
 	}
@@ -434,25 +319,6 @@ public class VillagerAIAttackMelee extends EntityAIBase {
 		return false;
 	}
 
-	private boolean isDrinking()
-	{
-		try
-		{
-			return this.attacker.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).isDrinking();
-		} catch(NullPointerException e) {}
-		return false;
-	}
-
-	@Nullable
-	private UUID getPlayerId()
-	{
-		try
-		{
-			return this.attacker.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getPlayerId();
-		} catch (NullPointerException e) {}
-		return null;
-	}
-
 	@Override
 	public void resetTask()
 	{
@@ -467,13 +333,12 @@ public class VillagerAIAttackMelee extends EntityAIBase {
         this.attacker.getNavigator().clearPath();
     }
 
-    protected double getAttackReachSqr(EntityLivingBase attackTarget)
-    {
-        return (this.attacker.width + ConfigHandler.attackReach) * (this.attacker.width + ConfigHandler.attackReach) + attackTarget.width;
-    }
+	@Nullable
+	private Path getPathToTarget(EntityLivingBase entityTarget) 
+	{
+		Vec3d pos = PathUtil.findNavigableBlockInDirection(this.attacker.getPosition(), entityTarget.getPosition(), this.attacker, 0.0F, false);
+		return this.navigator.getPathToXYZ(pos.x, pos.y, pos.z);
+	}
 
-    protected int itemUseDuration()
-    {
-    	return this.attacker.getHeldItemOffhand().getMaxItemUseDuration() - this.attacker.getItemInUseCount();
-    }
+    protected double hostSpeed() { return (this.speedToTarget > 0 ? this.speedToTarget : this.attacker.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).getAttributeValue()) + this.modifier; }
 }

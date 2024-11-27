@@ -7,9 +7,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.joshycode.improvedvils.Log;
-import com.joshycode.improvedvils.handler.ConfigHandler;
-
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemFood;

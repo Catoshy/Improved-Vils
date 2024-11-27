@@ -18,7 +18,6 @@ import com.joshycode.improvedvils.util.Pair;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
 
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Team;
@@ -291,6 +290,7 @@ public class VilPlayerDeal implements Runnable{
 	}
 
 	//TODO
+	@SuppressWarnings("unused")
 	private void checkMutiny() 
 	{
 		IVillageCapability villageCap = village.getCapability(CapabilityHandler.VILLAGE_CAPABILITY, null);

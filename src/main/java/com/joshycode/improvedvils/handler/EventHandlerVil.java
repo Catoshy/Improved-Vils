@@ -1,20 +1,26 @@
 package com.joshycode.improvedvils.handler;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 
+import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
+import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
 import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.entity.ai.VillagerAIAttackMelee;
 import com.joshycode.improvedvils.entity.ai.VillagerAIAttackNearestTarget;
 import com.joshycode.improvedvils.entity.ai.VillagerAIAvoidEntity;
+import com.joshycode.improvedvils.entity.ai.VillagerAIBayonetCharge;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignEat;
 import com.joshycode.improvedvils.entity.ai.VillagerAICampaignMove;
 import com.joshycode.improvedvils.entity.ai.VillagerAICollectKit;
@@ -46,6 +52,7 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
@@ -73,6 +80,7 @@ import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.IThreadListener;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.village.Village;
 import net.minecraftforge.client.event.GuiOpenEvent;
@@ -308,7 +316,7 @@ public class EventHandlerVil {
 	{
 		if(Minecraft.getMinecraft().currentScreen instanceof GuiVillagerArm && !(event.getGui() instanceof GuiVillagerArm))
 		{
-			ClientProxy.closeVillagerGUI(((GuiVillagerArm) Minecraft.getMinecraft().currentScreen).getVilId());
+			ImprovedVils.proxy.closeVillagerGUI(((GuiVillagerArm) Minecraft.getMinecraft().currentScreen).getVilId());
 		}
 	}
 
@@ -324,56 +332,92 @@ public class EventHandlerVil {
 		
 		if(keyBindings[0].isPressed())
 		{
-			ClientProxy.marshalKeyEvent(0);
+			ImprovedVils.proxy.marshalKeyEvent(0);
 		}
 		else if(keyBindings[1].isPressed())
 		{
-			ClientProxy.marshalKeyEvent(1);
+			ImprovedVils.proxy.marshalKeyEvent(1);
 		}
 		else if(keyBindings[2].isPressed())
 		{
-			ClientProxy.marshalKeyEvent(2);
+			ImprovedVils.proxy.marshalKeyEvent(2);
 		}
 		else if(keyBindings[3].isPressed())
 		{
-			ClientProxy.marshalKeyEvent(3);
+			ImprovedVils.proxy.marshalKeyEvent(3);
 		}
 		else if(keyBindings[4].isPressed())
 		{
-			ClientProxy.marshalKeyEvent(4);
+			ImprovedVils.proxy.marshalKeyEvent(4);
 		}
 	}
 
 	@SideOnly(Side.CLIENT)
 	@SubscribeEvent
-	public void showBatonSelectedPlatoon(RenderGameOverlayEvent.Post e) 
+	public void showBatonDoing(RenderGameOverlayEvent.Post e) 
 	{
-		if(e.isCancelable() || e.getType() != ElementType.TEXT || ImprovedVils.proxy.timeAgoSinceHudInfo() > 120) return;
+		if(e.isCancelable() || e.getType() != ElementType.TEXT || Minecraft.getMinecraft().gameSettings.chatVisibility == EntityPlayer.EnumChatVisibility.HIDDEN) return;
 		
+		float f = Minecraft.getMinecraft().gameSettings.chatOpacity * 0.9F + 0.1F;
 		GlStateManager.pushMatrix();
 		FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-		float alpha = 1f;
-		int timeAgo = ImprovedVils.proxy.timeAgoSinceHudInfo();
-		if(timeAgo > 60)
-			alpha = (120 - timeAgo) / 60;
-		GlStateManager.color(1, 1, 1, alpha);
-		GlStateManager.disableLighting();
-		int unit = ImprovedVils.proxy.getSelectedUnit();
-		int platoon = unit % 10;
-		int company = unit / 10;
+		
 		ScaledResolution res = e.getResolution();
 		int guiX = res.getScaledWidth() / 2 - 15;
 		int guiY = res.getScaledHeight() - 50;
-		font.drawString(TextFormatting.WHITE + "Selected Company: " + String.format(java.util.Locale.US, "%d", company + 1), guiX, guiY, 0);
-		font.drawString(TextFormatting.WHITE + "Selected Platoon: " + String.format(java.util.Locale.US, "%d", platoon + 1), guiX, guiY + 9, 0);
+		
+		TroopCommands command = ImprovedVils.proxy.getCommand();
+		ItemStack heldItem = Minecraft.getMinecraft().getRenderViewEntity().getHeldEquipment().iterator().next();
+		if(heldItem.getItem().equals(CommonProxy.ItemHolder.BATON))
+		{
+			if(ImprovedVils.proxy.getProvisioningUnit() != -1)
+			{
+				Provisions stuff = ImprovedVils.proxy.getStuff();
+				String stuffWrit = TextFormatting.WHITE + "Select a \"" + stuff.name() + "\" chest.";
+				int stuffWritWidth = font.getStringWidth(stuffWrit);
+				font.drawString(stuffWrit, guiX - (stuffWritWidth / 2), guiY, 16777215);
+	
+			}
+			if(command.getID() != TroopCommands.NONE.getID())
+			{
+				font.drawString(TextFormatting.WHITE + "Commanding a " + command.name() + "!", guiX, guiY, 16777215);
+			}
+		}
+		else
+		{
+			ImprovedVils.proxy.setTroopCommand(TroopCommands.NONE);
+		}
+		
+		int timeAgo = ImprovedVils.proxy.timeAgoSinceHudInfo();
+		double alphaStrength = (double)timeAgo / 200.0D;
+		alphaStrength = 1.0D - alphaStrength;
+		alphaStrength = alphaStrength * 10.0D;
+		alphaStrength = MathHelper.clamp(alphaStrength, 0D, 1D);
+		alphaStrength = alphaStrength * alphaStrength;
+		int alpha = (int)(255D * alphaStrength);
+		alpha = (int)((float)alpha * f);
+		
+		if(alpha > 3)
+		{
+			int unit = ImprovedVils.proxy.getSelectedUnit();
+			int platoon = unit % 10;
+			int company = unit / 10;
+			String platS = "Selected Platoon: " + String.format(java.util.Locale.US, "%d", platoon + 1);
+			String compS = "Selected Company: " + String.format(java.util.Locale.US, "%d", company + 1);
+			int platWidth = font.getStringWidth(platS);
+			int compWidth = font.getStringWidth(compS);
+            GlStateManager.enableBlend();
+			font.drawStringWithShadow(compS, guiX + 12 - (compWidth / 2), guiY, 16777215 + (alpha << 24));
+			font.drawStringWithShadow(platS, guiX + 12 - (platWidth / 2), guiY + 9, 16777215 + (alpha << 24));
+			GlStateManager.disableAlpha();
+            GlStateManager.disableBlend();
+		}
 		GlStateManager.popMatrix();
-		//TODO should make the text fade
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void addAiTasks(EntityVillager entity)
 	{
-		Collection<EntityAITaskEntry> toRem = new HashSet();
+		Collection<EntityAITaskEntry> toRem = new HashSet<EntityAITaskEntry>();
 		for(EntityAITaskEntry ai : entity.tasks.taskEntries)
 		{
 			if(ai.action instanceof EntityAIAvoidEntity)
@@ -406,30 +450,31 @@ public class EventHandlerVil {
 		entity.tasks.addTask(6, new VillagerAIFollow(entity, .67D, 6.0F, ConfigHandler.followRangeNormal));
 		entity.tasks.addTask(4, new VillagerAIMoveIndoors(entity));
 		entity.tasks.addTask(4, new VillagerAIDrinkPotion(entity));
-		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, .55D, true));
-		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new FriendlyFireVillagerPredicate(entity)));
+		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, /*.55D*/0D, true));
+		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new FriendlyFireVillagerPredicate<Entity>(entity)));
 		entity.tasks.addTask(1, new VillagerAISwimming(entity));
 		entity.tasks.addTask(1, aiCEat);
 		entity.tasks.addTask(1, new VillagerAIEatHeal(entity));
 		entity.tasks.addTask(1, new VillagerAIHandlePlayers(entity));
 		//entity.tasks.addTask(0, new VillagerAIClimbLadder(entity));
-		entity.tasks.addTask(1, new VillagerAICampaignMove(entity, 490));
+		entity.tasks.addTask(2, new VillagerAICampaignMove(entity, 64));
 		entity.tasks.addTask(3, new VillagerAIRestrictOpenDoor(entity));
-		entity.tasks.addTask(1, new VillagerAIGuard(entity, CommonProxy.MAX_GUARD_DIST, 4, 128));
-		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityZombie.class, 8.0F, 0.6D, 0.6D));
-		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityEvoker.class, 12.0F, 0.8D, 0.8D));
-		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVindicator.class, 8.0F, 0.8D, 0.8D));
-		entity.tasks.addTask(2, new VillagerAIAvoidEntity(entity, EntityVex.class, 8.0F, 0.6D, 0.6D));
+		entity.tasks.addTask(1, new VillagerAIGuard(entity, CommonProxy.MAX_GUARD_DIST, 4, 64));
+		entity.tasks.addTask(2, new VillagerAIAvoidEntity<EntityZombie>(entity, EntityZombie.class, 8.0F, 0.6D, 0.6D));
+		entity.tasks.addTask(2, new VillagerAIAvoidEntity<EntityEvoker>(entity, EntityEvoker.class, 12.0F, 0.8D, 0.8D));
+		entity.tasks.addTask(2, new VillagerAIAvoidEntity<EntityVindicator>(entity, EntityVindicator.class, 8.0F, 0.8D, 0.8D));
+		entity.tasks.addTask(2, new VillagerAIAvoidEntity<EntityVex>(entity, EntityVex.class, 8.0F, 0.6D, 0.6D));
 		
-		for(Class c : CommonProxy.TARGETS)
-		{
-			if(c != null && EntityLivingBase.class.isAssignableFrom(c))
-				entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, c, true, ConfigHandler.targetDistance));
-		}
-		if(!ConfigHandler.whiteListMobs)
-			entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityMob.class, true, ConfigHandler.targetDistance));
-		entity.targetTasks.addTask(1, new VillagerAIHurtByTarget(entity, false));
-		entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityVillager.class, true, ConfigHandler.targetDistance, new EnemyVillagerAttackPredicate(entity)));
-		entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, EntityPlayer.class, true, ConfigHandler.targetDistance, new EnemyPlayerAttackPredicate(entity)));
+		Map<Class<? extends EntityLivingBase>, Predicate<? super EntityLivingBase>> targets = new HashMap<>();
+		
+		for(Class<? extends EntityLivingBase> c : CommonProxy.TARGETS)
+				targets.put(c, null);
+		
+		targets.put(EntityVillager.class, new EnemyVillagerAttackPredicate<EntityLivingBase>(entity));
+		targets.put(EntityPlayer.class, new EnemyPlayerAttackPredicate<EntityLivingBase>(entity));
+		
+		entity.tasks.addTask(1, new VillagerAIBayonetCharge(entity, new HashSet<Predicate<? super EntityLivingBase>>(targets.values()), 4, 32));
+		entity.targetTasks.addTask(2, new VillagerAIAttackNearestTarget(entity, targets, true, ConfigHandler.targetDistance));
+		entity.targetTasks.addTask(1, new VillagerAIHurtByTarget<EntityLivingBase>(entity));
 	}
 }
