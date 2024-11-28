@@ -5,8 +5,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -374,7 +375,10 @@ public final class ImprovedVilCapability implements IImprovedVilCapability{
 	public IImprovedVilCapability setSaturation(float foodSaturation) { this.foodSaturationValue = foodSaturation; return this;}
 
 	@Override
-	public Collection<UUID> getKnownPlayers() { return this.playerReputations.keySet(); }
+	public List<UUID> getKnownPlayers() 
+	{ 
+		return new ArrayList<UUID>(this.playerReputations.keySet()); 
+	}
 
 	@Override
 	public boolean isMutinous() { return this.isMutinous; }

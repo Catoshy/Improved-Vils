@@ -1,6 +1,6 @@
 package com.joshycode.improvedvils.capabilities.entity;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -31,7 +31,7 @@ public interface IImprovedVilCapability extends INBTSerializable<NBTTagCompound>
 	public IImprovedVilCapability setKitStore(BlockPos pos);
 	public BlockPos getLastDoor();
 	public IImprovedVilCapability setLastDoor(BlockPos pos);
-	public Collection<UUID> getKnownPlayers();
+	public List<UUID> getKnownPlayers();
 	public boolean getHungry();
 	public IImprovedVilCapability setHungry(boolean isHungry);
 	public boolean isReturning();

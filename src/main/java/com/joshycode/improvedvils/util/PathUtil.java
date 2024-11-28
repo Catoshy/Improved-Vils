@@ -2,6 +2,7 @@ package com.joshycode.improvedvils.util;
 
 import org.jline.utils.Log;
 
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.entity.EntityLiving;
@@ -74,7 +75,7 @@ public class PathUtil {
 	
 	public static Vec3d findNavigableBlockInDirection(BlockPos start, BlockPos dest, EntityLiving entity, float offsetAngleDeg, boolean flipFacing)
 	{
-		if(start.getDistance(dest.getX(), dest.getY(), dest.getZ()) <= 8)
+		if(start.getDistance(dest.getX(), dest.getY(), dest.getZ()) <= CommonProxy.GUARD_MAX_PATH)
 				return new Vec3d(dest);
 		
 		int entX = start.getX();
@@ -153,7 +154,7 @@ public class PathUtil {
 				runZ += step;
 				
 				BlockPos pos = new BlockPos(runX, runY, runZ);
-				if(pos.getDistance(entX, entY, entZ) >= 8)
+				if(pos.getDistance(entX, entY, entZ) >= CommonProxy.GUARD_MAX_PATH)
 				{
 					while(!entity.getNavigator().canEntityStandOnPos(pos) && pos.getY() != dest.getY())
 					{
