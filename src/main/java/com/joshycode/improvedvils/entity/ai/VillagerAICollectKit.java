@@ -70,7 +70,8 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 		IInventory inv = getTileInventory();
 		if(kitStore == null || inv == null) return false;
 		
-		double dist = VilMethods.getGuardBlockPos(villager).getDistance(kitStore.getX(), kitStore.getY(), kitStore.getZ());
+		BlockPos herePos = VilMethods.getGuardBlockPos(villager) != null ? VilMethods.getGuardBlockPos(villager) : villager.getPosition();
+		double dist = herePos.getDistance(kitStore.getX(), kitStore.getY(), kitStore.getZ());
 		double distSq = dist * dist;
 	
 		if(VilMethods.getGuardBlockPos(villager) != null && distSq > CommonProxy.GUARD_IGNORE_LIMIT)

@@ -61,7 +61,8 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 		IInventory inv = getTileInventory();
 		if(inv == null || foodStore == null) return false;
 		
-		double dist = VilMethods.getGuardBlockPos(villager).getDistance(foodStore.getX(), foodStore.getY(), foodStore.getZ());
+		BlockPos herePos = VilMethods.getGuardBlockPos(villager) != null ? VilMethods.getGuardBlockPos(villager) : villager.getPosition();
+		double dist = herePos.getDistance(foodStore.getX(), foodStore.getY(), foodStore.getZ());
 		double distSq = dist * dist;
 	
 		if(VilMethods.getGuardBlockPos(villager) != null && distSq > CommonProxy.GUARD_IGNORE_LIMIT)
