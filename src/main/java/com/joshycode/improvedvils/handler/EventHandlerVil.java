@@ -452,10 +452,10 @@ public class EventHandlerVil {
 		entity.tasks.addTask(4, new VillagerAIDrinkPotion(entity));
 		entity.tasks.addTask(4, new VillagerAIAttackMelee(entity, /*.55D*/0D, true));
 		entity.tasks.addTask(5, new VillagerAIShootRanged(entity, 10, 32, .5F, new FriendlyFireVillagerPredicate<Entity>(entity)));
-		entity.tasks.addTask(1, new VillagerAISwimming(entity));
-		entity.tasks.addTask(1, aiCEat);
-		entity.tasks.addTask(1, new VillagerAIEatHeal(entity));
-		entity.tasks.addTask(1, new VillagerAIHandlePlayers(entity));
+		entity.tasks.addTask(0, new VillagerAISwimming(entity));
+		entity.tasks.addTask(0, aiCEat);
+		entity.tasks.addTask(0, new VillagerAIEatHeal(entity));
+		entity.tasks.addTask(0, new VillagerAIHandlePlayers(entity));
 		//entity.tasks.addTask(0, new VillagerAIClimbLadder(entity));
 		entity.tasks.addTask(2, new VillagerAICampaignMove(entity, 64));
 		entity.tasks.addTask(3, new VillagerAIRestrictOpenDoor(entity));

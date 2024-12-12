@@ -204,7 +204,7 @@ public class MarshalsBatonCapability implements IMarshalsBatonCapability {
 	}
 
 	@Override
-	public BlockPos getPlatoonFoodStore(int platoon, int company)
+	public BlockPos getPlatoonFoodStore(int company, int platoon)
 	{
 		Long serialized = this.foodStorePos.get(platoon + 10 * company);
 		if(serialized != null)

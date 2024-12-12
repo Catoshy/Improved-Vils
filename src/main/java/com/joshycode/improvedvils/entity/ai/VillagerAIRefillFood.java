@@ -6,6 +6,8 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import org.jline.utils.Log;
+
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
@@ -46,20 +48,19 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 		if(this.refillCooldown <= 0)
 			this.refillCooldown = 1;
 		this.foodToCollect = new HashMap<Item, Integer>(); //TODO
-		this.setMutexBits(3);
 	}
 
 	@Override
 	public boolean shouldExecute()
 	{
 		EntityVillager villager = (EntityVillager) this.entityHost;
+		BlockPos foodStore = getObjectiveBlock();
 		
-		if((VilMethods.getFoodStorePos(villager) == null) || this.isDoingSomethingMoreImportant() || (villager.getRNG().nextInt(5) != 0))
+		if(foodStore == null || this.isDoingSomethingMoreImportant() || (villager.getRNG().nextInt(5) != 0))
 			return false;
 		
-		BlockPos foodStore = getObjectiveBlock();
 		IInventory inv = getTileInventory();
-		if(inv == null || foodStore == null) return false;
+		if(inv == null) return false;
 		
 		BlockPos herePos = VilMethods.getGuardBlockPos(villager) != null ? VilMethods.getGuardBlockPos(villager) : villager.getPosition();
 		double dist = herePos.getDistance(foodStore.getX(), foodStore.getY(), foodStore.getZ());
@@ -87,7 +88,7 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 	private boolean isDoingSomethingMoreImportant()
 	{
 		EntityVillager villager = (EntityVillager) this.entityHost;
-		if((VilMethods.getCommBlockPos(villager) != null) /*|| VilMethods.isOutsideHomeDist(villager)*/ || VilMethods.isReturning(villager) || VilMethods.getMovingIndoors(villager))
+		if((VilMethods.getCommBlockPos(villager) != null) || VilMethods.isOutsideHomeDist(villager) || VilMethods.isReturning(villager) || VilMethods.getMovingIndoors(villager))
 			return true;
 		if(villager.isMating())
     		return true;
@@ -132,6 +133,7 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 	
 	private void refillInventory()
 	{
+		this.finished = false;
 		IInventory storeInv = getTileInventory();
 		EntityVillager villager = (EntityVillager) this.entityHost;
 		float saturation = ConfigHandler.collectFoodThreshold * .6f;
@@ -157,23 +159,14 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 					stack.grow(villager.getVillagerInventory().addItem(stack.splitStack(refillCount)).getCount());
 					saturation -= itemSaturation * refillCount;
 				}
-			}
-			float collectedSaturation = ConfigHandler.collectFoodThreshold * .6f - saturation;
-			
-			this.changePlayerReputation(collectedSaturation);
+			}			
+			VillagerPlayerDealMethods.checkArmourWeaponsAndFood(villager, VilMethods.getPlayerId(villager));
 			this.finished = true;
 		}
 		else
 		{
 			VilMethods.setFoodStore(villager, null);
 		}
-	}
-
-	private void changePlayerReputation(float collectedSaturation) 
-	{
-		IImprovedVilCapability vilCap = this.entityHost.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		if(vilCap.getPlayerId() != null)
-			VillagerPlayerDealMethods.changePlayerReputation((EntityVillager) this.entityHost, vilCap.getPlayerId(), collectedSaturation);
 	}
 
 	@Nullable

@@ -2,6 +2,7 @@ package com.joshycode.improvedvils.network;
 
 import java.util.Set;
 
+import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
@@ -19,9 +20,13 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 public class VilFoodStorePacket extends BlockPosPacket implements IMessage {
 
-	public VilFoodStorePacket() {}
-
 	int provisioningUnit;
+	
+	public VilFoodStorePacket() 
+	{
+		super();
+		this.provisioningUnit = -1;
+	}
 	
 	public VilFoodStorePacket(BlockPos pos, int provisioningUnit) 
 	{
@@ -52,19 +57,24 @@ public class VilFoodStorePacket extends BlockPosPacket implements IMessage {
 			{
 				EntityPlayerMP player = ctx.getServerHandler().player;
 				WorldServer world = ctx.getServerHandler().player.getServerWorld();
+				if(player.getHeldItemMainhand().getItem() != CommonProxy.ItemHolder.BATON && player.getHeldItemOffhand().getItem() != CommonProxy.ItemHolder.BATON)
+					return;
+				
 				IMarshalsBatonCapability cap = player.getCapability(CapabilityHandler.MARSHALS_BATON_CAPABILITY, null);
 				if(world.getBlockState(message.pos).getBlock().hasTileEntity(world.getBlockState(message.pos)))
 				{
-					if(cap != null &&  world.getTileEntity(message.pos) != null)
+					if(world.getTileEntity(message.pos) != null)
 					{
 						if(ConfigHandler.debug)
-							Log.info("Food Store for unit ... %s", cap.selectedUnit());
+							Log.info("Food Store for unit: " + message.pos + "... %s", message.provisioningUnit);
 						int prevSelectedUnit = cap.selectedUnit();
 						cap.setPlatoon(message.provisioningUnit / 10, message.provisioningUnit % 10);
 						cap.setPlatoonFoodStore(message.pos);
 						Set<EntityVillager> villagers = ImprovedVils.proxy.getEntitiesByUUID(EntityVillager.class, cap.getVillagersSelected(), world);
 						for(EntityVillager e : villagers)
 						{
+							if(ConfigHandler.debug)
+								Log.info("Food Store for villager ... %s", e.getUniqueID());
 							e.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).setFoodStore(message.pos);
 						}
 						cap.setPlatoon(prevSelectedUnit / 10, prevSelectedUnit % 10);
