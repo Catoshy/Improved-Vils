@@ -66,7 +66,7 @@ public class ItemMarshalsBaton extends Item {
 	{
 		if(ImprovedVils.proxy.getCommand() == TroopCommands.NONE)
 		{
-			Minecraft.getMinecraft().displayGuiScreen(new GuiBatonTroopCommand());
+			ImprovedVils.proxy.openGUITroopCommand();
 			return;
 		}
 		double d0 = ConfigHandler.commandDist;

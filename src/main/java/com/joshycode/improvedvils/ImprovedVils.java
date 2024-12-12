@@ -66,7 +66,6 @@ public class ImprovedVils {
 	@EventHandler
 	public void serverStart(FMLServerStartingEvent event) 
 	{
-		event.registerServerCommand(new CommandGetEntityName());
 		event.registerServerCommand(new CommandDestroyCommand());
 		event.registerServerCommand(new CommandTransferCommand());
 	}

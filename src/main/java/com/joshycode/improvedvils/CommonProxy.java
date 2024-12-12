@@ -311,4 +311,6 @@ public class CommonProxy {
 	public void marshalKeyEvent(int i) {}
 
 	public void closeVillagerGUI(int vilId) {}
+
+	public void openGUITroopCommand() {}
 }

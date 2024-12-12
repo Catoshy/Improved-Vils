@@ -16,8 +16,10 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
+import com.joshycode.improvedvils.command.CommandGetEntityName;
 import com.joshycode.improvedvils.command.CommandGetUnlocalName;
 import com.joshycode.improvedvils.entity.EntityBullet;
+import com.joshycode.improvedvils.gui.GuiBatonTroopCommand;
 import com.joshycode.improvedvils.gui.GuiVillagerArm;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.MarshalKeyEvent;
@@ -97,6 +99,8 @@ public class ClientProxy extends CommonProxy {
 		}
 		
 		ClientCommandHandler.instance.registerCommand(new CommandGetUnlocalName());
+		ClientCommandHandler.instance.registerCommand(new CommandGetEntityName());
+
 	}
 
 	@Override
@@ -314,6 +318,12 @@ public class ClientProxy extends CommonProxy {
 	public EntityPlayer getPlayerEntity(MessageContext ctx)
 	{
 		return ctx.side.isClient() ? Minecraft.getMinecraft().player : super.getPlayerEntity(ctx);
+	}
+	
+	@Override
+	public void openGUITroopCommand()
+	{
+		Minecraft.getMinecraft().displayGuiScreen(new GuiBatonTroopCommand());
 	}
 	
 	public void closeVillagerGUI(int vilId)
