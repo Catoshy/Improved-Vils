@@ -1,5 +1,7 @@
 package com.joshycode.improvedvils.network;
 
+import org.jline.utils.Log;
+
 import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
@@ -112,7 +114,7 @@ public class VilEnlistPacket implements IMessage {
 			Entity entity = server.getEntityByID(message.entityID);
 			IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
 	
-			if(VillagerPlayerDealMethods.getPlayerFealty(serverPlayer, (EntityVillager) entity))
+			if(entity instanceof EntityVillager && VillagerPlayerDealMethods.getPlayerFealty(serverPlayer, (EntityVillager) entity))
 			{
 				NetWrapper.NETWORK.sendTo(message.updateEnlistInfoForStack(serverPlayer, message.isEnlisted, message.company, message.platoon, entity, vilCap),
 						serverPlayer);

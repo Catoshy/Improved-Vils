@@ -10,6 +10,8 @@ import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 public class VillagerAISwimming extends EntityAISwimming {
 
@@ -28,31 +30,42 @@ public class VillagerAISwimming extends EntityAISwimming {
 	@Override
 	public boolean shouldExecute()
 	{
+		if(!super.shouldExecute()) return false;
+		
 		if(!this.entityLiving.isInsideOfMaterial(Material.WATER))
 		{
-			IBlockState blockUnderneath =  this.entityLiving.getEntityWorld().getBlockState(this.entityLiving.getPosition().down());
+			IBlockState blockUnderneath =  this.entityLiving.getEntityWorld().getBlockState(this.entityLiving.getPosition().down()).getActualState(this.entityLiving.getEntityWorld(), this.entityLiving.getPosition().down());
 			EnumFacing entityDir = EnumFacing.getDirectionFromEntityLiving(this.entityLiving.getPosition().down(), entityLiving);
 			if(blockUnderneath.isSideSolid(this.entityLiving.getEntityWorld(), this.entityLiving.getPosition().down(), entityDir)
 					&& !this.isTryingToLand())
 				return false;
 		}
-		return super.shouldExecute();
+		return true;
 	}
 
 	private boolean isTryingToLand() 
 	{
 		Path path = this.entityLiving.getNavigator().getPath();
-		EnumFacing facing = this.entityLiving.getAdjustedHorizontalFacing();
-		IBlockState blockFacing = this.entityLiving.getEntityWorld().getBlockState(this.entityLiving.getPosition().offset(facing));
+		IBlockState blockFacing;
+		BlockPos pos;
+		EnumFacing entityFacing = this.entityLiving.getAdjustedHorizontalFacing();
+		World world = this.entityLiving.getEntityWorld();
 		
-		if(path == null || path.getCurrentPathLength() >= path.getCurrentPathIndex()) 
-			return (blockFacing.isSideSolid(this.entityLiving.getEntityWorld(), this.entityLiving.getPosition().offset(facing), EnumFacing.UP)
-					&& this.entityLiving.getAttackTarget() == null);
+		pos = this.entityLiving.getPosition().offset(entityFacing);
+		blockFacing = world.getBlockState(pos).getActualState(world, pos);
+		boolean isNearSolid = blockFacing.isSideSolid(world, pos, EnumFacing.getDirectionFromEntityLiving(pos, this.entityLiving));
 		
-		int i = path.getCurrentPathIndex();
-		PathPoint next = path.getPathPointFromIndex(i + 1);
-		PathPoint now = path.getPathPointFromIndex(i);
+		if(isNearSolid)
+			return this.entityLiving.getAttackTarget() == null;
 		
-		return now.y < next.y;
+		if(path != null && path.getCurrentPathLength() > path.getCurrentPathIndex() + 1) 
+		{
+			int i = path.getCurrentPathIndex();
+			PathPoint next = path.getPathPointFromIndex(i + 1);
+			PathPoint now = path.getPathPointFromIndex(i);
+
+			return now.y < next.y;
+		}
+		return false;
 	}
 }

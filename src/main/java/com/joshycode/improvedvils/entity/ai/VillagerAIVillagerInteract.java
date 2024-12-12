@@ -28,7 +28,7 @@ public class VillagerAIVillagerInteract extends EntityAIWatchClosest2
         super.startExecuting();
 
         if (this.villager.canAbondonItems() && this.closestEntity instanceof EntityVillager && ((EntityVillager)this.closestEntity).wantsMoreFood() &&
-        		VilMethods.getDuty(this.villager))
+        		!VilMethods.getDuty(this.villager))
         {
             this.interactionDelay = 10;
         }

@@ -44,7 +44,6 @@ import net.minecraft.world.World;
 
 public class VillagerAICollectKit extends EntityAIGoFar {
 
-	private EntityVillager villager;
 	private InventoryHands villagerKit;
 	private Map<Item, EntityEquipmentSlot> kitToCollect;
 	private Map<Item, Integer> ammoToCollect;
@@ -53,8 +52,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	public VillagerAICollectKit(EntityVillager villager, int mostFails)
 	{
 		super(villager, 4, mostFails);
-		this.villager = villager;
-		this.villagerKit = new InventoryHands(villager, "Hands", false);
+		villagerKit = new InventoryHands(villager, "Hands", false);
 		this.ammoToCollect = new HashMap<>();
 		this.kitToCollect = new HashMap<>();
 		this.leftOversToPutAway = new HashSet<>();
@@ -63,12 +61,14 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	@Override
 	public boolean shouldExecute()
 	{
-		if((VilMethods.getKitStorePos(this.villager) == null) || this.isDoingSomethingMoreImportant() || (this.villager.getRNG().nextInt(5) != 0))
+		EntityVillager villager = (EntityVillager) this.entityHost;
+		BlockPos kitStore = getObjectiveBlock();	
+		
+		if(kitStore == null || this.isDoingSomethingMoreImportant() || (villager.getRNG().nextInt(5) != 0))
 			return false;
 		
-		BlockPos kitStore = getObjectiveBlock();	
 		IInventory inv = getTileInventory();
-		if(kitStore == null || inv == null) return false;
+		if(inv == null) return false;
 		
 		BlockPos herePos = VilMethods.getGuardBlockPos(villager) != null ? VilMethods.getGuardBlockPos(villager) : villager.getPosition();
 		double dist = herePos.getDistance(kitStore.getX(), kitStore.getY(), kitStore.getZ());
@@ -88,13 +88,14 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	
 	private boolean isDoingSomethingMoreImportant()
 	{
-		if((VilMethods.getCommBlockPos(this.villager) != null) || VilMethods.isOutsideHomeDist(this.villager) || VilMethods.isReturning(this.villager) || VilMethods.getMovingIndoors(this.villager))
+		EntityVillager villager = (EntityVillager) this.entityHost;
+		if((VilMethods.getCommBlockPos(villager) != null) || VilMethods.isOutsideHomeDist(villager) || VilMethods.isReturning(villager) || VilMethods.getMovingIndoors(villager))
 			return true;
-		if(this.villager.isMating())
+		if(villager.isMating())
     		return true;
-		if(VilMethods.getFollowing(this.villager))
+		if(VilMethods.getFollowing(villager))
 			return true;
-		if(this.villager.getAttackTarget() != null && !VilMethods.outOfAmmo(this.villager))
+		if(villager.getAttackTarget() != null && !VilMethods.outOfAmmo(villager))
 			return true;
 		return false;
 	}
@@ -118,10 +119,11 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 
 	private boolean canCollectAmmo(IInventory inv) 
 	{
-		if(this.villager.getHeldItemMainhand().isEmpty())
+		EntityVillager villager = (EntityVillager) this.entityHost;
+		if(villager.getHeldItemMainhand().isEmpty())
 			return false;
 		
-		String s = this.villager.getHeldItemMainhand().getUnlocalizedName();
+		String s = villager.getHeldItemMainhand().getUnlocalizedName();
 		boolean flag = false;
 		RangeAttackEntry ammunitionHeld = null;
 		WeaponBrooksData heldWeapon = null;
@@ -131,7 +133,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 			if(s.equals(weapon.itemUnlocalizedName))
 			{
 				heldWeapon = weapon;
-				ammunitionHeld = searchInvForAmmoEntry(heldWeapon, this.villager.getVillagerInventory());
+				ammunitionHeld = searchInvForAmmoEntry(heldWeapon, villager.getVillagerInventory());
 				
 				if(ammunitionHeld != null)
 				{
@@ -144,7 +146,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 		if(flag)
 		{
 			Map<Item, Integer> multiplied = multiplyConsumables(ammunitionHeld);
-			if(InventoryUtil.getItemStacksInInventory(this.villager.getVillagerInventory(), multiplied) != null)
+			if(InventoryUtil.getItemStacksInInventory(villager.getVillagerInventory(), multiplied) != null)
 				return false;
 			if(InventoryUtil.getItemStacksInInventory(inv, ammunitionHeld.getConsumables()) != null)
 			{
@@ -169,11 +171,12 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 
 	private void setAmmoToCollect(Map<Item, Integer> multiplied) 
 	{
+		EntityVillager villager = (EntityVillager) this.entityHost;
 		for(Map.Entry<Item, Integer> entry : multiplied.entrySet())
 		{
-			if(entry.getValue() < 0 && InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), entry.getKey()) > 0)
+			if(entry.getValue() < 0 && InventoryUtil.doesInventoryHaveItem(villager.getVillagerInventory(), entry.getKey()) > 0)
 				this.leftOversToPutAway.add(entry.getKey());
-			else if(entry.getValue() == 0 && InventoryUtil.doesInventoryHaveItem(this.villager.getVillagerInventory(), entry.getKey()) == 0)
+			else if(entry.getValue() == 0 && InventoryUtil.doesInventoryHaveItem(villager.getVillagerInventory(), entry.getKey()) == 0)
 				entry.setValue(1);
 		}
 		this.ammoToCollect.putAll(multiplied);
@@ -256,32 +259,32 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 			hasFeet = (flag1 == 1 && hasFeet == null) ? stack : hasFeet;
 		}
 		
-		if(this.villagerKit.getStackInSlot(EntityEquipmentSlot.MAINHAND).isEmpty() && hasMainhand != null)
+		if(villagerKit.getStackInSlot(EntityEquipmentSlot.MAINHAND).isEmpty() && hasMainhand != null)
 		{
 			this.kitToCollect.put(hasMainhand.getItem(), EntityEquipmentSlot.MAINHAND);
 			flag = true;
 		}
-		if(this.villagerKit.getStackInSlot(EntityEquipmentSlot.OFFHAND).isEmpty() && hasOffhand != null)
+		if(villagerKit.getStackInSlot(EntityEquipmentSlot.OFFHAND).isEmpty() && hasOffhand != null)
 		{
 			this.kitToCollect.put(hasOffhand.getItem(), EntityEquipmentSlot.OFFHAND);
 			flag = true;
 		}
-		if(this.villagerKit.getStackInSlot(EntityEquipmentSlot.HEAD).isEmpty() && hasHead != null)
+		if(villagerKit.getStackInSlot(EntityEquipmentSlot.HEAD).isEmpty() && hasHead != null)
 		{
 			this.kitToCollect.put(hasHead.getItem(), EntityEquipmentSlot.HEAD);
 			flag = true;
 		}
-		if(this.villagerKit.getStackInSlot(EntityEquipmentSlot.CHEST).isEmpty() && hasChest != null)
+		if(villagerKit.getStackInSlot(EntityEquipmentSlot.CHEST).isEmpty() && hasChest != null)
 		{
 			this.kitToCollect.put(hasChest.getItem(), EntityEquipmentSlot.CHEST);
 			flag = true;
 		}
-		if(this.villagerKit.getStackInSlot(EntityEquipmentSlot.LEGS).isEmpty() && hasLegs != null)
+		if(villagerKit.getStackInSlot(EntityEquipmentSlot.LEGS).isEmpty() && hasLegs != null)
 		{
 			this.kitToCollect.put(hasLegs.getItem(), EntityEquipmentSlot.LEGS);
 			flag = true;
 		}
-		if(this.villagerKit.getStackInSlot(EntityEquipmentSlot.FEET).isEmpty() && hasFeet != null)
+		if(villagerKit.getStackInSlot(EntityEquipmentSlot.FEET).isEmpty() && hasFeet != null)
 		{
 			this.kitToCollect.put(hasFeet.getItem(), EntityEquipmentSlot.FEET);
 			flag = true;
@@ -293,16 +296,17 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	public void startExecuting()
 	{
 		super.startExecuting();
-		VilMethods.setRefilling(this.villager, true);
+		VilMethods.setRefilling((EntityVillager) this.entityHost, true);
 	}
 
 	@Override
 	public boolean shouldContinueExecuting()
 	{
-		int revengeTime = this.villager.ticksExisted - this.villager.getRevengeTimer();
+		EntityVillager villager = (EntityVillager) this.entityHost;
+		int revengeTime = villager.ticksExisted - villager.getRevengeTimer();
 		if(revengeTime < 20 && revengeTime >= 0)
 			return false;
-		if((VilMethods.getGuardBlockPos(villager) != null && this.finished) || (this.villager.getNavigator().noPath() && this.finished))
+		if((VilMethods.getGuardBlockPos(villager) != null && this.finished) || (villager.getNavigator().noPath() && this.finished))
 			return false;
 		return super.shouldContinueExecuting();
 	}
@@ -311,20 +315,21 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	{
 		this.finished = false;
 		IInventory storeInv = getTileInventory();
-		InventoryBasic vilInv = this.villager.getVillagerInventory();
+		EntityVillager villager = (EntityVillager) this.entityHost;
+		InventoryBasic vilInv = villager.getVillagerInventory();
 		
 		if(storeInv != null)
 		{
-			VillagerPlayerDealMethods.updateArmourWeaponsAndFood(this.villager);
+			VillagerPlayerDealMethods.updateArmourWeaponsAndFood(villager);
 			
 			for(int i = 0; i < storeInv.getSizeInventory(); i++)
 			{
 				ItemStack stack = storeInv.getStackInSlot(i);
 				
 				EntityEquipmentSlot slot = this.kitToCollect.get(stack.getItem());
-				if(slot != null && this.villagerKit.getStackInSlot(slot).isEmpty())
+				if(slot != null && villagerKit.getStackInSlot(slot).isEmpty())
 				{
-					this.villagerKit.setEquipmentSlot(slot, stack.splitStack(1));
+					villagerKit.setEquipmentSlot(slot, stack.splitStack(1));
 					continue;
 				}
 				if(this.ammoToCollect.containsKey(stack.getItem()))
@@ -337,7 +342,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 					else
 						this.ammoToCollect.put(stack.getItem(), val);
 					stack.grow(vilInv.addItem(intoInv).getCount());
-					VilMethods.setOutOfAmmo(this.villager, false);
+					VilMethods.setOutOfAmmo(villager, false);
 					continue;
 				}
 				for(Item itemToPutInChest : this.leftOversToPutAway)
@@ -365,12 +370,12 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 						this.leftOversToPutAway.remove(itemToPutInChest);
 				}
 			}		
-			VillagerPlayerDealMethods.checkArmourWeaponsAndFood(this.villager, VilMethods.getPlayerId(this.villager));
+			VillagerPlayerDealMethods.checkArmourWeaponsAndFood(villager, VilMethods.getPlayerId(villager));
 			this.finished = true;
 		}
 		else
 		{
-			VilMethods.setKitStore(this.villager, null);
+			VilMethods.setKitStore(villager, null);
 		}
 	}
 
@@ -378,7 +383,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	IInventory getTileInventory()
 	{
 		IInventory iinventory = null;
-		World world = this.villager.getEntityWorld();
+		World world = this.entityHost.getEntityWorld();
 		BlockPos kitStore = getObjectiveBlock();
 		IBlockState state = world.getBlockState(kitStore);
 		Block block = state.getBlock();
@@ -414,22 +419,19 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 	}
 	
 	@Override
-	protected BlockPos getObjectiveBlock() 
-	{ 
-		return VilMethods.getKitStorePos(this.villager); 
-	}
-	
-	@Override
-	protected boolean breakDoors() 
-	{ 
-		return true; 
-	}
-	
-	@Override
 	protected void resetObjective() 
 	{
-		VilMethods.setRefilling(this.villager, false);
+		VilMethods.setRefilling((EntityVillager) this.entityHost, false);
 	}
+	
+	@Override
+	protected BlockPos getObjectiveBlock() 
+	{ 
+		return VilMethods.getKitStorePos((EntityVillager) this.entityHost);
+	}
+	
+	@Override
+	protected boolean breakDoors() { return true; }
 	
 	@Override
 	protected void arrivedAtObjective() 
