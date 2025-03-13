@@ -9,9 +9,6 @@ import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.PathUtil;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockDoor;
-import net.minecraft.block.BlockTrapDoor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -28,7 +25,6 @@ import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 
 public abstract class EntityAIGoFar extends EntityAIBase {
 
@@ -49,7 +45,6 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 	protected Path path;
 	private float distanceToObj;
 	private float prevPathDistance;
-	protected int closeBehind;
 	private int ppathIndex;
 	private int imHereDistanceSq;
 	
@@ -70,7 +65,6 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		this.passedBackThrough = false;
 		this.pathingToLastDoor = false;
 		this.finished = false;
-		this.closeBehind = -1;
 		this.theDebugVar = false;
 		this.canSoftReset = canSoftReset;
 		this.setMutexBits(3);
@@ -183,7 +177,6 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 			{
 				this.lastDoorSeen = true;
 				VilMethods.setLastDoor((EntityVillager) this.entityHost, pointPos);
-				this.handleDoor(pointPos, this.entityHost.getEntityWorld(), true);
 			}
 			else if(!this.lastDoorSeen && !this.passedBackThrough) //if lastDoorSeen is true, then villager is still going through the door so he would not actually be turning around
 			{													   //to pass through. if passedBackThrough is true, then the following has already been done.
@@ -195,27 +188,9 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		}
 		else
 		{
-			if(--this.closeBehind < 0)
-				this.handleDoor(VilMethods.getLastDoor((EntityVillager) this.entityHost), this.entityHost.getEntityWorld(), false);
 			this.lastDoorSeen = false;
 			this.passedBackThrough = false;
 		}
-	}
-
-	private void handleDoor(BlockPos pointPos, World entityWorld, boolean open) 
-	{
-		if(pointPos == null) return;
-		IBlockState iblockstate = entityWorld.getBlockState(pointPos);
-	    Block block = iblockstate.getBlock();
-	    if(block instanceof BlockDoor)
-	    {
-	    	((BlockDoor) block).toggleDoor(entityWorld, pointPos, open);
-	    	this.closeBehind = open ? 10 : -1;
-	    }
-	    else if(block instanceof BlockTrapDoor)
-	    {
-	    	//TODO
-	    }
 	}
 
 	public void checkIdle() 
