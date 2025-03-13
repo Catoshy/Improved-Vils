@@ -53,16 +53,7 @@ public class VillagerPlayerDealMethods {
 		int villagerReferenceVillageReputation = vilCap.getHomeVillagePlayerReputationReference(player);
 		int villageReputationChange = newReputation - villagerReferenceVillageReputation;
 		float playerReputation = vilCap.getPlayerReputation(player);
-		//If villager's perception of the player is higher than the mean it does not make sense to further raise his opinion
-		//given that his opinion is one of the sources of the better reputation. Lower reputations always come from outside
-		//the villager's personal experience
-		//TODO 21 April 2024: I do not think the above is right. Lower reputation CAN come from villager experience, and individual
-		//reputation changes are not done until AFTER the whole village has been tallied.
-		//TODO 26 April 2024: I changed my mind. Whether or not lower rep comes from vill experience, overall enthusiasm for the player
-		//wouldn't really go higher just because milder enthusiasm is reflected by other villagers. Whereas bad rep would harm his idea of
-		//the player.
-		//ADD 2: maybe just punish the player. Getting good reputation creates a domino effect if it effects the vill's personal. 
-		//TODO 27 April: domino works both ways. idk, just update vill reference.
+	
 		if(newReputation > playerReputation || villageReputationChange < 0)
 		{
 			if(ConfigHandler.debug)

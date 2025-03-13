@@ -1,9 +1,8 @@
 package com.joshycode.improvedvils.network;
 
-import org.jline.utils.Log;
-
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;

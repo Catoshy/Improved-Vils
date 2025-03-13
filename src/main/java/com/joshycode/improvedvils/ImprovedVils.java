@@ -6,7 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.joshycode.improvedvils.command.CommandDestroyCommand;
-import com.joshycode.improvedvils.command.CommandGetEntityName;
+import com.joshycode.improvedvils.command.CommandMakeRepUpdate;
 import com.joshycode.improvedvils.command.CommandTransferCommand;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.EventHandlerVil;
@@ -68,6 +68,7 @@ public class ImprovedVils {
 	{
 		event.registerServerCommand(new CommandDestroyCommand());
 		event.registerServerCommand(new CommandTransferCommand());
+		event.registerServerCommand(new CommandMakeRepUpdate());
 	}
 	
 	@EventHandler

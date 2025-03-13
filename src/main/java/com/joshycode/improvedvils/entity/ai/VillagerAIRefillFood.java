@@ -6,13 +6,9 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import org.jline.utils.Log;
-
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.VilMethods;
-import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
-import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.InventoryUtil;
 import com.joshycode.improvedvils.util.VillagerPlayerDealMethods;
@@ -43,7 +39,7 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 
 	public VillagerAIRefillFood(EntityVillager villager, int mostFails)
 	{
-		super(villager, 4, mostFails);
+		super(villager, 4, mostFails, true);
 		this.refillCooldown = villager.getEntityData().getInteger(refillCooldownInfo);
 		if(this.refillCooldown <= 0)
 			this.refillCooldown = 1;

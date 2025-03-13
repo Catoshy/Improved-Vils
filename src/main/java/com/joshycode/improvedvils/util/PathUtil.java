@@ -1,8 +1,8 @@
 package com.joshycode.improvedvils.util;
 
-import org.jline.utils.Log;
 
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
 import net.minecraft.entity.EntityLiving;
@@ -154,7 +154,7 @@ public class PathUtil {
 				runZ += step;
 				
 				BlockPos pos = new BlockPos(runX, runY, runZ);
-				if(pos.getDistance(entX, entY, entZ) >= CommonProxy.GUARD_MAX_PATH)
+				if(pos.getDistance(entX, entY, entZ) >= 8)
 				{
 					while(!entity.getNavigator().canEntityStandOnPos(pos) && pos.getY() != dest.getY())
 					{

@@ -2,8 +2,7 @@ package com.joshycode.improvedvils.entity.ai;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.jline.utils.Log;
-
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 
 import net.minecraft.entity.passive.EntityVillager;
@@ -19,7 +18,7 @@ public class VillagerAIGuard extends EntityAIGoFar{
 
 	public VillagerAIGuard(EntityVillager entityHost, int maxDistSq, int minDistSq, int maxPathFails)
 	{
-		super(entityHost, minDistSq, maxPathFails);
+		super(entityHost, minDistSq, maxPathFails, true);
 		this.villager = entityHost;
 		this.maxDistanceSq = maxDistSq;
 		this.minDistanceSq = minDistSq;
@@ -107,6 +106,7 @@ public class VillagerAIGuard extends EntityAIGoFar{
 		return VilMethods.getGuardBlockPos(this.villager); 
 	}
 	
+	@Override
 	protected boolean breakDoors() { return true; }
 	
 	protected void arrivedAtObjective() 

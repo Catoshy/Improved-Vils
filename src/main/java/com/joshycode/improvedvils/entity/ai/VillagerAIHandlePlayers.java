@@ -3,8 +3,7 @@ package com.joshycode.improvedvils.entity.ai;
 import java.util.List;
 import java.util.UUID;
 
-import org.jline.utils.Log;
-
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.capabilities.entity.IImprovedVilCapability;
 import com.joshycode.improvedvils.capabilities.village.IVillageCapability;
@@ -23,12 +22,14 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 	private EntityVillager villager;
 	private Village village;
 	private int fealtyHolding;
+	private int timerVal;
 	
 	public VillagerAIHandlePlayers(EntityVillager villager) 
 	{
 		super();
 		this.villager = villager;
 		this.fealtyHolding = 5;
+		timerVal = 100;
 	}
 
 	@Override
@@ -44,13 +45,29 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 			return true;
 		}
 		if(this.villager.ticksExisted < 20 || village == null ||
-				(village.equals(this.village) && this.villager.getRNG().nextInt(500) != 0))
+				(village.equals(this.village) && this.villager.getRNG().nextInt(this.getTimer()) != 0))
 		{
 			return false;
 		}
 
 		this.village = village;
 		return true;
+	}
+
+	private int getTimer() 
+	{
+		if(this.timerVal == 500) return this.timerVal;
+		if(this.village != null)
+		{
+			boolean flag = false;
+			for(UUID playerId : this.villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null).getKnownPlayers())
+			{
+				if(this.village.getPlayerReputation(playerId) == 0)
+					flag = true;
+			}
+			this.timerVal = flag ? 100 : 500;
+		}
+		return this.timerVal;
 	}
 
 	@Override
@@ -100,6 +117,8 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 		}
 		for(UUID playerId : vilCap.getKnownPlayers())
 		{
+			if(ConfigHandler.debug)
+				Log.info("updating village reputation for player UUID: %s", playerId);
 			int playerReputation = this.village.getPlayerReputation(playerId);
 			if(playerReputation > 5 || playerReputation < 0 || vilCap.getPlayerReputation(playerId) > 15F)
 			{

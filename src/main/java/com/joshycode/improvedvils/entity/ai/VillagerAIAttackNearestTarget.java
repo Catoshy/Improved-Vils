@@ -218,4 +218,11 @@ public class VillagerAIAttackNearestTarget extends VillagerAITarget {
             }
         }
     }
+	
+	@Override
+	public void resetTask()
+	{
+		super.resetTask();
+		((PathNavigateGround) this.taskOwner.getNavigator()).setBreakDoors(true);
+	}
 }

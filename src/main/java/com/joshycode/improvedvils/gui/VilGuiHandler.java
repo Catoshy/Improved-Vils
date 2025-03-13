@@ -1,8 +1,7 @@
 package com.joshycode.improvedvils.gui;
 
-import org.jline.utils.Log;
-
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.entity.EntityVillagerContainer;
 import com.joshycode.improvedvils.entity.InventoryHands;
 import com.joshycode.improvedvils.handler.CapabilityHandler;

@@ -51,7 +51,7 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 
 	public VillagerAICollectKit(EntityVillager villager, int mostFails)
 	{
-		super(villager, 4, mostFails);
+		super(villager, 4, mostFails, true);
 		villagerKit = new InventoryHands(villager, "Hands", false);
 		this.ammoToCollect = new HashMap<>();
 		this.kitToCollect = new HashMap<>();

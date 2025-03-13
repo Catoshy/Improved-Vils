@@ -2,6 +2,9 @@ package com.joshycode.improvedvils.entity.ai;
 
 import java.util.UUID;
 
+import com.joshycode.improvedvils.Log;
+import com.joshycode.improvedvils.handler.ConfigHandler;
+
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLiving;
@@ -24,6 +27,7 @@ public class VillagerAISwimming extends EntityAISwimming {
 	public VillagerAISwimming(EntityLiving entityIn) 
 	{
 		super(entityIn);
+		this.setMutexBits(0);
 		this.entityLiving = entityIn;
 	}
 	
@@ -63,7 +67,10 @@ public class VillagerAISwimming extends EntityAISwimming {
 			int i = path.getCurrentPathIndex();
 			PathPoint next = path.getPathPointFromIndex(i + 1);
 			PathPoint now = path.getPathPointFromIndex(i);
-
+			
+			if(ConfigHandler.debug)
+				Log.info("Water Villager: has path, is in path (not near end), and next y = %s. now y = " +now.y, next.y);
+			
 			return now.y < next.y;
 		}
 		return false;

@@ -6,10 +6,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.jline.utils.Log;
-
 import com.joshycode.improvedvils.CommonProxy.ItemHolder;
 import com.joshycode.improvedvils.ImprovedVils;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
 import com.joshycode.improvedvils.gui.EnlisteeContainer;
@@ -384,6 +383,16 @@ public static class GuardVillagers extends VillagerListPacket {
 						message.villagerIds.values().forEach(id -> {
 							cap.removeVillager(id);
 							cap.addVillager(id, message.platoon /10, message.platoon % 10);
+						});
+						
+						message.villagerIds.keySet().forEach(entityId -> {
+							EntityVillager villager = (EntityVillager) ImprovedVils.proxy.getWorld(ctx).getEntityByID(entityId);
+							if(villager != null)
+							{
+								villager.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null)
+									.setFoodStore(cap.getPlatoonFoodStore(message.platoon /10, message.platoon % 10))
+									.setKitStore(cap.getPlatoonKitStore(message.platoon /10, message.platoon % 10));
+							}
 						});
 						
 						Map<Integer, UUID> villagerIds = BatonDealMethods.getEntityIDsFromBatonPlatoon(serverPlayer);
