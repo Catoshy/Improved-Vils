@@ -9,8 +9,8 @@ import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 
+import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.item.EntityItem;
@@ -20,14 +20,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 
-public class CommandTransferCommand implements ICommand{
+public class CommandTransferCommand extends CommandBase{
 	
-	@Override
-	public int compareTo(ICommand arg0)
-	{
-		return 0;
-	}
-
 	@Override
 	public String getName() 
 	{

@@ -136,7 +136,7 @@ public class VillagerAIAttackNearestTarget extends VillagerAITarget {
 
 	private AxisAlignedBB getTargetableArea(double targetDistance)
 	{
-		return this.taskOwner.getEntityBoundingBox().grow(targetDistance, 4.0D, targetDistance);
+		return this.taskOwner.getEntityBoundingBox().grow(targetDistance, targetDistance / 2, targetDistance);
 	}
 
 	public static class Targeter {
@@ -218,4 +218,11 @@ public class VillagerAIAttackNearestTarget extends VillagerAITarget {
             }
         }
     }
+	
+	@Override
+	public void resetTask()
+	{
+		super.resetTask();
+		((PathNavigateGround) this.taskOwner.getNavigator()).setBreakDoors(true);
+	}
 }

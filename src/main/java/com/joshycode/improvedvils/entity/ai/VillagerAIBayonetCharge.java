@@ -49,7 +49,7 @@ public class VillagerAIBayonetCharge extends EntityAIGoFar {
     
 	public VillagerAIBayonetCharge(EntityVillager villager, Set<Predicate<? super EntityLivingBase>> filters, int imHereDistanceSq, int mostFails) 
 	{
-		super(villager, imHereDistanceSq, mostFails);
+		super(villager, imHereDistanceSq, mostFails, false);
 		this.filters = filters;
 		this.seekingVec = null;
 		this.chargeCounter = 0;

@@ -82,7 +82,7 @@ public class ConfigHandler {
 		whiteListMobs = config.getBoolean("Whitelist Only", "general", false, "Set to true to have Villagers only attack whitelisted Mobs, "
 				+ "otherwise Villagers will attack all instances of \"EntityMob\" + any mobs listed in whitelist");
 		attackableMobs = config.getStringList("Mob Whitelist", "general", new String[]{EntityRegistry.getEntry(EntitySlime.class).getRegistryName().toString()}, "Use the forge-registered name of the mob, this can generally "
-				+ "be found in the entity registring method for the applicable mod");
+				+ "be found in the entity registring method for the applicable mod. Alternatively, you can use the command \"/getEntityName\" while looking at a mob in-game.");
 		rangeAttackBlacklist = config.getStringList("Ranged Attack Blacklist", "general", new String[]{EntityRegistry.getEntry(EntityEnderman.class).getRegistryName().toString()}, "Entities in this list will not be"
 				+ " attacked with ranged weapons, generally the Enderman, and will instead be attacked by melee (if the weapon is also configured for melee)");
 		villagerDeBuffMelee = config.getFloat("VillagerDe-BuffMelee", "stats", .75F, .25F, 1.0F, "How much of a fraction of damage an item would cause if held by player will be caused by villager");
@@ -93,11 +93,11 @@ public class ConfigHandler {
 		attackReach = config.getFloat("Attack-reach", "attack", 2f, 1f, 5f, "Attack reach of Villager in blocks");
 		attackReachSq = attackReach * attackReach;
 		targetDistance = config.getInt("Targeting Range", "attack", 32, 16, 128, "How far a villagers will seek out a fiend");
-		friendlyFireSearchRange = config.getInt("Friendly Fire Check Range", "general", 16, 1, 64, "How far out villager's checking for friendlies goes (roughly in blocks), may bear upon perforamce and higher numbers may make villagers more hesitant to fire.");
+		friendlyFireSearchRange = config.getInt("Friendly Fire Check Range", "general", 16, 1, 64, "How far out villager's checking for friendlies goes (roughly in blocks), may bear upon performance and higher numbers may make villagers more hesitant to fire.");
 		followRange = config.getFloat("Follow-range", "general", 16f, 3f, 64f, "How far a villager can stray from a player to attack an enemy.");
 		followRangeNormal = config.getFloat("Follow-range; No Enemy", "general", 6f, 2f, 64f, "How far a villager can stray from a player when no enemy present and is following.");
 		blockChance = config.getFloat("Block Chance", "attack", .6f, 0f, 1f, "how likely a villager's attempted block is to succeed");
-		commandDist = config.getFloat("Command Distance", "general", 250f, 0f, 300f, "maximum distance in blocks a ray trace will go when right click the baton to order a villager movement");
+		commandDist = config.getFloat("Command Distance", "general", 250f, 0f, 300f, "maximum distance in blocks a ray trace will go when right clicking the baton to order a villager movement");
 		dailyBread = config.getFloat("Daily Bread", "general", 3f, 1f, 20f, "how much food saturation a villager will consume as measured in \"bread per day\" while drafted");
 		collectFoodThreshold = config.getFloat("Food Refill Threshold", "general", 16f, 1f, 256f, "how far the food saturation of a villager will decrease before villager goes to refill inventory at food store");
 		movementSpeed = config.getFloat("Movement Speed", "general", .67f, .25f, 1f, "how fast the villager moves. Default for villagers in MC is .55");

@@ -1,7 +1,5 @@
 package com.joshycode.improvedvils.network;
 
-import org.jline.utils.Log;
-
 import com.joshycode.improvedvils.ClientProxy;
 import com.joshycode.improvedvils.CommonProxy;
 import com.joshycode.improvedvils.ImprovedVils;

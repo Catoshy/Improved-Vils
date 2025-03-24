@@ -6,8 +6,8 @@ import java.util.Map.Entry;
 
 import com.joshycode.improvedvils.util.LookHelper;
 
+import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
@@ -21,14 +21,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class CommandGetEntityName implements ICommand {
-
-	@Override
-	public int compareTo(ICommand arg0) 
-	{
-		// TODO Auto-generated method stub
-		return 0;
-	}
+public class CommandGetEntityName extends CommandBase{
 
 	@Override
 	public String getName() 

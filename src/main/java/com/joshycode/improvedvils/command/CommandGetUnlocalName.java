@@ -3,21 +3,15 @@ package com.joshycode.improvedvils.command;
 import java.util.Arrays;
 import java.util.List;
 
+import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 
-public class CommandGetUnlocalName implements ICommand {
-
-	@Override
-	public int compareTo(ICommand arg0)
-	{
-		return 0;
-	}
+public class CommandGetUnlocalName extends CommandBase{
 
 	@Override
 	public String getName() 
@@ -34,7 +28,7 @@ public class CommandGetUnlocalName implements ICommand {
 	@Override
 	public List<String> getAliases() 
 	{
-		return Arrays.<String>asList("getUnlocalizedName");
+		return Arrays.<String>asList("getUnlocalizedName", "getUnlocalisedName");
 	}
 
 	@Override

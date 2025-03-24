@@ -16,7 +16,7 @@ public class VillagerAICampaignMove extends EntityAIGoFar {
 
 	public VillagerAICampaignMove(EntityVillager entityHost, int pathFailMax)
 	{
-		super(entityHost, 4, pathFailMax);
+		super(entityHost, 4, pathFailMax, true);
 		this.order = TroopCommands.NONE;
 	}
 
@@ -78,9 +78,6 @@ public class VillagerAICampaignMove extends EntityAIGoFar {
     
 	@Override
     protected BlockPos getObjectiveBlock() { return VilMethods.getCommBlockPos((EntityVillager) this.entityHost); }
-	
-	@Override
-	protected boolean breakDoors() { return false; }
 	
 	@Override
 	protected void resetObjective() 

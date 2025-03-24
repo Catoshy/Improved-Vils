@@ -6,11 +6,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.joshycode.improvedvils.command.CommandDestroyCommand;
-import com.joshycode.improvedvils.command.CommandGetEntityName;
+import com.joshycode.improvedvils.command.CommandMakeRepUpdate;
 import com.joshycode.improvedvils.command.CommandTransferCommand;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 import com.joshycode.improvedvils.handler.EventHandlerVil;
-import com.joshycode.improvedvils.handler.GraveStoneCompHandler;
+import com.joshycode.improvedvils.patch.GraveStoneCompHandler;
+import com.joshycode.improvedvils.patch.ImprovedMobsPatch;
 
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
@@ -25,12 +26,12 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 
-@Mod(modid = ImprovedVils.MODID, name = ImprovedVils.MODNAME, version = ImprovedVils.VERSION, certificateFingerprint = ImprovedVils.certificateFingerprint, dependencies = "after:openblocks;")
+@Mod(modid = ImprovedVils.MODID, name = ImprovedVils.MODNAME, version = ImprovedVils.VERSION, certificateFingerprint = ImprovedVils.certificateFingerprint, dependencies = "after:openblocks; after:tenshilib; after:improvedmobs")
 public class ImprovedVils {
 
 	public static final String MODID = "improvedvils";
 	public static final String MODNAME = "Improved Villagers";
-	public static final String VERSION = "1.0.5";
+	public static final String VERSION = "1.0.6";
 	public static final String certificateFingerprint = "e34b86ab6155979713e5a093503cb0140ecb7134";
 	public static final Logger logger = LogManager.getLogger(ImprovedVils.MODID);
 
@@ -53,6 +54,11 @@ public class ImprovedVils {
 	@EventHandler
 	public void init(FMLInitializationEvent e) 
 	{
+		if(Loader.isModLoaded("improvedmobs"))
+		{
+			proxy.unregisterImprovedMobsHandler();
+			MinecraftForge.EVENT_BUS.register(new ImprovedMobsPatch());
+		}
 		proxy.init();
 	}
 
@@ -68,6 +74,7 @@ public class ImprovedVils {
 	{
 		event.registerServerCommand(new CommandDestroyCommand());
 		event.registerServerCommand(new CommandTransferCommand());
+		event.registerServerCommand(new CommandMakeRepUpdate());
 	}
 	
 	@EventHandler

@@ -6,21 +6,15 @@ import java.util.List;
 import com.joshycode.improvedvils.capabilities.entity.IMarshalsBatonCapability;
 import com.joshycode.improvedvils.handler.CapabilityHandler;
 
+import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 
-public class CommandDestroyCommand implements ICommand {
-
-	@Override
-	public int compareTo(ICommand arg0)
-	{
-		return 0;
-	}
+public class CommandDestroyCommand extends CommandBase{
 
 	@Override
 	public String getName() 

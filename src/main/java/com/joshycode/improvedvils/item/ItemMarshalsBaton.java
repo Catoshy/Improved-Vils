@@ -3,7 +3,6 @@ package com.joshycode.improvedvils.item;
 import com.joshycode.improvedvils.ImprovedVils;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.Provisions;
 import com.joshycode.improvedvils.capabilities.entity.MarshalsBatonCapability.TroopCommands;
-import com.joshycode.improvedvils.gui.GuiBatonTroopCommand;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.network.NetWrapper;
 import com.joshycode.improvedvils.network.VilCommandPacket;

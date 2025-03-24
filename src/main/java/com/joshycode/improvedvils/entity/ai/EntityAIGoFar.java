@@ -2,10 +2,9 @@ package com.joshycode.improvedvils.entity.ai;
 
 import javax.annotation.Nullable;
 
-import org.jline.utils.Log;
-
 import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.CommonProxy;
+import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.capabilities.VilMethods;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 import com.joshycode.improvedvils.util.PathUtil;
@@ -34,6 +33,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 	protected int pathfindingFails;
 	protected final int mostPathfindingFails;
 	protected final boolean countFails;
+	protected final boolean canSoftReset;
 	protected PathNavigate navigator;
 	protected boolean finished;
 	protected boolean theDebugVar;
@@ -48,7 +48,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 	private int ppathIndex;
 	private int imHereDistanceSq;
 	
-	public EntityAIGoFar(EntityCreature entityHost, int imHereDistanceSq, int mostFails)
+	public EntityAIGoFar(EntityCreature entityHost, int imHereDistanceSq, int mostFails, boolean canSoftReset)
 	{
 		super();
 		this.distanceToObj = 0;
@@ -66,12 +66,13 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		this.pathingToLastDoor = false;
 		this.finished = false;
 		this.theDebugVar = false;
+		this.canSoftReset = canSoftReset;
 		this.setMutexBits(3);
 	}
 
 	public EntityAIGoFar(EntityCreature villager, int imHereDistanceSq) 
 	{
-		this(villager, imHereDistanceSq, -1);
+		this(villager, imHereDistanceSq, -1, false);
 	}
 
 	@Override
@@ -82,7 +83,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		if(breakDoors())
 			this.lastDoorSeen = VilMethods.getLastDoor((EntityVillager) this.entityHost) != null; //Cap (VilMethod) BlockPos var is for permanence across AIs
 		((PathNavigateGround) this.navigator).setBreakDoors(this.breakDoors());
-		if(generatePath())//TODO
+		if(generatePath())
 		{
 			PathPoint pp = this.path.getFinalPathPoint();
 			if(pp != null)
@@ -105,7 +106,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 						return arg0 instanceof EntityPlayer;
 					}
 			
-		}).isEmpty())
+		}).isEmpty() && ConfigHandler.debug)
 			this.theDebugVar = true;
 		else
 			this.theDebugVar = false;
@@ -127,6 +128,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 				|| this.idleTicks > 60)
 		{
 			this.idleTicks = 0;
+			if(this.canSoftReset) this.resetTask();
 			if(!this.tryToGetCloser(object)) return;
 		}
 		if(this.entityHost.getDistanceSq(object) < this.imHereDistanceSq)
@@ -153,7 +155,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 			setDoorReference();
 		checkIdle();
 	}
-	
+
 	public boolean shouldContinueExecuting()
 	{
 		return this.pathfindingFails < this.mostPathfindingFails;
@@ -163,19 +165,18 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 	{
 		int i = this.path.getCurrentPathIndex();
 		PathPoint point = this.path.getPathPointFromIndex(i);
-		//BlockPos pointPos = new BlockPos(point.x, point.y, point.z);
-		BlockPos entityPos = this.entityHost.getPosition();
+		BlockPos pointPos = new BlockPos(point.x, point.y, point.z);
 		PathNodeType type = this.navigator.getNodeProcessor().getPathNodeType(this.entityHost.getEntityWorld(), point.x, point.y, point.z);
-		if(type == PathNodeType.DOOR_OPEN || type == PathNodeType.DOOR_WOOD_CLOSED)
+		if(type == PathNodeType.DOOR_OPEN || type == PathNodeType.DOOR_WOOD_CLOSED /*|| type == PathNodeType.TRAPDOOR TODO*/)
 		{
 			BlockPos savedPos = VilMethods.getLastDoor((EntityVillager) this.entityHost);
 			if(this.theDebugVar)
-				Log.info("point, pointPos, type, savedPos, villager name; ", point, " ", entityPos, " ", type, " ", savedPos, " ", this.entityHost.getName());
-			if(savedPos != null && !entityPos.equals(savedPos) || //villager treads through door: here checks if either he has a previous saved door pos and sets to entityPos if not same,
+				Log.info("point, pointPos, type, savedPos, villager name; " + point + " " + pointPos + " " + type + " " + savedPos + " " + this.entityHost.getName());
+			if(savedPos != null && !pointPos.equals(savedPos) || //villager treads through door: here checks if either he has a previous saved door pos and sets to entityPos if not same,
 					savedPos == null && !this.passedBackThrough) //or if the door position is intentionally null because he's going back through, hence passedBackThrough would be true.
 			{
 				this.lastDoorSeen = true;
-				VilMethods.setLastDoor((EntityVillager) this.entityHost, entityPos);
+				VilMethods.setLastDoor((EntityVillager) this.entityHost, pointPos);
 			}
 			else if(!this.lastDoorSeen && !this.passedBackThrough) //if lastDoorSeen is true, then villager is still going through the door so he would not actually be turning around
 			{													   //to pass through. if passedBackThrough is true, then the following has already been done.
@@ -214,19 +215,6 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		this.ppathIndex = this.path.getCurrentPathIndex();
 	}
 
-	@Override
-	public void resetTask()
-	{
-		if(this.theDebugVar)
-			Log.info("reset task");
-		resetObjective();
-		this.path = null;
-		this.navigator.clearPath();
-		this.idleTicks = 0;
-		this.distanceToObj = 0;
-		this.pathfindingFails = 0;
-	}
-
 	private boolean generatePath()
 	{
 		Vec3d pos;
@@ -253,7 +241,6 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		}
 		if(this.entityHost.getDistanceSq(objective) > CommonProxy.GUARD_MAX_PATH_SQ)
 		{
-				
 			Vec3d pos1 = PathUtil.findNavigableBlockInDirection(this.entityHost.getPosition(), objective, this.entityHost, offsetAngle, flipFacing);
 			if(pos1 != null)
 			{
@@ -270,6 +257,8 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		}
 		if(pos == null)
 		{
+			if(ConfigHandler.debug && this.theDebugVar)
+				Log.info("generate path fail.");
 			return false;
 		}
 		this.path = this.navigator.getPathToXYZ(pos.x, pos.y, pos.z);
@@ -277,12 +266,14 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		if(this.path != null)
 		{
 			if(ConfigHandler.debug && this.theDebugVar)
-				Log.info("new Villager path is so long; ", path.getCurrentPathLength());
+				Log.info("new Villager path is so long; %s", path.getCurrentPathLength());
 			this.removePathFloatingEnds();
 			if(ConfigHandler.debug && this.theDebugVar)
-				Log.info("after truncating, villager path is so long; ", path.getCurrentPathLength());
+				Log.info("after truncating, villager path is so long; %s", path.getCurrentPathLength());
 			return true;
 		}
+		if(ConfigHandler.debug && this.theDebugVar)
+			Log.info("generate path fail.");
 		return false;
 	}
 
@@ -304,10 +295,10 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		} 
 	}
 
-	private boolean tryToGetCloser(BlockPos object)
+	private boolean tryToGetCloser(BlockPos object) 
 	{
-		if(this.theDebugVar)
-			Log.info("path fails for vill;", this.pathfindingFails);
+		if(ConfigHandler.debug && this.theDebugVar)
+			Log.info("path fails for vill; %s", this.pathfindingFails);
 		if(generatePath())
 		{
 			PathPoint pp = this.path.getFinalPathPoint();
@@ -331,7 +322,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		this.navigator.setPath(null, 0);
 		return false;
 	}
-
+	
 	@Nullable
 	protected Vec3d getRandomPosition()
     {
@@ -345,7 +336,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 	protected boolean breakDoors() { return false; }
 	
 	@Override
-	public boolean isInterruptible() { return false; }
+	public boolean isInterruptible() { return this.canSoftReset; }
 	
 	protected double hostSpeed() 
 	{ 
@@ -355,4 +346,30 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 	protected void resetObjective() {}
 	
 	protected void arrivedAtObjective() {}
+	
+
+	@Override
+	public void resetTask()
+	{
+		if(this.canSoftReset && this.pathfindingFails < this.mostPathfindingFails && this.getObjectiveBlock() != null && !this.finished)	
+		{
+			if(this.theDebugVar)
+				Log.info("soft reset task");
+			this.path = null;
+			this.navigator.clearPath();
+			this.idleTicks = 0;
+			this.distanceToObj = 0;
+		}
+		else
+		{
+			if(this.theDebugVar)
+				Log.info("hard reset task");
+			resetObjective();
+			this.path = null;
+			this.navigator.clearPath();
+			this.idleTicks = 0;
+			this.distanceToObj = 0;
+			this.pathfindingFails = 0;
+		}
+	}
 }

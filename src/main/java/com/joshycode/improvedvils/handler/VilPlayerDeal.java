@@ -235,7 +235,6 @@ public class VilPlayerDeal implements Runnable{
 		}
 		else
 		{
-			//TODO slight modification to this, should make separate wholeVilRep for either case (familiar player or evil  team)
 			if((this.villagerPlayerRep > 0 || this.villageCurrentTeamRep < VillagerPlayerDealMethods.UNBEARABLE_THRESHOLD) && this.wholeVillagePlayerRep > VillagerPlayerDealMethods.HATED_THRESHOLD)
 			{
 				if(ConfigHandler.debug)

@@ -2,6 +2,7 @@ package com.joshycode.improvedvils.util;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -22,11 +23,13 @@ import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.EnumAction;
+import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.management.PlayerChunkMap;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -53,16 +56,7 @@ public class VillagerPlayerDealMethods {
 		int villagerReferenceVillageReputation = vilCap.getHomeVillagePlayerReputationReference(player);
 		int villageReputationChange = newReputation - villagerReferenceVillageReputation;
 		float playerReputation = vilCap.getPlayerReputation(player);
-		//If villager's perception of the player is higher than the mean it does not make sense to further raise his opinion
-		//given that his opinion is one of the sources of the better reputation. Lower reputations always come from outside
-		//the villager's personal experience
-		//TODO 21 April 2024: I do not think the above is right. Lower reputation CAN come from villager experience, and individual
-		//reputation changes are not done until AFTER the whole village has been tallied.
-		//TODO 26 April 2024: I changed my mind. Whether or not lower rep comes from vill experience, overall enthusiasm for the player
-		//wouldn't really go higher just because milder enthusiasm is reflected by other villagers. Whereas bad rep would harm his idea of
-		//the player.
-		//ADD 2: maybe just punish the player. Getting good reputation creates a domino effect if it effects the vill's personal. 
-		//TODO 27 April: domino works both ways. idk, just update vill reference.
+	
 		if(newReputation > playerReputation || villageReputationChange < 0)
 		{
 			if(ConfigHandler.debug)
@@ -336,8 +330,9 @@ public class VillagerPlayerDealMethods {
 	public static void checkArmourWeaponsAndFood(EntityVillager entity, UUID playerEntityByUUID)
 	{
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		int armour = entity.getTotalArmorValue();
+		int armour = getArmourTally(entity);
 		int prevArmour = vilCap.getArmourValue();
+
 		float attackVal = 0;
 		boolean hasShield  = false;
 		if(!entity.getHeldItemMainhand().isEmpty())
@@ -372,6 +367,24 @@ public class VillagerPlayerDealMethods {
 		vilCap.setArmourValue(armour).setAttackValue(attackVal).setShield(hasShield).setSaturation(foodSaturation);
 	}
 	
+	private static int getArmourTally(EntityVillager entity) 
+	{
+		double armourTally = 0D;
+		for (EntityEquipmentSlot entityequipmentslot : EntityEquipmentSlot.values())
+        {
+            ItemStack itemstack = entity.getItemStackFromSlot(entityequipmentslot);
+            if(!itemstack.isEmpty())
+            {
+            	Iterator<AttributeModifier> attributeIter = itemstack.getAttributeModifiers(entityequipmentslot).get(SharedMonsterAttributes.ARMOR.getName()).iterator();
+            	while(attributeIter.hasNext())
+            	{
+            		armourTally += attributeIter.next().getAmount();
+            	}
+            }
+        }
+		return MathHelper.floor(armourTally);
+	}
+
 	public static void changePlayerReputation(EntityVillager entity, UUID playerEntityUUID, float wholeReputationChange) 
 	{
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);

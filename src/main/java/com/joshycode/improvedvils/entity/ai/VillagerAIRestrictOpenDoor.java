@@ -19,9 +19,17 @@ public class VillagerAIRestrictOpenDoor extends EntityAIRestrictOpenDoor {
 	@Override
 	public boolean shouldExecute()
 	{
-		if(VilMethods.getGuardBlockPos(villager) != null)
+		if(VilMethods.getDuty(this.villager) && !VilMethods.getHungry(this.villager))
 			return false;
 
 		return super.shouldExecute();
+	}
+	
+	public boolean shouldContinueExecuting()
+	{
+		if(VilMethods.getDuty(this.villager) && !VilMethods.getHungry(this.villager))
+			return false;
+		
+		return super.shouldContinueExecuting();
 	}
 }
