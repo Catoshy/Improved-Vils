@@ -19,13 +19,7 @@ public final class LookHelper {
 	public static Pair<RayTraceResult, String> checkForFirendlyFire(EntityLivingBase entityHost, World world, float inaccuracy, int range)
 	{
 		String debugString = "\nDEBUG FOR FRIENDLY FIRE! \n";
-		Entity entity = checkEntitiesNearby(entityHost, world);/*
-	    if(entity != null)
-	    {
-	    	debugString += "Entity: " + entity + "is too near to shooter. Should not even be able to get shot?!";
-	    	return new Pair<>(new RayTraceResult(entity), debugString);
-	    	//return new RayTraceResult(entity);
-	    }*/
+		Entity entity = checkEntitiesNearby(entityHost, world);
 	    
 		double y = entityHost.posY + entityHost.getEyeHeight();
 		double x = entityHost.posX;
@@ -102,7 +96,6 @@ public final class LookHelper {
 	        raytraceresult = new RayTraceResult(entity);
 	    }
 	    
-	    //return raytraceresult;
     	//TODO DEBUG
 	    return new Pair<>(raytraceresult, debugString);
 	}

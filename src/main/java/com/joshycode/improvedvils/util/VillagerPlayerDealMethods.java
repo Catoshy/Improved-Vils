@@ -2,6 +2,7 @@ package com.joshycode.improvedvils.util;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -22,11 +23,13 @@ import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.EnumAction;
+import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.management.PlayerChunkMap;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -327,8 +330,9 @@ public class VillagerPlayerDealMethods {
 	public static void checkArmourWeaponsAndFood(EntityVillager entity, UUID playerEntityByUUID)
 	{
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);
-		int armour = entity.getTotalArmorValue();
+		int armour = getArmourTally(entity);
 		int prevArmour = vilCap.getArmourValue();
+
 		float attackVal = 0;
 		boolean hasShield  = false;
 		if(!entity.getHeldItemMainhand().isEmpty())
@@ -363,6 +367,24 @@ public class VillagerPlayerDealMethods {
 		vilCap.setArmourValue(armour).setAttackValue(attackVal).setShield(hasShield).setSaturation(foodSaturation);
 	}
 	
+	private static int getArmourTally(EntityVillager entity) 
+	{
+		double armourTally = 0D;
+		for (EntityEquipmentSlot entityequipmentslot : EntityEquipmentSlot.values())
+        {
+            ItemStack itemstack = entity.getItemStackFromSlot(entityequipmentslot);
+            if(!itemstack.isEmpty())
+            {
+            	Iterator<AttributeModifier> attributeIter = itemstack.getAttributeModifiers(entityequipmentslot).get(SharedMonsterAttributes.ARMOR.getName()).iterator();
+            	while(attributeIter.hasNext())
+            	{
+            		armourTally += attributeIter.next().getAmount();
+            	}
+            }
+        }
+		return MathHelper.floor(armourTally);
+	}
+
 	public static void changePlayerReputation(EntityVillager entity, UUID playerEntityUUID, float wholeReputationChange) 
 	{
 		IImprovedVilCapability vilCap = entity.getCapability(CapabilityHandler.VIL_PLAYER_CAPABILITY, null);

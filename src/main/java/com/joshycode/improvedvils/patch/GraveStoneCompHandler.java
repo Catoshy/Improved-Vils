@@ -1,4 +1,4 @@
-package com.joshycode.improvedvils.handler;
+package com.joshycode.improvedvils.patch;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -57,8 +57,7 @@ import openmods.world.DelayedActionTickHandler;
 
 /**
  * Credit to openblocks & co. for writing most of this file and for making their nice mod with
- * helpful gravestones
- * :3   ^-^
+ * helpful gravestones!
  */
 @SuppressWarnings("deprecation")
 public class GraveStoneCompHandler {

@@ -97,6 +97,8 @@ public class VillagerAICollectKit extends EntityAIGoFar {
 			return true;
 		if(villager.getAttackTarget() != null && !VilMethods.outOfAmmo(villager))
 			return true;
+		if(VilMethods.isRefillingFood(villager))
+			return true;
 		return false;
 	}
 

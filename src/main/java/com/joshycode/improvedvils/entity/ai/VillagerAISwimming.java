@@ -1,7 +1,5 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import java.util.UUID;
-
 import com.joshycode.improvedvils.Log;
 import com.joshycode.improvedvils.handler.ConfigHandler;
 
@@ -9,7 +7,6 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.ai.EntityAISwimming;
-import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.EnumFacing;
@@ -18,16 +15,11 @@ import net.minecraft.world.World;
 
 public class VillagerAISwimming extends EntityAISwimming {
 
-	protected static final UUID MODIFIER_UUID = UUID.fromString("3ccaa8b7-9872-4ae3-9401-d72c4a0ce244");
-	//TODO
-	@SuppressWarnings("unused")
-	private static final AttributeModifier MODIFIER = (new AttributeModifier(MODIFIER_UUID, "Wading jump boost", +0.5D, 0)).setSaved(false);
 	private EntityLiving entityLiving;
 
 	public VillagerAISwimming(EntityLiving entityIn) 
 	{
 		super(entityIn);
-		this.setMutexBits(0);
 		this.entityLiving = entityIn;
 	}
 	

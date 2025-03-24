@@ -1,8 +1,6 @@
 package com.joshycode.improvedvils.entity.ai;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -20,7 +18,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -35,7 +32,6 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 
 	private static final String refillCooldownInfo = ImprovedVils.MODID + ":refill";
 	private int refillCooldown;
-	Map<Item, Integer> foodToCollect;//TODO
 
 	public VillagerAIRefillFood(EntityVillager villager, int mostFails)
 	{
@@ -43,7 +39,6 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 		this.refillCooldown = villager.getEntityData().getInteger(refillCooldownInfo);
 		if(this.refillCooldown <= 0)
 			this.refillCooldown = 1;
-		this.foodToCollect = new HashMap<Item, Integer>(); //TODO
 	}
 
 	@Override
@@ -97,7 +92,6 @@ public class VillagerAIRefillFood extends EntityAIGoFar {
 
 	private boolean canCollectFood(IInventory inv) 
 	{
-		this.foodToCollect.clear();
 		for(int i = 0; i < inv.getSizeInventory(); i++)
 		{
 			if(inv.getStackInSlot(i).getItem() instanceof ItemFood)

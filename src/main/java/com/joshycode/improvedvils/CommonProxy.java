@@ -1,11 +1,15 @@
 package com.joshycode.improvedvils;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import com.google.common.base.Predicate;
 import com.joshycode.improvedvils.capabilities.CapabilityStorage;
@@ -62,9 +66,13 @@ import net.minecraft.util.IThreadListener;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.ASMEventHandler;
+import net.minecraftforge.fml.common.eventhandler.EventBus;
+import net.minecraftforge.fml.common.eventhandler.IEventListener;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -113,6 +121,37 @@ public class CommonProxy {
 		registerCapabilities();
 		registerPackets();
 		ConfigHandler.load(LoadState.PREINIT);
+	}
+	
+	@SuppressWarnings("unchecked")
+	protected void unregisterImprovedMobsHandler()
+	{
+		Class<?> clazz = EventBus.class;
+		try {
+			Field eventBusListeners = clazz.getDeclaredField("listeners");
+			eventBusListeners.setAccessible(true);
+			ConcurrentHashMap<Object, ArrayList<IEventListener>> listeners = (ConcurrentHashMap<Object, ArrayList<IEventListener>>) eventBusListeners.get(MinecraftForge.EVENT_BUS);
+			Object handlerKey = listeners.searchKeys(1, new Function<Object, Object> () {
+
+				@Override
+				public Object apply(Object arg0) 
+				{
+					if(arg0 instanceof com.flemmli97.improvedmobs.handler.EventHandlerAI)
+						return arg0;
+					return null;
+				}
+			
+			});
+			ArrayList<IEventListener> eListeners = listeners.get(handlerKey);
+			for(int i = 0; i < eListeners.size(); i++)
+			{
+				ASMEventHandler asm = (ASMEventHandler) eListeners.get(i);
+				if(asm.toString().contains("modifyPathfinder(Lcom/flemmli97/tenshilib/common/events/PathFindInitEvent;)V"))
+					eListeners.remove(i);
+			}
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException  e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void registerEntities() 

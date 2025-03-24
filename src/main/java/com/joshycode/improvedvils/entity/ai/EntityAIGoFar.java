@@ -83,7 +83,7 @@ public abstract class EntityAIGoFar extends EntityAIBase {
 		if(breakDoors())
 			this.lastDoorSeen = VilMethods.getLastDoor((EntityVillager) this.entityHost) != null; //Cap (VilMethod) BlockPos var is for permanence across AIs
 		((PathNavigateGround) this.navigator).setBreakDoors(this.breakDoors());
-		if(generatePath())//TODO
+		if(generatePath())
 		{
 			PathPoint pp = this.path.getFinalPathPoint();
 			if(pp != null)

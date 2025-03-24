@@ -126,6 +126,9 @@ public class VillagerAIHandlePlayers extends EntityAIBase {
 				List<EntityVillager> population = pair.a;
 				long[] removeChunks = pair.b;
 				
+				if(ConfigHandler.debug)
+					Log.info("population to work with: %s", population);
+				
 				int updateReputation = VillagerPlayerDealMethods.getVillageReputationFromMean(this.village, playerId, population) ;
 				VillagerPlayerDealMethods.updateVillageReputation(this.villager.getEntityWorld(), this.village, playerId, updateReputation, population);
 				VillagerPlayerDealMethods.putAwayChunks(this.villager.getEntityWorld(), removeChunks);

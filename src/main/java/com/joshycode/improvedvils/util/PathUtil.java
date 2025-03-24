@@ -45,7 +45,7 @@ public class PathUtil {
 				}
 			}
 		}
-		else
+		else if(dZ != 0)
 		{
 			double slope = (double)dX / Math.abs((double)dZ);
 			double slopeY = (double)dY / Math.abs((double)dZ);
@@ -63,6 +63,22 @@ public class PathUtil {
 				runZ += step;
 				
 				BlockPos pos = new BlockPos(runX, runY, runZ);
+				
+				if(pos.getDistance(entX, entY, entZ) >= 16)
+				{
+					return new Vec3d(pos);
+				}
+			}
+		}
+		else
+		{
+			double runY = entY;
+			
+			for(int i = 0; i < 32; i++)
+			{
+				runY += dY;
+				
+				BlockPos pos = new BlockPos(entX, runY, entZ);
 				
 				if(pos.getDistance(entX, entY, entZ) >= 16)
 				{
@@ -128,7 +144,7 @@ public class PathUtil {
 				}
 			}
 		}
-		else
+		else if(dZ != 0)
 		{
 			if(offsetAngleDeg != 0)
 			{
@@ -163,6 +179,31 @@ public class PathUtil {
 						else if(dY < 0)
 							runY -= 1;
 						pos = new BlockPos(runX, runY, runZ);
+					}
+					if(ConfigHandler.debug && entity.isInWater())
+						Log.info("Water Villager, try blockpos %s", pos );
+					return new Vec3d(pos);
+				}
+			}
+		}
+		else
+		{
+			double runY = entY;
+			
+			for(int i = 0; i < 32; i++)
+			{
+				runY += dY;
+
+				BlockPos pos = new BlockPos(entX, (int)runY, entX);
+				if(pos.getDistance(entX, entY, entZ) >= 8)
+				{
+					while(!entity.getNavigator().canEntityStandOnPos(pos) && pos.getY() != dest.getY())
+					{
+						if(dY > 0)
+							runY += 1;
+						else if(dY < 0)
+							runY -= 1;
+						pos = new BlockPos(entX, (int)runY, entX);
 					}
 					if(ConfigHandler.debug && entity.isInWater())
 						Log.info("Water Villager, try blockpos %s", pos );

@@ -427,7 +427,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		return null;
     }
 
-    //TODO
 	private boolean notLookingAtTarget() 
 	{
 		if(this.attackTarget != this.entityHost.getAttackTarget())
@@ -448,9 +447,7 @@ public class VillagerAIShootRanged extends EntityAIBase {
 
 	private boolean checkForConflict() 
 	{
-		//RayTraceResult lineOfSight = ProjectileHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy);
-		//Friendly-fire debug
-    	//TODO DEBUG
+		//Friendly-fire debug TODO
 		Pair<RayTraceResult, String> pair = LookHelper.checkForFirendlyFire(this.entityHost, this.entityHost.getEntityWorld(), this.entry.ballisticData.inaccuracy, ConfigHandler.friendlyFireSearchRange);
 		RayTraceResult lineOfSight = pair.a;
 		this.debugString = pair.b;
@@ -463,8 +460,6 @@ public class VillagerAIShootRanged extends EntityAIBase {
 		List<EntityVillager> list = this.entityHost.getEntityWorld().getEntitiesWithinAABB(EntityVillager.class, this.attackTarget.getEntityBoundingBox().grow(1.5D), this.friendlyFirePredicate);
 		if(!list.isEmpty())
 		{
-			/*if(ConfigHandler.debug)
-				Log.info("Friendlies too close to fire! %s", list.get(0));*/
 			this.rangedAttackTime++;
 			return true;
 		}

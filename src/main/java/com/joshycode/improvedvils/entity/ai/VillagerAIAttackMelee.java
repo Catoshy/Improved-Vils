@@ -76,7 +76,7 @@ public class VillagerAIAttackMelee extends EntityAIBase {
             }
         }
         this.path = this.getPathToTarget(entityTarget);
-        if (this.path != null)//TODO
+        if (this.path != null)
         {
         	this.navigator.setPath(this.path, this.hostSpeed());
             return true;
